@@ -1,5 +1,5 @@
 ﻿{
-  "version": "2.4.6",
+  "version": "2.4.7",
   "name": "VisOps with PBI Inspector",
   "description": "A testing or inspection tool for the visual layer of Microsoft Power BI reports.",
   "path": "%PATH%",
