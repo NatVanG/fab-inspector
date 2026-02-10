@@ -14,6 +14,9 @@ COPY ["PBIRInspectorCLI/PBIRInspectorCLI.csproj", "PBIRInspectorCLI/"]
 COPY ["PBIRInspectorImageLibrary/PBIRInspectorImageLibrary.csproj", "PBIRInspectorImageLibrary/"]
 COPY ["PBIRInspectorLibrary/PBIRInspectorLibrary.csproj", "PBIRInspectorLibrary/"]
 COPY ["PBIRInspectorClientLibrary/PBIRInspectorClientLibrary.csproj", "PBIRInspectorClientLibrary/"]
+COPY ["FabInspector.Operators/FabInspector.Operators.csproj", "FabInspector.Operators/"]
+COPY ["Ric.Operators/Ric.Operators.csproj", "Ric.Operators/"]
+
 RUN dotnet restore "./PBIRInspectorCLI/PBIRInspectorCLI.csproj"
 COPY . .
 WORKDIR "/src/PBIRInspectorCLI"
