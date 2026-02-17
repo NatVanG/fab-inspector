@@ -43,7 +43,7 @@ jobs:
         
     - name: Create Windows zip
       run: |
-        Compress-Archive -Path ./package/win-x64/* -DestinationPath ./win-x64-WinForm.zip
+        Compress-Archive -Path ./package/win-x64/* -DestinationPath ./win-x64.${{ github.ref_name }}-portable-net8.0.zip
         
     - name: Create Release
       uses: softprops/action-gh-release@v2
