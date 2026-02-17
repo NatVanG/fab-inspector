@@ -1,0 +1,59 @@
+name: WinForm Release Build
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+-Winform'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+        
+    - name: Build Windows x64 WinForm
+      run: |
+        dotnet publish PBIRInspectorWinForm/PBIRInspectorWinForm.csproj `
+          -c Release `
+          -r win-x64 `
+          --self-contained true `
+          -p:PublishSingleFile=true `
+          -p:PublishReadyToRun=false `
+          -p:DebugType=None `
+          -p:DebugSymbols=false `
+          -p:PublishTrimmed=false `
+          -o ./build/win-x64
+          
+    - name: Prepare Windows package
+      run: |
+        New-Item -ItemType Directory -Force -Path ./package/win-x64/WinForm
+        Copy-Item -Path ./build/win-x64/* -Destination ./package/win-x64/WinForm/ -Recurse
+        Remove-Item -Path ./package/win-x64/WinForm/*.pdb -ErrorAction SilentlyContinue
+        Remove-Item -Path ./package/win-x64/WinForm/*.config -ErrorAction SilentlyContinue
+        
+    - name: Create Windows zip
+      run: |
+        Compress-Archive -Path ./package/win-x64/* -DestinationPath ./win-x64-WinForm.zip
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        name: "WinForm-portable"
+        body: |
+          win-x64 Window Forms client.
+          Self-contained with .NET 8.0 runtime included.
+        files: |
+          win-x64.${{ github.ref_name }}-portable-net8.0.zip
+        prerelease: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

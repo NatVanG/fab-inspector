@@ -1,12 +1,6 @@
 ﻿using Json.Path;
 using Json.Pointer;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json.Nodes;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace PBIRInspectorLibrary.Part
 {
@@ -68,6 +62,8 @@ namespace PBIRInspectorLibrary.Part
             catch (System.Text.Json.JsonException)
             {
                 //this is not a json file or not a valid json file so add annotation with the file system path; this is so JsonLogic rules can still be applied
+                
+                //TODO: introduce a breaking change to return a JsonValue with the contents of the file instead of annotations?
                 node = Annotations(context);
             }
             finally

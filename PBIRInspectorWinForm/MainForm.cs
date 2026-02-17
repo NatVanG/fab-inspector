@@ -2,8 +2,8 @@ using Microsoft.Extensions.DependencyInjection;
 using PBIRInspectorClientLibrary;
 using PBIRInspectorClientLibrary.Utils;
 using PBIRInspectorLibrary;
-using PBIRInspectorLibrary.CustomRules;
-using System;
+using FabInspector.Operators;
+using Ric.Operators;
 
 namespace PBIRInspectorWinForm
 {
@@ -30,21 +30,20 @@ namespace PBIRInspectorWinForm
             var registries = new List<JsonLogicOperatorRegistry>();
 
             registries.Add(new JsonLogicOperatorRegistry(
-            new PBIRInspectorSerializerContext(),
-            new IJsonLogicOperator[] { 
+            new RicSerializerContext(),
+            new IJsonLogicOperator[] {
                 new CountOperator(),
-                new DrillVariableOperator(), 
-                new FileSizeOperator(), 
-                new FileTextSearchCountOperator(), 
-                new IsNullOrEmptyOperator(), 
-                new PartInfoOperator(), 
-                new PartOperator(), 
-                new PathOperator(), 
-                new QueryOperator(), 
-                new RectangleOverlapOperator(), 
-                new SetDifferenceOperator(), 
-                new SetEqualOperator(), 
-                new SetIntersectionOperator(), 
+                new DrillVariableOperator(),
+                new FileSizeOperator(),
+                new FileTextSearchCountOperator(),
+                new IsNullOrEmptyOperator(),
+                new PartInfoOperator(),
+                new PartOperator(),
+                new PathOperator(),
+                new QueryOperator(),
+                new SetDifferenceOperator(),
+                new SetEqualOperator(),
+                new SetIntersectionOperator(),
                 new SetSymmetricDifferenceOperator(),
                 new SetUnionOperator(),
                 new StringContainsOperator(),
@@ -52,6 +51,12 @@ namespace PBIRInspectorWinForm
                 new ToStringOperator(),
                 new FromYamlFileOperator()
             }));
+
+            registries.Add(new JsonLogicOperatorRegistry(
+            new FabInspectorSerializerContext(),
+            new IJsonLogicOperator[] {
+                new RectangleOverlapOperator()}));
+
             services.AddTransient<IEnumerable<JsonLogicOperatorRegistry>>(provider => registries);
 
             services.AddTransient<IReportPageWireframeRenderer, PBIRInspectorWinImageLibrary.ReportPageWireframeRenderer>();

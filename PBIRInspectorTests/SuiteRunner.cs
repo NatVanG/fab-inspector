@@ -20,12 +20,12 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 
+using FabInspector.Operators;
 using Microsoft.Extensions.DependencyInjection;
 using PBIRInspectorLibrary;
-using PBIRInspectorLibrary.CustomRules;
 using PBIRInspectorLibrary.Exceptions;
 using PBIRInspectorLibrary.Output;
-using System;
+using Ric.Operators;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -417,7 +417,7 @@ public class SuiteRunner
         var registries = new List<JsonLogicOperatorRegistry>();
 
         registries.Add(new JsonLogicOperatorRegistry(
-        new PBIRInspectorSerializerContext(),
+        new RicSerializerContext(),
         new IJsonLogicOperator[] {
                 new CountOperator(),
                 new DrillVariableOperator(),
@@ -428,7 +428,6 @@ public class SuiteRunner
                 new PartOperator(),
                 new PathOperator(),
                 new QueryOperator(),
-                new RectangleOverlapOperator(),
                 new SetDifferenceOperator(),
                 new SetEqualOperator(),
                 new SetIntersectionOperator(),
@@ -437,7 +436,14 @@ public class SuiteRunner
                 new StringContainsOperator(),
                 new ToRecordOperator(),
                 new ToStringOperator(),
-                new FromYamlFileOperator()}));
+                new FromYamlFileOperator()
+        }));
+
+        registries.Add(new JsonLogicOperatorRegistry(
+        new FabInspectorSerializerContext(),
+        new IJsonLogicOperator[] {
+                new RectangleOverlapOperator()}));
+
         services.AddTransient<IEnumerable<JsonLogicOperatorRegistry>>(provider => registries);
         services.AddTransient<IReportPageWireframeRenderer, PBIRInspectorWinImageLibrary.ReportPageWireframeRenderer>();
 

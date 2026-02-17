@@ -1,6 +1,4 @@
-﻿//using Newtonsoft.Json;
-using PBIRInspectorLibrary.CustomRules;
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace PBIRInspectorLibrary
 {
