@@ -1,18 +1,19 @@
 [![CodeQL](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/github-code-scanning/codeql)
 [![PBIRInspector Tests](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/tests.yml/badge.svg)](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/tests.yml)
 [![Build and Publish Docker Image](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/docker-publish.yml)
-# PBI Inspector V2 (i.e. rules-based CI/CD metadata testing for the Microsoft Power BI visual layer and other Fabric Items)
+# Fab Inspector (aka PBI Inspector V2) 
+## Declarative rules-based CI/CD metadata testing for the Microsoft Power BI visual layer and other Microsoft Fabric items
 
-<img src="DocsImages/pbiinspectoricons.png" alt="PBI Inspector logo" height="250"/>
+<img src="DocsImages/pbiinspectoricons.png" alt="Fab Inspector logo" height="250"/>
 
 ## NOTE :pencil:
 
 This is a community project that is not supported by Microsoft. 
 
-:exclamation: Aside from Fabric items other than Power BI reports, this version of PBI Inspector is intended to support the new enhanced metadata file format (PBIR), see https://learn.microsoft.com/en-gb/power-bi/developer/projects/projects-report?tabs=desktop#pbir-format. For the older PBIR-legacy file format (see https://learn.microsoft.com/en-gb/power-bi/developer/projects/projects-report?tabs=desktop#report-files), please use the previous version of PBI Inspector available at https://github.com/NatVanG/PBI-Inspector :exclamation:
+:exclamation: Aside from Fabric items other than Power BI reports, this V2 version of PBI Inspector is intended to support the new enhanced metadata file format (PBIR), see https://learn.microsoft.com/en-gb/power-bi/developer/projects/projects-report?tabs=desktop#pbir-format. For the older PBIR-legacy file format (see https://learn.microsoft.com/en-gb/power-bi/developer/projects/projects-report?tabs=desktop#report-files), please use the previous version of PBI Inspector available at https://github.com/NatVanG/PBI-Inspector :exclamation:
 
 ## Breaking changes :boom:
-**PBI Inspector v2.0.0**To support the new enhanced report format (PBIR), a new "part" custom command has been introduced which helps to navigate to or iterate over the new metadata file format's parts such as "Pages", "Visuals", "Bookmarks" etc. Rules defined against the new format are not backward compatible with the older PBIR-legacy format and vice versa.
+**PBI Inspector v2.0.0**: To support the new enhanced report format (PBIR), a new "part" custom command has been introduced which helps to navigate to or iterate over the new metadata file format's parts such as "Pages", "Visuals", "Bookmarks" etc. Rules defined against the new format are not backward compatible with the older PBIR-legacy format and vice versa.
 
 **PBI Inspector v2.4.2**: Rules' ```part``` iterator and ```part``` custom operator previously allowed for a regular expression to match one or more Fabric item file or folder path(s). As PBI Inspector V2 is now cross-platform, the regular expression would have needed to be platform-agnostic to work across both windows and linux file paths. Furthermore, either forward slashes and back slashes need to be escaped in regular expressions and JSONLogic. To simplify matters, Fabric items' folder paths have been "normalised" and the neutral column character i.e. ':' was chosen to act as folder separator instead therefore, as an example, the part iterator or operator can be set as follows: 
 
@@ -61,6 +62,7 @@ The ""-parallel"" option is now available with the CLI only as an experimental f
 - [Azure DevOps and GitHub integration](#ado)
 - [Custom rules guide](#customerruleguide)
 - [Patching](#patching)
+- [Create and Debug Rules with VS Code](#rulecreationwithvscode)
 - [Examples](#customrulesexamples)
 - [Wiki](#wiki)
 - [Known issues](#knownissues)
@@ -70,7 +72,7 @@ The ""-parallel"" option is now available with the CLI only as an experimental f
 
 So we've DevOps, MLOps and DataOps... but why not VisOps? How can we ensure that business intelligence charts and other visuals within report pages are published in a consistent, performance optimised and accessible state? For example, are local report settings set in a consistent manner for a consistent user experience? Are visuals deviating from the specified theme by, say, using custom colours? Are visuals kept lean so they render quickly? Are charts axes titles displayed? etc.
 
-With Microsoft Power BI, visuals are placed on a canvas and formatted as desired, images may be included and theme files referenced. Testing the consistency of the visuals output has thus far typically been a manual process. The [Power BI Project file format (.pbip) was introduced](https://powerbi.microsoft.com/en-us/blog/deep-dive-into-power-bi-desktop-developer-mode-preview/) then more recently [enhanced](https://learn.microsoft.com/en-gb/power-bi/developer/projects/projects-report) to enable pro developer application lifecycle management and source control also known as CI/CD. PBI Inspector V2 contributes to CI/CD for Power BI reports by providing the ability to define fully configurable testing rules written in json. PBI Inspector V2 is powered by Greg Dennis's Json Logic .NET implementation, see https://json-everything.net/json-logic. 
+With Microsoft Power BI, visuals are placed on a canvas and formatted as desired, images may be included and theme files referenced. Testing the consistency of the visuals output has thus far typically been a manual process. The [Power BI Project file format (.pbip) was introduced](https://powerbi.microsoft.com/en-us/blog/deep-dive-into-power-bi-desktop-developer-mode-preview/) then more recently [enhanced](https://learn.microsoft.com/en-gb/power-bi/developer/projects/projects-report) to enable pro developer application lifecycle management and source control also known as CI/CD. Fab Inspector contributes to CI/CD for Power BI reports by providing the ability to define fully configurable testing rules written in json. Fab Inspector is powered by Greg Dennis's Json Logic .NET implementation, see https://json-everything.net/json-logic. 
 
 **PBI Inspector v2.3**: PBI Inspector V2 has evolved to support testing any Fabric items' CI/CD metadata, not just Power BI reports! Use either the Windows Forms desktop application or the CLI which now includes the "-fabricitem" command line option and point to a CI/CD folder containing one or more Fabric item definitions. Here's an example rules file that tests a CopyJob Fabric item's metadata: [CopyJob Rules](DocsExamples/Example-CopyJob-Rules.json). Here's another example that tests metadata across Fabric item types: [Cross-Fabric Items Rule](DocsExamples/Example-FabricCrossItem-Rules.json).
 
@@ -80,7 +82,7 @@ See releases for the Windows application and Command Line interface (CLI) at: ht
 
 ## <a id="baserulesoverview"></a>Base rules
 
-While PBI Inspector V2 supports custom rules, it also includes the following base rules defined at https://github.com/NatVanG/PBI-InspectorV2/blob/main/Rules/Base-rules.json. Currently the base rules only test the visual layer of Power BI reports as opposed to other Fabric CI/CD items. Some base rules allow for user parameters as shown below:
+While Fab Inspector supports custom rules, it also includes the following base rules defined at https://github.com/NatVanG/PBI-InspectorV2/blob/main/Rules/Base-rules.json. Currently the base rules only test the visual layer of Power BI reports as opposed to other Fabric CI/CD items. Some base rules allow for user parameters as shown below:
 
 1. Remove custom visuals which are not used in the report (no user parameters)
 2. Reduce the number of visible visuals on the page (set parameter ```paramMaxVisualsPerPage``` to the maximum number of allowed visible visuals on the page)
@@ -94,9 +96,9 @@ While PBI Inspector V2 supports custom rules, it also includes the following bas
 10. Ensure pages do not scroll vertically (no user parameters)
 11. Ensure alternativeText has been defined for all visuals (disabled by default, no user parameters)
 
-To modify parameters, save a local copy of the Base-rules.json file at https://github.com/NatVanG/PBI-InspectorV2/blob/main/Rules/Base-rules.json and point PBI Inspector V2 to the new file.
+To modify parameters, save a local copy of the Base-rules.json file at https://github.com/NatVanG/PBI-InspectorV2/blob/main/Rules/Base-rules.json and point Fab Inspector to the new file.
 
-To disable a rule, edit the rule's json to specify ```"disabled": true```. At runtime PBI Inspector V2 will ignore any disabled rule.
+To disable a rule, edit the rule's json to specify ```"disabled": true```. At runtime Fab Inspector will ignore any disabled rule.
 
 ## <a id="gui"></a>Run from the graphical user interface (GUI)
 
@@ -116,7 +118,7 @@ Running ```PBIRInspectorWinForm.exe``` presents the user with the following inte
 
 All command line parameters are as follows:
 
-```-fabricitem folderpath```: Required. The path to the CI/CD folder containing one or more Fabric item(s) definitions. PBI Inspector V2 traverses subfolders so you can specify the root CI/CD folder or a specific subfolder.
+```-fabricitem folderpath```: Required. The path to the CI/CD folder containing one or more Fabric item(s) definitions. Fab Inspector traverses subfolders so you can specify the root CI/CD folder or a specific subfolder.
 
 ```-pbip filepath```: Depreated, use -fabricitem instead. The path to the *.pbip file.
 
@@ -137,7 +139,7 @@ All command line parameters are as follows:
 - **JSON** writes results to a Json file.
 - **HTML** writes results to a formatted Html page. If no output directory is specified and the HTML format is specified, then a browser page will be opened to display the HTML results. When specifying "HTML" format, report page wireframe images will be created so there is no need to also include the "PNG" format. 
 - **PNG** draws report pages wireframes clearly showing any failing visuals. 
-- **ADO** outputs Azure DevOps compatible task commands for use in a deployment pipeline. Task commands issued are "task.logissue" and "task.complete", see https://learn.microsoft.com/en-us/azure/devops/pipelines/scripts/logging-commands?view=azure-devops&tabs=bash#task-commands. PBI Inspector V2 rules definition can be given a "logType" attribute of either "warning" or "error" which will be passed to the Azure DevOps task command as follows: ```##vso[task.logissue type=warning|error]```. When specifying "ADO" all other output format types will be ignored.
+- **ADO** outputs Azure DevOps compatible task commands for use in a deployment pipeline. Task commands issued are "task.logissue" and "task.complete", see https://learn.microsoft.com/en-us/azure/devops/pipelines/scripts/logging-commands?view=azure-devops&tabs=bash#task-commands. Fab Inspector rules definition can be given a "logType" attribute of either "warning" or "error" which will be passed to the Azure DevOps task command as follows: ```##vso[task.logissue type=warning|error]```. When specifying "ADO" all other output format types will be ignored.
 - **GitHub** similar to ADO but for use in GitHub Actions workflows.
 
 
@@ -161,7 +163,7 @@ All command line parameters are as follows:
 
 ## <a id="results"></a>Interpreting results
 
- If a verbose output was requested, then results for both test passes and failures will be reported. The JSON output is intended to be consumed by a subsequent process, for example a Power BI report may be created that uses the JSON file as a data source to visualise the PBI Inspector V2 test results. The HTML page is a more readable format for humans and also includes report page wireframe images when tests are at the report page level. These images are intended to help the user identify visuals that have failed the test such as in the example image below. The PBI Inspector V2 logo is also displayed at the centre of each failing visuals as an additional identification aid when the wireframe is busy. 
+ If a verbose output was requested, then results for both test passes and failures will be reported. The JSON output is intended to be consumed by a subsequent process, for example a Power BI report may be created that uses the JSON file as a data source to visualise the Fab Inspector test results. The HTML page is a more readable format for humans and also includes report page wireframe images when tests are at the report page level. These images are intended to help the user identify visuals that have failed the test such as in the example image below. The Fab Inspector logo is also displayed at the centre of each failing visuals as an additional identification aid when the wireframe is busy. 
 
 ![Wireframe with failures](DocsImages/WireframeWithFailures.png)
 
@@ -171,23 +173,23 @@ Visuals with a dotted border are visuals hidden by default as the following exam
 
 ## <a id="ado"></a>Azure DevOps and GitHub integration
 
-The PBI Inspector V2 CLI can be run as part of an Azure DevOps pipeline job. By specifying the "-formats ADO" command line option, the CLI will output Azure DevOps compatible task commands for use in a deployment pipeline. PBI Inspector V2 rules definition can be given a "logType" attribute of either "warning" or "error" which will be passed to the Azure DevOps task command as follows: ```##vso[task.logissue type=warning|error]```.
+The Fab Inspector CLI can be run as part of an Azure DevOps pipeline job. By specifying the "-formats ADO" command line option, the CLI will output Azure DevOps compatible task commands for use in a deployment pipeline. Fab Inspector rules definition can be given a "logType" attribute of either "warning" or "error" which will be passed to the Azure DevOps task command as follows: ```##vso[task.logissue type=warning|error]```.
 
-Similarly, the PBI Inspector V2 CLI can be run as part of a GitHub Actions workflow by using the "-formats GitHub" command line option. 
+Similarly, the Fab Inspector CLI can be run as part of a GitHub Actions workflow by using the "-formats GitHub" command line option. 
 
 ### Tutorials
 
-For a tutorial on how to run PBI Inspector V2 as part of an **Azure DevOps** pipeline job (alongside Tabular Editor's BPA rules), see https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-build-pipelines.  ( :exclamation: Please note that to work with PBI Inspector V2 in Azure DevOps the YAML file referenced in the tutorial needs to be updated as follows: [ContinuousIntegration-Rules-PBIR.yml](DocsExamples/ContinuousIntegration-Rules-PBIR.yml)).
+For a tutorial on how to run Fab Inspector as part of an **Azure DevOps** pipeline job (alongside Tabular Editor's BPA rules), see https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-build-pipelines.  ( :exclamation: Please note that to work with Fab Inspector in Azure DevOps the YAML file referenced in the tutorial needs to be updated as follows: [ContinuousIntegration-Rules-PBIR.yml](DocsExamples/ContinuousIntegration-Rules-PBIR.yml)).
 
-For a tutorial on how to run PBI Inspector V2 as part of a **GitHub Action** workflow using the **Fabric CLI** see https://github.com/RuiRomano/fabric-cli-powerbi-cicd-sample.
+For a tutorial on how to run Fab Inspector as part of a **GitHub Action** workflow using the **Fabric CLI** see https://github.com/RuiRomano/fabric-cli-powerbi-cicd-sample.
 
-For a tutorial on how to run the PBI Inspector V2 CLI as part of a **GitHub Action** workflow using the **[fabric-cicd](https://microsoft.github.io/fabric-cicd/latest/)** Python library, see https://github.com/RuiRomano/pbip-demo.
+For a tutorial on how to run the Fab Inspector CLI as part of a **GitHub Action** workflow using the **[fabric-cicd](https://microsoft.github.io/fabric-cicd/latest/)** Python library, see https://github.com/RuiRomano/pbip-demo.
 
-For a tutorial on how to run the PBI Inspector V2 CLI (aka Fab Inspector) as part of a **GitHub Action** using a **Docker image** see the example repo at https://github.com/NatVanG/fab-inspector-cicd-example/blob/main/.github/workflows/fab-inspector.yml.
+For a tutorial on how to run the Fab Inspector CLI (aka Fab Inspector) as part of a **GitHub Action** using a **Docker image** see the example repo at https://github.com/NatVanG/fab-inspector-cicd-example/blob/main/.github/workflows/fab-inspector.yml.
 
 ## <a id="customerruleguide"></a>Custom Rules Guide
 
-:pencil: This is a high-level guide to custom rules for a deeper explanation of rules and operators see the [PBI Inspector V2 wiki](https://github.com/NatVanG/PBI-InspectorV2/wiki).
+:pencil: This is a high-level guide to custom rules for a deeper explanation of rules and operators see the [Fab Inspector wiki](https://github.com/NatVanG/PBI-InspectorV2/wiki).
 
 Custom rules are defined in a JSON file as an array of rule objects as follows:
 
@@ -326,7 +328,7 @@ A patch definition has the following structure:
       ]
 ```
 
-The patch logic operator array is defined as per the JSON Patch specification at https://tools.ietf.org/html/rfc6902. PBI Inspector V2 uses the .NET implementation of JSON Patch, for see https://docs.json-everything.net/patch/basics/.
+The patch logic operator array is defined as per the JSON Patch specification at https://tools.ietf.org/html/rfc6902. Fab Inspector uses the .NET implementation of JSON Patch, for see https://docs.json-everything.net/patch/basics/.
 
 Therefore the full rule example including the patch is as follows:
 
@@ -478,16 +480,20 @@ Although somewhat of an anti-pattern, it is possible to vary a rule's test based
 ## <a id="customrulesexamples"></a>Rule File Examples
 
 For full rule file examples see:
-- [Base Rules](Rules/Base-rules.json) - The set of rules that ships with PBI Inspector V2
+- [Base Rules](Rules/Base-rules.json) - The set of rules that ships with Fab Inspector
 - [Example Rules](DocsExamples/Examples-rules.json) - An ever growing library of example rules
 - [Example Rules with Patches](DocsExamples/Example-patches.json) - Examples of patches to fix issues
 - [CopyJob Rules](DocsExamples/Sample-CopyJob-Rules.json) - Rules to check for CopyJob settings/metadata. Yes you can now test any Fabric item's metadata!
 - [Environment Rules](DocsExamples/Example-Environment-Rules.json) - Example rules to check Fabric Environment CI/CD item types.
 - [Rules Template](DocsExamples/RulesTemplate.json) - A simple rules file  template to get you started with your own rules
 
+## <a id="rulecreationwithvscode"></a>Create and Debug Rules with VS Code 
+
+Check out the Fab Inspector VS Code extension at https://github.com/NatVanG/fab-inspector-vscode-ext and the demo video in the extension release [announcement post on LinkedIn](https://www.linkedin.com/posts/natvangulck_powerbi-microsoftfabric-microsoftfabriccicd-activity-7360220590856675328-NYDB).
+
 ## <a id="wiki"></a>Wiki
 
-For an in-depth understanding of PBI Inspector V2 rules and operators see the [PBI Inspector V2 wiki](https://github.com/NatVanG/PBI-InspectorV2/wiki).
+For an in-depth understanding of Fab Inspector rules and operators see the [Fab Inspector wiki](https://github.com/NatVanG/PBI-InspectorV2/wiki).
 
 ## <a id="knownissues"></a>Known issues
 
