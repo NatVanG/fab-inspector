@@ -28,6 +28,10 @@ jobs:
           -r win-x64 \
           --self-contained false \
           -p:PublishSingleFile=true \
+          -p:PublishTrimmed=false \
+          -p:DebugType=None \
+          -p:DebugSymbols=false \
+          -p:IncludeNativeLibrariesForSelfExtract=false \
           -o ./build/win-x64
           
     - name: Build Linux x64 CLI
@@ -37,6 +41,10 @@ jobs:
           -r linux-x64 \
           --self-contained false \
           -p:PublishSingleFile=true \
+          -p:PublishTrimmed=false \
+          -p:DebugType=None \
+          -p:DebugSymbols=false \
+          -p:IncludeNativeLibrariesForSelfExtract=false \
           -o ./build/linux-x64
           
     - name: Prepare Windows package

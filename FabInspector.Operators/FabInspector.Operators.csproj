@@ -10,10 +10,6 @@
 
   <ItemGroup>
     <PackageReference Include="JsonLogic" Version="6.0.0" />
-    <PackageReference Include="JsonPatch.Net" Version="5.0.0" />
-    <PackageReference Include="JsonPath.Net" Version="3.0.0" />
-    <PackageReference Include="Yaml2JsonNode" Version="3.0.0" />
-    <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
 
   <ItemGroup>
