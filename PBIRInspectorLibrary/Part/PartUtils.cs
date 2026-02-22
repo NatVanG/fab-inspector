@@ -45,15 +45,17 @@ namespace PBIRInspectorLibrary.Part
 
             JsonNode? node = null;
 
+            // Use the Part's file system reference
+            var fileSystem = context.GetFileSystem();
 
             try
             {
-                if (File.Exists(context.FileSystemPath))
+                if (fileSystem.FileExists(context.FileSystemPath))
                 {
-                    node = JsonNode.Parse(File.ReadAllText(context.FileSystemPath));
+                    node = JsonNode.Parse(fileSystem.ReadAllText(context.FileSystemPath));
                 }
 
-                if (Directory.Exists(context.FileSystemPath))
+                if (fileSystem.DirectoryExists(context.FileSystemPath))
                 {
                     //if the path is a directory, we cannot parse it as JSON, so we return an annotation with the file system path
                     node = Annotations(context);

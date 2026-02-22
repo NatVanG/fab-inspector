@@ -7,6 +7,8 @@ namespace PBIRInspectorLibrary.Part
 {
     public class Part
     {
+        private readonly IFileSystem _fileSystem;
+
         public Part Parent { get; private set; }
 
         // The name of the file or folder
@@ -20,15 +22,21 @@ namespace PBIRInspectorLibrary.Part
 
         public JsonNode? JsonContent { get; set; }
 
-        public Part(string fileSystemName, string fileSystemPath, Part parent = null, PartFileSystemTypeEnum partType = default)
+        public Part(string fileSystemName, string fileSystemPath, Part parent = null, PartFileSystemTypeEnum partType = default, IFileSystem fileSystem = null)
         {
             Parent = parent;
             FileSystemName = fileSystemName;
             FileSystemPath = fileSystemPath;
             PartFileSystemType = partType;
+            _fileSystem = fileSystem ?? parent?._fileSystem ?? new PhysicalFileSystem();
         }
 
         public List<Part> Parts { get; set; }
+
+        public IFileSystem GetFileSystem()
+        {
+            return _fileSystem;
+        }
 
         public static IEnumerable<Part> Flatten(Part part)
         {
@@ -52,7 +60,7 @@ namespace PBIRInspectorLibrary.Part
             {
                 var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
                 var updatedJson = JsonContent.ToJsonString(jsonOptions);
-                File.WriteAllText(FileSystemPath, updatedJson);
+                _fileSystem.WriteAllText(FileSystemPath, updatedJson);
             }
         }
     }

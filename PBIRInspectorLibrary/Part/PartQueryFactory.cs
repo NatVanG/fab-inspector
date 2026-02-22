@@ -9,18 +9,18 @@ namespace PBIRInspectorLibrary.Part
 {
     internal static class PartQueryFactory
     {
-        internal static IPartQuery CreatePartQuery(string type, string path)
+        internal static IPartQuery CreatePartQuery(string type, string path, IFileSystem? fileSystem = null)
         {
             switch (type.ToLowerInvariant())
             {
                 case "*":
-                    return new CrossItemPartQuery(path);
+                    return new CrossItemPartQuery(path, fileSystem);
                 case "report":
-                    return new PBIRPartQuery(path);
+                    return new PBIRPartQuery(path, fileSystem);
                 case "report_deprecated":
-                    return new PBIRPartQuery_deprecated(path);
+                    return new PBIRPartQuery_deprecated(path, fileSystem);
                 default:
-                    return new GenericPartQuery(path);
+                    return new GenericPartQuery(path, fileSystem);
             }
         }
     }

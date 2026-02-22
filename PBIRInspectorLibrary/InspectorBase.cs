@@ -6,18 +6,21 @@ namespace PBIRInspectorLibrary
     {
         //private readonly IEnumerable<IJsonLogicOperator> _customOperators;
         private readonly IEnumerable<JsonLogicOperatorRegistry> _registries;
+        protected readonly IFileSystem _fileSystem;
 
-        public InspectorBase(string fabricItemPath, InspectionRules inspectionRules, IEnumerable<JsonLogicOperatorRegistry> registries)
+        public InspectorBase(string fabricItemPath, InspectionRules inspectionRules, IEnumerable<JsonLogicOperatorRegistry> registries, IFileSystem? fileSystem = null)
         {
             if (string.IsNullOrEmpty(fabricItemPath)) throw new ArgumentNullException(nameof(fabricItemPath));
-            if (!File.Exists(fabricItemPath) && !Directory.Exists(fabricItemPath)) throw new FileNotFoundException();
+            _fileSystem = fileSystem ?? new PhysicalFileSystem();
+            if (!_fileSystem.FileExists(fabricItemPath) && !_fileSystem.DirectoryExists(fabricItemPath)) throw new FileNotFoundException();
             _registries = registries;
             UseRegistries();
         }
 
-        public InspectorBase(string fabricItemPath, string rulesPath, IEnumerable<JsonLogicOperatorRegistry> registries)
+        public InspectorBase(string fabricItemPath, string rulesPath, IEnumerable<JsonLogicOperatorRegistry> registries, IFileSystem? fileSystem = null)
         {
             if (string.IsNullOrEmpty(fabricItemPath)) throw new ArgumentNullException(nameof(fabricItemPath));
+            _fileSystem = fileSystem ?? new PhysicalFileSystem();
             _registries = registries;
             UseRegistries();
         }
@@ -38,7 +41,21 @@ namespace PBIRInspectorLibrary
             string jsonString = File.ReadAllText(rulesPath);
 
             return DeserialiseRules<T>(jsonString);
+        }
 
+        public static T? DeserialiseRulesFromPath<T>(string rulesPath, IFileSystem? fileSystem)
+        {
+            var fs = fileSystem ?? new PhysicalFileSystem();
+            if (!fs.FileExists(rulesPath)) throw new FileNotFoundException(string.Format("Rules with path \"{0}\" was not found", rulesPath));
+
+            string jsonString = fs.ReadAllText(rulesPath);
+
+            return DeserialiseRules<T>(jsonString);
+        }
+
+        public T? DeserialiseRulesFromPathInstance<T>(string rulesPath)
+        {
+            return DeserialiseRulesFromPath<T>(rulesPath, _fileSystem);
         }
 
         public static T? DeserialiseRules<T>(string jsonString)

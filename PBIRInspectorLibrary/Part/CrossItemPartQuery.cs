@@ -8,9 +8,13 @@ namespace PBIRInspectorLibrary.Part
 {
     internal class CrossItemPartQuery : BasePartQuery
     {
-        public CrossItemPartQuery(string fileSystemPath) : base(fileSystemPath)
+        public CrossItemPartQuery(string fileSystemPath) : this(fileSystemPath, null!)
         {
-            SetParts(new Part("root", fileSystemPath, null, PartFileSystemTypeEnum.Folder));
+        }
+
+        public CrossItemPartQuery(string fileSystemPath, IFileSystem? fileSystem) : base(fileSystemPath, fileSystem)
+        {
+            SetParts(new Part("root", fileSystemPath, null!, PartFileSystemTypeEnum.Folder, _fileSystem));
         }
 
         public override object? Invoke(string query, Part context)

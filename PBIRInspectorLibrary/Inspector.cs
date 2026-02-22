@@ -35,7 +35,9 @@ namespace PBIRInspectorLibrary
         /// </summary>
         /// <param name="fabricItemPath"></param>
         /// <param name="inspectionRules"></param>
-        public Inspector(string fabricItemPath, InspectionRules inspectionRules, IEnumerable<JsonLogicOperatorRegistry> registries) : base(fabricItemPath, inspectionRules, registries)
+        /// <param name="registries"></param>
+        /// <param name="fileSystem"></param>
+        public Inspector(string fabricItemPath, InspectionRules inspectionRules, IEnumerable<JsonLogicOperatorRegistry> registries, IFileSystem? fileSystem = null) : base(fabricItemPath, inspectionRules, registries, fileSystem)
         {
             this._fabricItemPath = fabricItemPath;
             this._inspectionRules = inspectionRules;
@@ -47,14 +49,16 @@ namespace PBIRInspectorLibrary
         /// </summary>
         /// <param name="fabricItemPath">Local PBI file path</param>
         /// <param name="rulesPath">Local rules json file path</param>
-        public Inspector(string fabricItemPath, string rulesPath, IEnumerable<JsonLogicOperatorRegistry> registries) : base(fabricItemPath, rulesPath, registries)
+        /// <param name="registries"></param>
+        /// <param name="fileSystem"></param>
+        public Inspector(string fabricItemPath, string rulesPath, IEnumerable<JsonLogicOperatorRegistry> registries, IFileSystem? fileSystem = null) : base(fabricItemPath, rulesPath, registries, fileSystem)
         {
             this._fabricItemPath = fabricItemPath;
             this._rulesPath = rulesPath;
 
             try
             {
-                var inspectionRules = DeserialiseRulesFromPath<InspectionRules>(rulesPath);
+                var inspectionRules = DeserialiseRulesFromPath<InspectionRules>(rulesPath, _fileSystem);
 
                 if (inspectionRules == null || inspectionRules.Rules == null || inspectionRules.Rules.Count == 0)
                 {
@@ -83,13 +87,13 @@ namespace PBIRInspectorLibrary
             var rules = this._inspectionRules.Rules.Where(_ => !_.Disabled);
             var testResults = new List<TestResult>();
 
-            if (!string.IsNullOrEmpty(fileSystemPath) && Directory.Exists(fileSystemPath))
+            if (!string.IsNullOrEmpty(fileSystemPath) && _fileSystem.DirectoryExists(fileSystemPath))
             {
                 //Run rules that apply across types ie. with attribute "itemtype" set to "*"
                 RunRulesByItemType(testResults, rules, "*", fileSystemPath);
 
                 //Run rules that apply to specific itemtypes
-                var platformFiles = Directory
+                var platformFiles = _fileSystem
                     .GetFiles(fileSystemPath, "*.platform", SearchOption.AllDirectories)
                     .ToList();
 
@@ -97,7 +101,7 @@ namespace PBIRInspectorLibrary
                 {
                     foreach (var platformFile in platformFiles)
                     {
-                        JsonNode? platformNode = JsonNode.Parse(File.ReadAllBytes(platformFile));
+                        JsonNode? platformNode = JsonNode.Parse(_fileSystem.ReadAllBytes(platformFile));
                         if (platformNode == null)
                         {
                             OnMessageIssued(MessageTypeEnum.Error, string.Format("Could not parse platform file at \"{0}\".", platformFile));
@@ -106,8 +110,7 @@ namespace PBIRInspectorLibrary
 
                         var itemType = PartUtils.TryGetJsonNodeStringValue(platformNode, "/metadata/type")!.ToLowerInvariant();
 
-                        var fo = new FileInfo(platformFile);
-                        var dir = fo.DirectoryName;
+                        var dir = _fileSystem.GetDirectoryName(platformFile);
                         RunRulesByItemType(testResults, rules, itemType, dir);
                         RunDeprecatedRulesByItemType(testResults, rules, itemType, dir);
                     }
@@ -122,12 +125,12 @@ namespace PBIRInspectorLibrary
             else
             {
                 //if _fabricItemPath is not a directory, check if it is a file
-                if (!File.Exists(fileSystemPath))
+                if (!_fileSystem.FileExists(fileSystemPath))
                 {
                     throw new PBIRInspectorException(string.Format("File or folder with path \"{0}\" not found.", fileSystemPath));
                 }
 
-                var fileExtension = Path.GetExtension(fileSystemPath).ToLowerInvariant();
+                var fileExtension = _fileSystem.GetExtension(fileSystemPath).ToLowerInvariant();
                 switch (fileExtension)
                 {
                     case ".pbip":
@@ -218,7 +221,7 @@ namespace PBIRInspectorLibrary
                 return;
             }
 
-            IPartQuery partQuery = PartQueryFactory.CreatePartQuery(type, fileSystemPath);
+            IPartQuery partQuery = PartQueryFactory.CreatePartQuery(type, fileSystemPath, _fileSystem);
 
             RunRules(testResults, rulesFilteredByItemType, partQuery);
         }
@@ -229,7 +232,7 @@ namespace PBIRInspectorLibrary
             var deprecatedRules = rules.Where(_ => _.ItemType.Contains(DEPRECATED_SUFFIX, StringComparison.InvariantCultureIgnoreCase));
             var rulesFilteredByItemType = deprecatedRules.Where(_ => _.ItemType.Replace(DEPRECATED_SUFFIX, string.Empty).Equals(type, StringComparison.InvariantCultureIgnoreCase));
 
-            IPartQuery partQuery = PartQueryFactory.CreatePartQuery(string.Concat(type, DEPRECATED_SUFFIX), fileSystemPath);
+            IPartQuery partQuery = PartQueryFactory.CreatePartQuery(string.Concat(type, DEPRECATED_SUFFIX), fileSystemPath, _fileSystem);
 
             RunRules(testResults, rulesFilteredByItemType, partQuery);
         }

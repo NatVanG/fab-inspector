@@ -9,9 +9,13 @@ namespace PBIRInspectorLibrary.Part
 {
     internal class GenericPartQuery : BasePartQuery
     {
-        public GenericPartQuery(string fileSystemPath) : base(fileSystemPath)
+        public GenericPartQuery(string fileSystemPath) : this(fileSystemPath, null)
         {
-            SetParts(new Part("root", fileSystemPath, null, PartFileSystemTypeEnum.Folder));
+        }
+
+        public GenericPartQuery(string fileSystemPath, IFileSystem? fileSystem) : base(fileSystemPath, fileSystem)
+        {
+            SetParts(new Part("root", fileSystemPath, null!, PartFileSystemTypeEnum.Folder, _fileSystem));
         }
     }
 }

@@ -26,27 +26,31 @@ namespace PBIRInspectorLibrary.Part
         private const string PBIPEXT = ".pbip";
         private const string PBIXEXT = ".pbix";
 
-        public PBIRPartQuery(string path) : base(path)
+        public PBIRPartQuery(string path) : this(path, null)
+        {
+        }
+
+        public PBIRPartQuery(string path, IFileSystem? fileSystem) : base(path, fileSystem)
         {
             if (path == null || path.Length == 0) throw new ArgumentNullException(nameof(path));
-            if (!File.Exists(path) && path.EndsWith(PBIPEXT)) throw new ArgumentException($"PBI Desktop file {path} does not exist.");
+            if (!_fileSystem.FileExists(path) && path.EndsWith(PBIPEXT)) throw new ArgumentException($"PBI Desktop file {path} does not exist.");
             if (path.ToLower().EndsWith(PBIXEXT)) throw new ArgumentException($"PBIX files are not currently supported, please specify a PBIP or a Fabric items directory path.");
-            if (File.Exists(path) && !path.ToLower().EndsWith(PBIPEXT)) throw new ArgumentException($"PBI Desktop file {path} must have .pbip extension.");
-            if (!File.Exists(path) && !Directory.Exists(path)) throw new ArgumentException($"{path} does not exist.");
+            if (_fileSystem.FileExists(path) && !path.ToLower().EndsWith(PBIPEXT)) throw new ArgumentException($"PBI Desktop file {path} must have .pbip extension.");
+            if (!_fileSystem.FileExists(path) && !_fileSystem.DirectoryExists(path)) throw new ArgumentException($"{path} does not exist.");
 
             string? reportFolderPath = null;
 
-            if (File.Exists(path) && path.EndsWith(PBIPEXT))
+            if (_fileSystem.FileExists(path) && path.EndsWith(PBIPEXT))
             {
-                var pbip = new Part("pbip", path);
+                var pbip = new Part("pbip", path, null!, PartFileSystemTypeEnum.File, _fileSystem);
                 reportFolderPath = ReportPath(pbip);
             }
-            else if (Directory.Exists(path))
+            else if (_fileSystem.DirectoryExists(path))
             {
                 reportFolderPath = path;
             }
 
-            this.RootPart = new Part("root", reportFolderPath!, null, PartFileSystemTypeEnum.Folder);
+            this.RootPart = new Part("root", reportFolderPath!, null!, PartFileSystemTypeEnum.Folder, _fileSystem);
             SetParts(this.RootPart);
         }
 
@@ -56,7 +60,7 @@ namespace PBIRInspectorLibrary.Part
             var node = PartUtils.ToJsonNode(context);
             var val = PartUtils.TryGetJsonNodeStringValue(node, REPORTFOLDERPOINTER);
 
-            val = Path.Combine(Path.GetDirectoryName(context.FileSystemPath), val);
+            val = _fileSystem.PathCombine(_fileSystem.GetDirectoryName(context.FileSystemPath), val);
 
             return val;
         }

@@ -10,11 +10,22 @@ using System.Text.RegularExpressions;
 
 namespace PBIRInspectorLibrary.Part
 {
-    internal class BasePartQuery(string fileSystemPath) : IPartQuery
+    internal class BasePartQuery : IPartQuery
     {
         private const string UNIQUEPARTMETHODNAME = "UniquePart";
         private const string NAMEPOINTER = "/name";
         private const string DISPLAYNAMEPOINTER = "/displayName";
+
+        protected readonly IFileSystem _fileSystem;
+
+        public BasePartQuery(string fileSystemPath) : this(fileSystemPath, null)
+        {
+        }
+
+        public BasePartQuery(string fileSystemPath, IFileSystem? fileSystem)
+        {
+            _fileSystem = fileSystem ?? new PhysicalFileSystem();
+        }
 
         public Part RootPart { get; set; }
 
@@ -62,21 +73,21 @@ namespace PBIRInspectorLibrary.Part
             {
                 this.RootPart = context;
             }
-            if (!Directory.Exists(context.FileSystemPath)) return;
+            if (!_fileSystem.DirectoryExists(context.FileSystemPath)) return;
 
             context.Parts = new List<Part>();
 
-            foreach (string filePath in Directory.GetFiles(context.FileSystemPath))
+            foreach (string filePath in _fileSystem.GetFiles(context.FileSystemPath))
             {
-                FileInfo fileInfo = new FileInfo(filePath);
-                Part filePart = new Part(fileInfo.Name, fileInfo.FullName, context, PartFileSystemTypeEnum.File);
+                var fileName = _fileSystem.GetFileName(filePath);
+                Part filePart = new Part(fileName, filePath, context, PartFileSystemTypeEnum.File, _fileSystem);
                 context.Parts.Add(filePart);
             }
 
-            foreach (string dirPath in Directory.GetDirectories(context.FileSystemPath))
+            foreach (string dirPath in _fileSystem.GetDirectories(context.FileSystemPath))
             {
-                DirectoryInfo dirInfo = new DirectoryInfo(dirPath);
-                Part dirPart = new Part(dirInfo.Name, dirInfo.FullName, context, PartFileSystemTypeEnum.Folder);
+                var dirName = _fileSystem.GetFileName(dirPath);
+                Part dirPart = new Part(dirName, dirPath, context, PartFileSystemTypeEnum.Folder, _fileSystem);
                 context.Parts.Add(dirPart);
                 SetParts(dirPart);
             }
