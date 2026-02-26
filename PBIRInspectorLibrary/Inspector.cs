@@ -1,16 +1,10 @@
 ﻿using Json.Logic;
 using Json.More;
-using Json.Patch;
-using Json.Path;
 using Json.Pointer;
 using PBIRInspectorLibrary.Exceptions;
 using PBIRInspectorLibrary.Output;
 using PBIRInspectorLibrary.Part;
-using System.Collections.Generic;
 using System.Data;
-using System.Reflection;
-using System.Text;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace PBIRInspectorLibrary
@@ -38,46 +32,6 @@ namespace PBIRInspectorLibrary
         public Inspector(InspectionRules inspectionRules, IEnumerable<JsonLogicOperatorRegistry> registries, IFileSystem fileSystem) : base(inspectionRules, registries, fileSystem)
         {
             this._inspectionRules = inspectionRules;
-            //AddCustomRulesToRegistry();
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="rulesPath">Local rules json file path</param>
-        /// <param name="registries"></param>
-        /// <param name="fileSystem"></param>
-        public Inspector(string rulesPath, IEnumerable<JsonLogicOperatorRegistry> registries, IFileSystem fileSystem) : base(rulesPath, registries, fileSystem)
-        {
-            this._rulesPath = rulesPath;
-
-            try
-            {
-                //TODO: consider validating rules file against schema here to provide more specific error message if rules file is invalid. 
-                
-                // var inspectionRules = DeserialiseRulesFromPath<InspectionRules>(rulesPath, _fileSystem);
-
-                var inspectionRules = DeserialiseRulesFromPath<InspectionRules>(rulesPath);
-
-                if (inspectionRules == null || inspectionRules.Rules == null || inspectionRules.Rules.Count == 0)
-                {
-                    throw new PBIRInspectorException(string.Format("No rule definitions were found within rules file at \"{0}\".", rulesPath));
-                }
-                else
-                {
-                    this._inspectionRules = inspectionRules;
-                }
-            }
-            catch (System.IO.FileNotFoundException e)
-            {
-                throw new PBIRInspectorException(string.Format("Rules file with path \"{0}\" not found.", rulesPath), e);
-            }
-            catch (System.Text.Json.JsonException e)
-            {
-                throw new PBIRInspectorException(string.Format("Could not deserialise rules file with path \"{0}\". Check that the file is valid json and following the correct schema for PBI Inspector rules.", rulesPath), e);
-            }
-
-            //AddCustomRulesToRegistry();
         }
 
         public List<TestResult> Inspect()
@@ -164,29 +118,6 @@ namespace PBIRInspectorLibrary
         }
 
         #region private methods
-
-        //private void AddCustomRulesToRegistry()
-        //{
-        //    PBIRInspectorSerializerContext context = new PBIRInspectorSerializerContext();
-        //    Json.Logic.RuleRegistry.AddRule<CustomRules.IsNullOrEmptyRule>(context);
-        //    Json.Logic.RuleRegistry.AddRule<CustomRules.CountRule>(context);
-        //    Json.Logic.RuleRegistry.AddRule<CustomRules.StringContains>(context);
-        //    Json.Logic.RuleRegistry.AddRule<CustomRules.ToString>(context);
-        //    Json.Logic.RuleRegistry.AddRule<CustomRules.ToRecordRule>(context);
-        //    Json.Logic.RuleRegistry.AddRule<CustomRules.DrillVariableRule>(context);
-        //    Json.Logic.RuleRegistry.AddRule<CustomRules.RectOverlapRule>(context);
-        //    Json.Logic.RuleRegistry.AddRule<CustomRules.SetIntersectionRule>(context);
-        //    Json.Logic.RuleRegistry.AddRule<CustomRules.SetUnionRule>(context);
-        //    Json.Logic.RuleRegistry.AddRule<CustomRules.SetDifferenceRule>(context);
-        //    Json.Logic.RuleRegistry.AddRule<CustomRules.SetSymmetricDifferenceRule>(context);
-        //    Json.Logic.RuleRegistry.AddRule<CustomRules.SetEqualRule>(context);
-        //    Json.Logic.RuleRegistry.AddRule<CustomRules.PartRule>(context);
-        //    Json.Logic.RuleRegistry.AddRule<CustomRules.PartInfoRule>(context);
-        //    Json.Logic.RuleRegistry.AddRule<CustomRules.QueryRule>(context);
-        //    Json.Logic.RuleRegistry.AddRule<CustomRules.PathRule>(context);
-        //    Json.Logic.RuleRegistry.AddRule<CustomRules.FileSizeRule>(context);
-        //    Json.Logic.RuleRegistry.AddRule<CustomRules.FileTextSearchCountRule>(context);
-        //}
 
         private MessageTypeEnum ConvertRuleLogType(string ruleLogType)
                 {

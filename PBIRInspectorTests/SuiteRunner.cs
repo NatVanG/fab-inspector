@@ -22,6 +22,7 @@
 
 using FabInspector.Operators;
 using Microsoft.Extensions.DependencyInjection;
+using PBIRInspectorClientLibrary.Utils;
 using PBIRInspectorLibrary;
 using PBIRInspectorLibrary.Exceptions;
 using PBIRInspectorLibrary.Output;
@@ -460,7 +461,8 @@ public class SuiteRunner
             var sp = InitServiceProvider();
             var registries = sp.GetRequiredService<IEnumerable<JsonLogicOperatorRegistry>>();
             var fileSystem = new PhysicalFileSystem(PBIPFilePath);
-            Inspector insp = new Inspector(RulesFilePath, registries, fileSystem);
+            var rules = JsonUtils.DeserialiseFromPath<InspectionRules>(RulesFilePath);
+            Inspector insp = new Inspector(rules, registries, fileSystem);
 
             var testResults = insp.Inspect();
 

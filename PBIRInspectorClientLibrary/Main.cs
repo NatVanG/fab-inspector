@@ -56,6 +56,33 @@ namespace PBIRInspectorClientLibrary
             Run(args, pageRenderer, registries);
         }
 
+        public static InspectionRules DeserialiseRulesFromPath(string rulesPath)
+        {
+            try
+            {
+                //TODO: consider validating rules file against schema here to provide more specific error message if rules file is invalid. 
+
+                var inspectionRules = JsonUtils.DeserialiseFromPath<InspectionRules>(rulesPath);
+
+                if (inspectionRules == null || inspectionRules.Rules == null || inspectionRules.Rules.Count == 0)
+                {
+                    throw new PBIRInspectorException(string.Format("No rule definitions were found within rules file at \"{0}\".", rulesPath));
+                }
+                else
+                {
+                    return inspectionRules;
+                }
+            }
+            catch (System.IO.FileNotFoundException e)
+            {
+                throw new PBIRInspectorException(string.Format("Rules file with path \"{0}\" not found.", rulesPath), e);
+            }
+            catch (System.Text.Json.JsonException e)
+            {
+                throw new PBIRInspectorException(string.Format("Could not deserialise rules file with path \"{0}\". Check that the file is valid json and following the correct schema for PBI Inspector rules.", rulesPath), e);
+            }
+        }
+
         public static async Task Run(Args args, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
             // Authenticate based on auth method
@@ -117,11 +144,10 @@ namespace PBIRInspectorClientLibrary
         {
             _args = args;
             IEnumerable<TestResult> testResults = null;
-            Inspector? insp = null;
-
+            
             OnMessageIssued(MessageTypeEnum.Information, string.Concat("Test run started at (UTC): ", DateTime.Now.ToUniversalTime()));
 
-            var rules = Inspector.DeserialiseRulesFromPath<InspectionRules>(Main._args.RulesFilePath);
+            var rules = DeserialiseRulesFromPath(Main._args.RulesFilePath);
             testResults = RunSingleThreaded(rules, registries);
 
             if (testResults != null && testResults.Any())
@@ -138,7 +164,7 @@ namespace PBIRInspectorClientLibrary
         public static void RunParallel(Args args, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
             _args = args;
-            var rules = Inspector.DeserialiseRulesFromPath<InspectionRules>(Main._args.RulesFilePath);
+            var rules = DeserialiseRulesFromPath(Main._args.RulesFilePath);
             var ruleBuckets = ChunkInspectionRules(rules);
             var globalResults = new ConcurrentBag<TestResult>();
 
@@ -295,7 +321,8 @@ namespace PBIRInspectorClientLibrary
             {
                 // Create file system for field map inspection
                 IFileSystem fieldMapFileSystem = new PhysicalFileSystem(Main._args.PBIFilePath ?? string.Empty);
-                fieldMapInsp = new Inspector(Constants.ReportPageFieldMapFilePath, registries, fieldMapFileSystem);
+                var fieldMapPathRules = DeserialiseRulesFromPath(Constants.ReportPageFieldMapFilePath);
+                fieldMapInsp = new Inspector(fieldMapPathRules, registries, fieldMapFileSystem);
 
                 fieldMapResults = fieldMapInsp.Inspect();
 
