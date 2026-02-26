@@ -101,5 +101,15 @@ namespace PBIRInspectorClientLibrary.Utils
         }
 
         public bool OverwriteOutput { get; private set; } = false;
+
+        public string? AuthMethod { get; set; } = "local";
+        
+        public string? TenantId { get; set; }
+        
+        public string? ClientId { get; set; }
+        
+        public string? ClientSecret { get; set; }
+        
+        public string? FabricWorkspaceId { get; set; }
     }
 }

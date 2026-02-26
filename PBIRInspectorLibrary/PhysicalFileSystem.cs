@@ -9,6 +9,29 @@ namespace PBIRInspectorLibrary
     /// </summary>
     public class PhysicalFileSystem : IFileSystem
     {
+        private readonly string _rootPath;
+
+        /// <summary>
+        /// Initializes a new instance of PhysicalFileSystem with an empty root path
+        /// </summary>
+        public PhysicalFileSystem() : this(string.Empty)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of PhysicalFileSystem with a specified root path
+        /// </summary>
+        /// <param name="rootPath">The root path for this file system instance</param>
+        public PhysicalFileSystem(string rootPath)
+        {
+            _rootPath = rootPath ?? string.Empty;
+        }
+
+        /// <summary>
+        /// Gets the root path for this file system instance
+        /// </summary>
+        public string RootPath => _rootPath;
+
         public bool FileExists(string path)
         {
             return File.Exists(path);
@@ -67,6 +90,17 @@ namespace PBIRInspectorLibrary
         public string PathCombine(params string[] paths)
         {
             return Path.Combine(paths);
+        }
+
+        public long GetFileSize(string path)
+        {
+            var fileInfo = new FileInfo(path);
+            return fileInfo.Length;
+        }
+
+        public string GetFileNameWithoutExtension(string path)
+        {
+            return Path.GetFileNameWithoutExtension(path);
         }
     }
 }

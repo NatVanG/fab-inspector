@@ -1,6 +1,4 @@
 ﻿using System.Text.Json.Nodes;
-using System.IO;
-using System.Reflection.Metadata.Ecma335;
 using System.Text.Json;
 
 namespace PBIRInspectorLibrary.Part

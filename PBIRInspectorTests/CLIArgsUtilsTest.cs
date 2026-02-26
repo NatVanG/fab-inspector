@@ -277,6 +277,416 @@ namespace PBIRInspectorTests
             Assert.That(parsedArgs.PBIFilePath.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && !parsedArgs.Verbose);
         }
 
+        // Authentication Method Tests
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_AuthMethodLocalDefault()
+        {
+            string[] args = "-pbip pbipPath -rules rulesPath".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("local", StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_AuthMethodLocalExplicit()
+        {
+            string[] args = "-pbip pbipPath -rules rulesPath -authmethod local".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("local", StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_AuthMethodDeviceCode()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase) 
+                && parsedArgs.ClientId.Equals("test-client-id", StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_AuthMethodDeviceCodeWithTenantId()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id -tenantid test-tenant-id".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase) 
+                && parsedArgs.ClientId.Equals("test-client-id", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.TenantId.Equals("test-tenant-id", StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_AuthMethodInteractive()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("interactive", StringComparison.OrdinalIgnoreCase) 
+                && parsedArgs.ClientId.Equals("test-client-id", StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_AuthMethodClientSecret()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod clientsecret -tenantid test-tenant-id -clientid test-client-id -clientsecret test-secret".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("clientsecret", StringComparison.OrdinalIgnoreCase) 
+                && parsedArgs.TenantId.Equals("test-tenant-id", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.ClientId.Equals("test-client-id", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.ClientSecret.Equals("test-secret", StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_AuthMethodCaseInsensitive()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod DeviceCode -clientid test-client-id".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_InvalidAuthMethod()
+        {
+            string[] args = "-pbip pbipPath -rules rulesPath -authmethod invalid".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+            
+            Assert.That(ex.Message.Contains("Invalid auth method"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_DeviceCodeMissingClientId()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+            
+            Assert.That(ex.Message.Contains("Client ID is required"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_InteractiveMissingClientId()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+            
+            Assert.That(ex.Message.Contains("Client ID is required"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_ClientSecretMissingTenantId()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod clientsecret -clientid test-client-id -clientsecret test-secret".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+            
+            Assert.That(ex.Message.Contains("Tenant ID is required"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_ClientSecretMissingClientSecret()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod clientsecret -tenantid test-tenant-id -clientid test-client-id".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+            
+            Assert.That(ex.Message.Contains("Client secret is required"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_ClientSecretMissingClientId()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod clientsecret -tenantid test-tenant-id -clientsecret test-secret".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+            
+            Assert.That(ex.Message.Contains("Client ID is required"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_EnvironmentVariablesFallback()
+        {
+            // Set environment variables for the test
+            Environment.SetEnvironmentVariable("FABRIC_TENANT_ID", "env-tenant-id");
+            Environment.SetEnvironmentVariable("FABRIC_CLIENT_ID", "env-client-id");
+            Environment.SetEnvironmentVariable("FABRIC_CLIENT_SECRET", "env-client-secret");
+
+            try
+            {
+                string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod clientsecret".Split(" ");
+                var parsedArgs = ArgsUtils.ParseArgs(args);
+
+                Assert.That(parsedArgs.TenantId.Equals("env-tenant-id", StringComparison.OrdinalIgnoreCase)
+                    && parsedArgs.ClientId.Equals("env-client-id", StringComparison.OrdinalIgnoreCase)
+                    && parsedArgs.ClientSecret.Equals("env-client-secret", StringComparison.OrdinalIgnoreCase));
+            }
+            finally
+            {
+                // Clean up environment variables
+                Environment.SetEnvironmentVariable("FABRIC_TENANT_ID", null);
+                Environment.SetEnvironmentVariable("FABRIC_CLIENT_ID", null);
+                Environment.SetEnvironmentVariable("FABRIC_CLIENT_SECRET", null);
+            }
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_ArgumentsOverrideEnvironmentVariables()
+        {
+            // Set environment variables for the test
+            Environment.SetEnvironmentVariable("FABRIC_TENANT_ID", "env-tenant-id");
+            Environment.SetEnvironmentVariable("FABRIC_CLIENT_ID", "env-client-id");
+            Environment.SetEnvironmentVariable("FABRIC_CLIENT_SECRET", "env-client-secret");
+
+            try
+            {
+                string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod clientsecret -tenantid arg-tenant-id -clientid arg-client-id -clientsecret arg-secret".Split(" ");
+                var parsedArgs = ArgsUtils.ParseArgs(args);
+
+                Assert.That(parsedArgs.TenantId.Equals("arg-tenant-id", StringComparison.OrdinalIgnoreCase)
+                    && parsedArgs.ClientId.Equals("arg-client-id", StringComparison.OrdinalIgnoreCase)
+                    && parsedArgs.ClientSecret.Equals("arg-secret", StringComparison.OrdinalIgnoreCase));
+            }
+            finally
+            {
+                // Clean up environment variables
+                Environment.SetEnvironmentVariable("FABRIC_TENANT_ID", null);
+                Environment.SetEnvironmentVariable("FABRIC_CLIENT_ID", null);
+                Environment.SetEnvironmentVariable("FABRIC_CLIENT_SECRET", null);
+            }
+        }
+
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_DeviceCodeWithADOFormat()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id -formats ADO".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+            
+            Assert.That(ex.Message.Contains("authentication is not compatible with ADO or GitHub"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_DeviceCodeWithGitHubFormat()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id -formats GitHub".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+            
+            Assert.That(ex.Message.Contains("authentication is not compatible with ADO or GitHub"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_DeviceCodeWithADOAndGitHubFormats()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id -formats ADO,GitHub".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+            
+            Assert.That(ex.Message.Contains("authentication is not compatible with ADO or GitHub"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_DeviceCodeWithMixedFormatsIncludingADO()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id -formats HTML,ADO,JSON".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+            
+            Assert.That(ex.Message.Contains("authentication is not compatible with ADO or GitHub"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_DeviceCodeWithAllowedFormats()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id -formats HTML,JSON,PNG,CONSOLE".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase) 
+                && parsedArgs.ClientId.Equals("test-client-id", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.HTMLOutput 
+                && parsedArgs.JSONOutput 
+                && parsedArgs.PNGOutput 
+                && parsedArgs.CONSOLEOutput);
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_ClientSecretWithADOFormat()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod clientsecret -tenantid test-tenant-id -clientid test-client-id -clientsecret test-secret -formats ADO".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("clientsecret", StringComparison.OrdinalIgnoreCase) 
+                && parsedArgs.ADOOutput);
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_ClientSecretWithGitHubFormat()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod clientsecret -tenantid test-tenant-id -clientid test-client-id -clientsecret test-secret -formats GitHub".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("clientsecret", StringComparison.OrdinalIgnoreCase) 
+                && parsedArgs.GITHUBOutput);
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_InteractiveWithADOFormat()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -formats ADO".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+            
+            Assert.That(ex.Message.Contains("interactive authentication is not compatible with ADO or GitHub"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_InteractiveWithGitHubFormat()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -formats GitHub".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+            
+            Assert.That(ex.Message.Contains("interactive authentication is not compatible with ADO or GitHub"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_InteractiveWithMixedFormatsIncludingADO()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -formats HTML,ADO,JSON".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+            
+            Assert.That(ex.Message.Contains("interactive authentication is not compatible with ADO or GitHub"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_InteractiveWithAllowedFormats()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -formats HTML,JSON,PNG,CONSOLE".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("interactive", StringComparison.OrdinalIgnoreCase) 
+                && parsedArgs.HTMLOutput 
+                && parsedArgs.JSONOutput 
+                && parsedArgs.PNGOutput 
+                && parsedArgs.CONSOLEOutput);
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_FabricWorkspaceScoped_DeviceCode()
+        {
+            string workspaceId = Guid.NewGuid().ToString();
+            string[] args = $"-fabricworkspace {workspaceId} -rules rulesPath -authmethod devicecode -clientid testclientid".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.FabricWorkspaceId == workspaceId 
+                && parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase)
+                && string.IsNullOrEmpty(parsedArgs.PBIFilePath));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_FabricItemScoped_Interactive()
+        {
+            string workspaceId = Guid.NewGuid().ToString();
+            string itemId = Guid.NewGuid().ToString();
+            string[] args = $"-fabricworkspace {workspaceId} -fabricitem {itemId} -rules rulesPath -authmethod interactive -clientid testclientid".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.FabricWorkspaceId == workspaceId 
+                && parsedArgs.PBIFilePath == itemId
+                && parsedArgs.AuthMethod.Equals("interactive", StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_FabricItemScoped_ClientSecret()
+        {
+            string workspaceId = Guid.NewGuid().ToString();
+            string itemId = Guid.NewGuid().ToString();
+            string[] args = $"-fabricworkspace {workspaceId} -fabricitem {itemId} -rules rulesPath -authmethod clientsecret -clientid testclient -tenantid testtenant -clientsecret testsecret".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.FabricWorkspaceId == workspaceId 
+                && parsedArgs.PBIFilePath == itemId
+                && parsedArgs.AuthMethod.Equals("clientsecret", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.ClientId.Equals("testclient")
+                && parsedArgs.TenantId.Equals("testtenant")
+                && parsedArgs.ClientSecret.Equals("testsecret"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsError_FabricWorkspace_LocalAuth()
+        {
+            string workspaceId = Guid.NewGuid().ToString();
+            string[] args = $"-fabricworkspace {workspaceId} -rules rulesPath".Split(" ");
+
+            var ex = Assert.Throws<ArgumentException>(() => ArgsUtils.ParseArgs(args));
+            Assert.That(ex.Message.Contains("Fabric workspace access requires authentication"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsError_FabricWorkspace_InvalidGuid()
+        {
+            string[] args = "-fabricworkspace not-a-guid -rules rulesPath -authmethod devicecode -clientid testclientid".Split(" ");
+
+            var ex = Assert.Throws<ArgumentException>(() => ArgsUtils.ParseArgs(args));
+            Assert.That(ex.Message.Contains("Invalid Fabric workspace ID") && ex.Message.Contains("Must be a valid GUID"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsError_FabricWorkspace_ItemNotGuid()
+        {
+            string workspaceId = Guid.NewGuid().ToString();
+            string[] args = $"-fabricworkspace {workspaceId} -fabricitem C:\\path\\to\\folder -rules rulesPath -authmethod devicecode -clientid testclientid".Split(" ");
+
+            var ex = Assert.Throws<ArgumentException>(() => ArgsUtils.ParseArgs(args));
+            Assert.That(ex.Message.Contains("must be a valid GUID"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_LocalMode_BackwardsCompatibility()
+        {
+            // Ensure existing local mode behavior still works
+            string[] args = "-fabricitem C:\\path\\to\\folder -rules rulesPath".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.PBIFilePath.Contains("C:\\path\\to\\folder") 
+                && parsedArgs.AuthMethod.Equals("local")
+                && string.IsNullOrEmpty(parsedArgs.FabricWorkspaceId));
+        }
+
 
     }
 }

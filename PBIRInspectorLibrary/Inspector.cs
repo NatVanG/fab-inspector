@@ -8,7 +8,6 @@ using PBIRInspectorLibrary.Output;
 using PBIRInspectorLibrary.Part;
 using System.Collections.Generic;
 using System.Data;
-using System.IO.Compression;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -25,7 +24,7 @@ namespace PBIRInspectorLibrary
         private const string CONTEXTNODE = ".";
         internal const char DRILLCHAR = '>';
 
-        private string? _fabricItemPath, _rulesPath;
+        private string? _rulesPath;
         private InspectionRules? _inspectionRules;
 
         public event EventHandler<MessageIssuedEventArgs>? MessageIssued;
@@ -33,13 +32,11 @@ namespace PBIRInspectorLibrary
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="fabricItemPath"></param>
         /// <param name="inspectionRules"></param>
         /// <param name="registries"></param>
         /// <param name="fileSystem"></param>
-        public Inspector(string fabricItemPath, InspectionRules inspectionRules, IEnumerable<JsonLogicOperatorRegistry> registries, IFileSystem? fileSystem = null) : base(fabricItemPath, inspectionRules, registries, fileSystem)
+        public Inspector(InspectionRules inspectionRules, IEnumerable<JsonLogicOperatorRegistry> registries, IFileSystem fileSystem) : base(inspectionRules, registries, fileSystem)
         {
-            this._fabricItemPath = fabricItemPath;
             this._inspectionRules = inspectionRules;
             //AddCustomRulesToRegistry();
         }
@@ -47,18 +44,20 @@ namespace PBIRInspectorLibrary
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="fabricItemPath">Local PBI file path</param>
         /// <param name="rulesPath">Local rules json file path</param>
         /// <param name="registries"></param>
         /// <param name="fileSystem"></param>
-        public Inspector(string fabricItemPath, string rulesPath, IEnumerable<JsonLogicOperatorRegistry> registries, IFileSystem? fileSystem = null) : base(fabricItemPath, rulesPath, registries, fileSystem)
+        public Inspector(string rulesPath, IEnumerable<JsonLogicOperatorRegistry> registries, IFileSystem fileSystem) : base(rulesPath, registries, fileSystem)
         {
-            this._fabricItemPath = fabricItemPath;
             this._rulesPath = rulesPath;
 
             try
             {
-                var inspectionRules = DeserialiseRulesFromPath<InspectionRules>(rulesPath, _fileSystem);
+                //TODO: consider validating rules file against schema here to provide more specific error message if rules file is invalid. 
+                
+                // var inspectionRules = DeserialiseRulesFromPath<InspectionRules>(rulesPath, _fileSystem);
+
+                var inspectionRules = DeserialiseRulesFromPath<InspectionRules>(rulesPath);
 
                 if (inspectionRules == null || inspectionRules.Rules == null || inspectionRules.Rules.Count == 0)
                 {
@@ -83,7 +82,7 @@ namespace PBIRInspectorLibrary
 
         public List<TestResult> Inspect()
         {
-            var fileSystemPath = _fabricItemPath;
+            var fileSystemPath = _fileSystem.RootPath;
             var rules = this._inspectionRules.Rules.Where(_ => !_.Disabled);
             var testResults = new List<TestResult>();
 
@@ -310,7 +309,7 @@ namespace PBIRInspectorLibrary
                             var node = PartUtils.ToJsonNode(part);
                             var newdata = MapRuleDataPointersToValues(node, rule);
 
-                            var itemPath = part.FileSystemPath.Substring(part.FileSystemPath.IndexOf(this._fabricItemPath) + this._fabricItemPath.Length);
+                            var itemPath = part.FileSystemPath.Substring(part.FileSystemPath.IndexOf(this._fileSystem.RootPath) + this._fileSystem.RootPath.Length);
                             itemPath = string.IsNullOrEmpty(itemPath) ? "root" : itemPath;
                             var parentPageName = part.FileSystemName.ToLowerInvariant().EndsWith("page.json") ? partQuery.PartName(part) : null;
                             var parentPageDisplayName = part.FileSystemName.ToLowerInvariant().EndsWith("page.json") ? partQuery.PartDisplayName(part) ?? partQuery.PartName(part) : "N/A";

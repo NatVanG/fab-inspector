@@ -107,10 +107,11 @@ namespace PBIRInspectorLibrary.Part
 
         public static PartInfo? TryGetPartInfo(JsonNode node, bool setAdvancedProperties = false)
         {
-            var fileSystemPath = TryGetFileSystemPath(node);
+            var fileSystem = ContextService.Current?.Part?.GetFileSystem() ?? new PhysicalFileSystem();
+            var fileSystemPath = TryGetFileSystemPath(node, fileSystem);
             if (fileSystemPath != null)
             {
-                return new PartInfo(fileSystemPath, setAdvancedProperties);
+                return new PartInfo(fileSystemPath, setAdvancedProperties, fileSystem);
             }
             else
             {
@@ -118,9 +119,9 @@ namespace PBIRInspectorLibrary.Part
             }
         }
 
-        private static string? TryGetFileSystemPath(JsonNode node)
+        private static string? TryGetFileSystemPath(JsonNode node, IFileSystem fileSystem)
         {            
-            if (node is JsonValue filePathValue && filePathValue.TryGetValue(out string? stringFilePath) && File.Exists(stringFilePath))
+            if (node is JsonValue filePathValue && filePathValue.TryGetValue(out string? stringFilePath) && fileSystem.FileExists(stringFilePath))
             {
                 return stringFilePath;
             }

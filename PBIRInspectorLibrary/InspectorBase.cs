@@ -8,19 +8,18 @@ namespace PBIRInspectorLibrary
         private readonly IEnumerable<JsonLogicOperatorRegistry> _registries;
         protected readonly IFileSystem _fileSystem;
 
-        public InspectorBase(string fabricItemPath, InspectionRules inspectionRules, IEnumerable<JsonLogicOperatorRegistry> registries, IFileSystem? fileSystem = null)
+        public InspectorBase(InspectionRules inspectionRules, IEnumerable<JsonLogicOperatorRegistry> registries, IFileSystem fileSystem)
         {
-            if (string.IsNullOrEmpty(fabricItemPath)) throw new ArgumentNullException(nameof(fabricItemPath));
-            _fileSystem = fileSystem ?? new PhysicalFileSystem();
-            if (!_fileSystem.FileExists(fabricItemPath) && !_fileSystem.DirectoryExists(fabricItemPath)) throw new FileNotFoundException();
+            if (fileSystem == null) throw new ArgumentNullException(nameof(fileSystem));
+            _fileSystem = fileSystem;
             _registries = registries;
             UseRegistries();
         }
 
-        public InspectorBase(string fabricItemPath, string rulesPath, IEnumerable<JsonLogicOperatorRegistry> registries, IFileSystem? fileSystem = null)
+        public InspectorBase(string rulesPath, IEnumerable<JsonLogicOperatorRegistry> registries, IFileSystem fileSystem)
         {
-            if (string.IsNullOrEmpty(fabricItemPath)) throw new ArgumentNullException(nameof(fabricItemPath));
-            _fileSystem = fileSystem ?? new PhysicalFileSystem();
+            if (fileSystem == null) throw new ArgumentNullException(nameof(fileSystem));
+            _fileSystem = fileSystem;
             _registries = registries;
             UseRegistries();
         }

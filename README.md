@@ -118,7 +118,11 @@ Running ```PBIRInspectorWinForm.exe``` presents the user with the following inte
 
 All command line parameters are as follows:
 
-```-fabricitem folderpath```: Required. The path to the CI/CD folder containing one or more Fabric item(s) definitions. Fab Inspector traverses subfolders so you can specify the root CI/CD folder or a specific subfolder.
+```-fabricitem folderpath|itemid```: The path to the CI/CD folder containing one or more Fabric item(s) definitions (local mode), or a Fabric Item ID GUID when using `-fabricworkspace` (Fabric mode). In local mode, Fab Inspector traverses subfolders so you can specify the root CI/CD folder or a specific subfolder. In Fabric mode with workspace-scoped access, omit this parameter to access all items in the workspace.
+
+```-fabricworkspace workspaceid```: Optional. Microsoft Fabric Workspace ID (GUID). When specified, enables Fabric mode where the Inspector uses the FabricFileSystem to access items directly from a Fabric workspace. Requires non-local authentication (use `-authmethod devicecode`, `interactive`, or `clientsecret`). 
+- **Workspace-scoped access**: Omit `-fabricitem` to access all items in the workspace.
+- **Item-scoped access**: Provide a Fabric Item ID GUID via `-fabricitem` to access only that specific item.
 
 ```-pbip filepath```: Depreated, use -fabricitem instead. The path to the *.pbip file.
 
@@ -127,6 +131,18 @@ All command line parameters are as follows:
 ```-pbix filepath```: Not currently supported. 
 
 ```-rules filepath```: Required. The filepath to the rules file. Save a local copy of the [Base Rules](Rules/Base-rules.json) file and modify as required.
+
+```-authmethod local|devicecode|interactive|clientsecret```: Optional, defaults to "local". Authentication method for Fabric workspace access:
+- **local** (default): No authentication, uses local file system (PhysicalFileSystem).
+- **devicecode**: Device code flow for non-interactive CLI authentication.
+- **interactive**: Interactive browser-based authentication.
+- **clientsecret**: Service principal authentication using client secret (for CI/CD pipelines).
+
+```-clientid clientid```: Optional. Azure AD application (client) ID for authentication. Required when using non-local authentication methods. Can also be provided via `FABRIC_CLIENT_ID` environment variable.
+
+```-tenantid tenantid```: Optional. Azure AD tenant ID. Required when using `clientsecret` authentication. Can also be provided via `FABRIC_TENANT_ID` environment variable.
+
+```-clientsecret secret```: Optional. Client secret for service principal authentication. Required when using `clientsecret` authentication method. Can also be provided via `FABRIC_CLIENT_SECRET` environment variable.
 
 ```-verbose true|false```: Optional, false by default. If false then only rule violations will be shown otherwise all results will be listed.
 
@@ -160,6 +176,20 @@ All command line parameters are as follows:
 - Run custom rules against CopyJob Fabric items, output as GitHub logging:
 
 ``` PBIRInspectorCLI.exe -fabricitem "C:\Files\copyjob1.CopyJob" -rules "C:\Files\Sample-CopyJob-Rules.json" -formats GitHub```
+
+**Fabric Workspace mode examples:**
+
+- Run rules against all items in a Fabric workspace (workspace-scoped access) using device code authentication:
+
+``` PBIRInspectorCLI.exe -fabricworkspace "12345678-1234-1234-1234-123456789abc" -rules ".\Files\Base-rules.json" -authmethod devicecode -formats "JSON,HTML"```
+
+- Run rules against a specific item in a Fabric workspace (item-scoped access) using interactive authentication:
+
+``` PBIRInspectorCLI.exe -fabricworkspace "12345678-1234-1234-1234-123456789abc" -fabricitem "87654321-4321-4321-4321-cba987654321" -rules ".\Files\Base-rules.json" -authmethod interactive -formats Console```
+
+- Run rules in CI/CD pipeline using client secret authentication:
+
+``` PBIRInspectorCLI.exe -fabricworkspace "12345678-1234-1234-1234-123456789abc" -fabricitem "87654321-4321-4321-4321-cba987654321" -rules ".\Files\Base-rules.json" -authmethod clientsecret -clientid "your-client-id" -tenantid "your-tenant-id" -clientsecret "your-secret" -formats ADO```
 
 ## <a id="results"></a>Interpreting results
 

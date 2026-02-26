@@ -8,6 +8,8 @@ namespace PBIRInspectorLibrary.Part
 {
     public class PartInfo
     { 
+        private readonly IFileSystem _fileSystem;
+
         public string FileSystemName { get; set; }
         public string FileSystemPath { get; set; }
         public PartFileSystemTypeEnum PartFileSystemType { get; private set; } = PartFileSystemTypeEnum.None;
@@ -19,38 +21,39 @@ namespace PBIRInspectorLibrary.Part
         {
             if (part == null) throw new ArgumentNullException(nameof(part));
 
+            _fileSystem = part.GetFileSystem();
             FileSystemName = part.FileSystemName;
             FileSystemPath = part.FileSystemPath;
             PartFileSystemType = part.PartFileSystemType;
 
-            if (setAdvancedProps) this.setAdvancedProps(part.FileSystemPath);
+            if (setAdvancedProps) this.setAdvancedProps();
         }
 
-        public PartInfo(string fileSystemPath, bool setAdvancedProps = false)
+        public PartInfo(string fileSystemPath, bool setAdvancedProps = false, IFileSystem fileSystem = null)
         {
-            FileSystemName = Path.GetFileNameWithoutExtension(fileSystemPath);
+            _fileSystem = fileSystem ?? new PhysicalFileSystem();
+            FileSystemName = _fileSystem.GetFileNameWithoutExtension(fileSystemPath);
             FileSystemPath = fileSystemPath;
-            PartFileSystemType = Directory.Exists(FileSystemPath) ? PartFileSystemTypeEnum.Folder : (File.Exists(fileSystemPath) ? PartFileSystemTypeEnum.File : PartFileSystemTypeEnum.None);
+            PartFileSystemType = _fileSystem.DirectoryExists(FileSystemPath) ? PartFileSystemTypeEnum.Folder : (_fileSystem.FileExists(fileSystemPath) ? PartFileSystemTypeEnum.File : PartFileSystemTypeEnum.None);
             Exists = PartFileSystemType == PartFileSystemTypeEnum.File || PartFileSystemType == PartFileSystemTypeEnum.Folder;
 
-            if (setAdvancedProps) this.setAdvancedProps(fileSystemPath);
+            if (setAdvancedProps) this.setAdvancedProps();
         }
 
-        private void setAdvancedProps(string fileSystemPath)
+        private void setAdvancedProps()
         {
-            if (File.Exists(FileSystemPath))
+            if (_fileSystem.FileExists(FileSystemPath))
             {
-                FileInfo fileInfo = new FileInfo(FileSystemPath);
                 this.FileCount = 1;
-                this.FileSize = fileInfo.Length;
+                this.FileSize = _fileSystem.GetFileSize(FileSystemPath);
             }
 
-            if (Directory.Exists(FileSystemPath))
+            if (_fileSystem.DirectoryExists(FileSystemPath))
             {
-                DirectoryInfo directoryInfo = new DirectoryInfo(FileSystemPath);
-                var files = directoryInfo.GetFiles("*", SearchOption.AllDirectories);
-                this.FileCount = files.Length;
-                this.FileSize = files.Sum(f => f.Length);
+                var files = _fileSystem.GetFiles(FileSystemPath, "*", System.IO.SearchOption.AllDirectories);
+                var filesList = files.ToList();
+                this.FileCount = filesList.Count;
+                this.FileSize = filesList.Sum(f => _fileSystem.GetFileSize(f));
             }
         }
     }

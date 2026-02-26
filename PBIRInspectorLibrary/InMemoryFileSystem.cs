@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text;
 
@@ -13,14 +12,30 @@ namespace PBIRInspectorLibrary
     {
         private readonly Dictionary<string, string> _files = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _directories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly string _rootPath;
 
-        public InMemoryFileSystem()
+        public InMemoryFileSystem() : this(string.Empty)
         {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of InMemoryFileSystem with a specified root path
+        /// </summary>
+        /// <param name="rootPath">The root path for this file system instance</param>
+        public InMemoryFileSystem(string rootPath)
+        {
+            _rootPath = rootPath ?? string.Empty;
+            
             // Root directory always exists
             _directories.Add("");
             _directories.Add("/");
             _directories.Add("\\");
         }
+
+        /// <summary>
+        /// Gets the root path for this file system instance
+        /// </summary>
+        public string RootPath => _rootPath;
 
         /// <summary>
         /// Adds a file to the in-memory file system
@@ -210,6 +225,25 @@ namespace PBIRInspectorLibrary
             return "^" + System.Text.RegularExpressions.Regex.Escape(pattern)
                 .Replace("\\*", ".*")
                 .Replace("\\?", ".") + "$";
+        }
+
+        public long GetFileSize(string path)
+        {
+            var normalizedPath = NormalizePath(path);
+            if (!_files.TryGetValue(normalizedPath, out var contents))
+            {
+                throw new FileNotFoundException($"File not found: {path}");
+            }
+            return Encoding.UTF8.GetByteCount(contents);
+        }
+
+        public string GetFileNameWithoutExtension(string path)
+        {
+            var fileName = GetFileName(path);
+            var extension = GetExtension(path);
+            if (string.IsNullOrEmpty(extension))
+                return fileName;
+            return fileName.Substring(0, fileName.Length - extension.Length);
         }
     }
 }

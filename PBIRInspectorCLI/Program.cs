@@ -10,7 +10,7 @@ internal partial class Program
 {
     private static Args _parsedArgs = null;
 
-    private static void Main(string[] args)
+    private static async Task Main(string[] args)
     {
 #if DEBUG
         Console.WriteLine("Attach debugger to process? Press any key to continue.");
@@ -28,7 +28,7 @@ internal partial class Program
             Welcome();
             PBIRInspectorClientLibrary.Main.WinMessageIssued += Main_MessageIssued;
             PBIRInspectorClientLibrary.Main.CleanUpRootTempFolder();
-            PBIRInspectorClientLibrary.Main.Run(_parsedArgs, pageRenderer, operatorRegistries);
+            await PBIRInspectorClientLibrary.Main.Run(_parsedArgs, pageRenderer, operatorRegistries);
         }
         catch (ArgumentException e)
         {

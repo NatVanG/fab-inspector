@@ -9,7 +9,6 @@ using System.Text.Json.Nodes;
 using System.ComponentModel;
 using PBIRInspectorLibrary.Part;
 using System.Reflection;
-using System.IO;
 using System.Runtime.CompilerServices;
 using Json.More;
 using System.Text.RegularExpressions;

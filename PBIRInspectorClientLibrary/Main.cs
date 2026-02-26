@@ -12,6 +12,7 @@ namespace PBIRInspectorClientLibrary
     public class Main
     {
         public static event EventHandler<MessageIssuedEventArgs>? WinMessageIssued;
+        private static string? _token = null;
         private static Args? _args = null;
         private static int _errorCount = 0;
         private static int _warningCount = 0;
@@ -55,8 +56,53 @@ namespace PBIRInspectorClientLibrary
             Run(args, pageRenderer, registries);
         }
 
-        public static void Run(Args args, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
+        public static async Task Run(Args args, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
+            // Authenticate based on auth method
+            if (args.AuthMethod != "local")
+            {
+                try
+                {
+                    OnMessageIssued(MessageTypeEnum.Information, $"Starting {args.AuthMethod} authentication...");
+
+                    switch (args.AuthMethod.ToLower())
+                    {
+                        case "devicecode":
+                            _token = await FabricAuthenticationHelper.AuthenticateWithDeviceCodeAsync(
+                                args.ClientId,
+                                args.TenantId,
+                                message => OnMessageIssued(MessageTypeEnum.Information, message)
+                            );
+                            break;
+
+                        case "interactive":
+                            _token = await FabricAuthenticationHelper.AuthenticateInteractiveAsync(
+                                args.ClientId,
+                                args.TenantId
+                            );
+                            break;
+
+                        case "clientsecret":
+                            _token = await FabricAuthenticationHelper.AuthenticateWithClientSecretAsync(
+                                args.ClientId,
+                                args.ClientSecret,
+                                args.TenantId
+                            );
+                            break;
+
+                        default:
+                            throw new ArgumentException($"Unsupported authentication method: {args.AuthMethod}");
+                    }
+
+                    OnMessageIssued(MessageTypeEnum.Information, "Authentication successful.");
+                }
+                catch (Exception ex)
+                {
+                    OnMessageIssued(MessageTypeEnum.Error, $"Authentication failed: {ex.Message}");
+                    throw;
+                }
+            }
+
             if (!args.Parallel)
             {
                 RunSingleThreaded(args, pageRenderer, registries);
@@ -134,7 +180,27 @@ namespace PBIRInspectorClientLibrary
 
             try
             {
-                insp = new Inspector(Main._args.PBIFilePath, rules, registries);
+                // Determine which file system to use based on Fabric workspace configuration
+                IFileSystem fileSystem;
+                if (!string.IsNullOrWhiteSpace(Main._args.FabricWorkspaceId))
+                {
+                    if (string.IsNullOrWhiteSpace(Main._token))
+                    {
+                        throw new InvalidOperationException("Authentication token is required for Fabric workspace access.");
+                    }
+                    
+                    // Item-scoped vs workspace-scoped mode
+                    fileSystem = string.IsNullOrWhiteSpace(Main._args.PBIFilePath)
+                        ? new FabricFileSystem(Main._args.FabricWorkspaceId, Main._token)
+                        : new FabricFileSystem(Main._args.FabricWorkspaceId, Main._args.PBIFilePath, Main._token);
+                }
+                else
+                {
+                    // Use PhysicalFileSystem with the specified path
+                    fileSystem = new PhysicalFileSystem(Main._args.PBIFilePath ?? string.Empty);
+                }
+                
+                insp = new Inspector(rules, registries, fileSystem);
 
                 insp.MessageIssued += Insp_MessageIssued;
                 var testResults = insp.Inspect().Where(_ => (!Main._args.Verbose && !_.Pass) || (Main._args.Verbose));
@@ -227,7 +293,9 @@ namespace PBIRInspectorClientLibrary
 
             if (!(Main._args.ADOOutput || Main._args.GITHUBOutput) && (Main._args.PNGOutput || Main._args.HTMLOutput))
             {
-                fieldMapInsp = new Inspector(Main._args.PBIFilePath, Constants.ReportPageFieldMapFilePath, registries);
+                // Create file system for field map inspection
+                IFileSystem fieldMapFileSystem = new PhysicalFileSystem(Main._args.PBIFilePath ?? string.Empty);
+                fieldMapInsp = new Inspector(Constants.ReportPageFieldMapFilePath, registries, fieldMapFileSystem);
 
                 fieldMapResults = fieldMapInsp.Inspect();
 

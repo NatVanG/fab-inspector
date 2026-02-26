@@ -10,6 +10,11 @@ namespace PBIRInspectorLibrary
     public interface IFileSystem
     {
         /// <summary>
+        /// Gets the root path for this file system instance
+        /// </summary>
+        string RootPath { get; }
+
+        /// <summary>
         /// Checks if a file exists at the specified path
         /// </summary>
         bool FileExists(string path);
@@ -68,5 +73,15 @@ namespace PBIRInspectorLibrary
         /// Combines path segments
         /// </summary>
         string PathCombine(params string[] paths);
+
+        /// <summary>
+        /// Gets the size of a file in bytes
+        /// </summary>
+        long GetFileSize(string path);
+
+        /// <summary>
+        /// Gets the file name without extension from a path
+        /// </summary>
+        string GetFileNameWithoutExtension(string path);
     }
 }
