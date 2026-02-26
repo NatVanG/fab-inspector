@@ -3,12 +3,29 @@ using PBIRInspectorClientLibrary.Utils;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using Azure.Core;
 
 namespace PBIRInspectorTests
 {
     [TestFixture]
     public class FabricFileSystemTests
     {
+        /// <summary>
+        /// Mock TokenCredential for testing without real authentication
+        /// </summary>
+        private class MockTokenCredential : TokenCredential
+        {
+            public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                return new AccessToken("mock-token", DateTimeOffset.UtcNow.AddHours(1));
+            }
+
+            public override ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
+            {
+                return new ValueTask<AccessToken>(new AccessToken("mock-token", DateTimeOffset.UtcNow.AddHours(1)));
+            }
+        }
+
         /// <summary>
         /// Mock HTTP message handler for testing without real API calls
         /// </summary>
@@ -67,11 +84,13 @@ namespace PBIRInspectorTests
         [Test]
         public void FabricFileSystem_Constructor_ValidatesParameters()
         {
-            // Arrange & Act & Assert
-            Assert.Throws<ArgumentNullException>(() => new FabricFileSystem("", "token"));
-            Assert.Throws<ArgumentNullException>(() => new FabricFileSystem("workspace-id", ""));
-            Assert.Throws<ArgumentNullException>(() => new FabricFileSystem(null!, "token"));
+            // Arrange
+            var mockCredential = new MockTokenCredential();
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => new FabricFileSystem("", mockCredential));
             Assert.Throws<ArgumentNullException>(() => new FabricFileSystem("workspace-id", null!));
+            Assert.Throws<ArgumentNullException>(() => new FabricFileSystem(null!, mockCredential));
         }
 
         [Test]
@@ -80,7 +99,8 @@ namespace PBIRInspectorTests
             // Arrange
             var mockHandler = new MockHttpMessageHandler();
             var httpClient = new HttpClient(mockHandler);
-            var fs = new FabricFileSystem("test-workspace-id", "test-token", httpClient);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricFileSystem("test-workspace-id", mockCredential, httpClient);
 
             // Act & Assert
             Assert.That(fs.DirectoryExists(""), Is.True);
@@ -107,7 +127,8 @@ namespace PBIRInspectorTests
             );
 
             var httpClient = new HttpClient(mockHandler);
-            var fs = new FabricFileSystem("test-workspace-id", "test-token", httpClient);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricFileSystem("test-workspace-id", mockCredential, httpClient);
 
             // Act
             bool report1Exists = fs.DirectoryExists("Report1");
@@ -141,7 +162,8 @@ namespace PBIRInspectorTests
             );
 
             var httpClient = new HttpClient(mockHandler);
-            var fs = new FabricFileSystem("test-workspace-id", "test-token", httpClient);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricFileSystem("test-workspace-id", mockCredential, httpClient);
 
             // Act
             var directories = fs.GetDirectories("").ToList();
@@ -193,7 +215,8 @@ namespace PBIRInspectorTests
             );
 
             var httpClient = new HttpClient(mockHandler);
-            var fs = new FabricFileSystem("test-workspace-id", "test-token", httpClient);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricFileSystem("test-workspace-id", mockCredential, httpClient);
 
             // Act
             bool definitionExists = fs.FileExists("Report1/definition.pbir");
@@ -247,7 +270,8 @@ namespace PBIRInspectorTests
             );
 
             var httpClient = new HttpClient(mockHandler);
-            var fs = new FabricFileSystem("test-workspace-id", "test-token", httpClient);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricFileSystem("test-workspace-id", mockCredential, httpClient);
 
             // Act
             var content = fs.ReadAllText("Report1/definition.pbir");
@@ -297,7 +321,8 @@ namespace PBIRInspectorTests
             );
 
             var httpClient = new HttpClient(mockHandler);
-            var fs = new FabricFileSystem("test-workspace-id", "test-token", httpClient);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricFileSystem("test-workspace-id", mockCredential, httpClient);
 
             // Act
             var files = fs.GetFiles("Report1").ToList();
@@ -351,7 +376,8 @@ namespace PBIRInspectorTests
             );
 
             var httpClient = new HttpClient(mockHandler);
-            var fs = new FabricFileSystem("test-workspace-id", "test-token", httpClient);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricFileSystem("test-workspace-id", mockCredential, httpClient);
 
             // Act
             var jsonFiles = fs.GetFiles("Report1", "*.json", SearchOption.TopDirectoryOnly).ToList();
@@ -367,7 +393,8 @@ namespace PBIRInspectorTests
             // Arrange
             var mockHandler = new MockHttpMessageHandler();
             var httpClient = new HttpClient(mockHandler);
-            var fs = new FabricFileSystem("test-workspace-id", "test-token", httpClient);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricFileSystem("test-workspace-id", mockCredential, httpClient);
 
             // Act & Assert
             Assert.That(fs.GetFileName("Report1/definition.pbir"), Is.EqualTo("definition.pbir"));
@@ -383,7 +410,8 @@ namespace PBIRInspectorTests
             // Arrange
             var mockHandler = new MockHttpMessageHandler();
             var httpClient = new HttpClient(mockHandler);
-            var fs = new FabricFileSystem("test-workspace-id", "test-token", httpClient);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricFileSystem("test-workspace-id", mockCredential, httpClient);
 
             // Act & Assert
             Assert.Throws<NotSupportedException>(() => fs.WriteAllText("test.txt", "content"));
@@ -405,20 +433,11 @@ namespace PBIRInspectorTests
             );
 
             var httpClient = new HttpClient(mockHandler);
-            var fs = new FabricFileSystem("test-workspace-id", "test-token", httpClient);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricFileSystem("test-workspace-id", mockCredential, httpClient);
 
             // Act & Assert
             Assert.Throws<FileNotFoundException>(() => fs.ReadAllText("NonExistent/file.txt"));
-        }
-
-        [Test]
-        public void FabricAuthenticationHelper_IsTokenFormatValid_ValidatesCorrectly()
-        {
-            // Arrange & Act & Assert
-            Assert.That(FabricAuthenticationHelper.IsTokenFormatValid("header.payload.signature"), Is.True);
-            Assert.That(FabricAuthenticationHelper.IsTokenFormatValid("invalidtoken"), Is.False);
-            Assert.That(FabricAuthenticationHelper.IsTokenFormatValid(""), Is.False);
-            Assert.That(FabricAuthenticationHelper.IsTokenFormatValid(null!), Is.False);
         }
 
         [Test]
@@ -441,7 +460,8 @@ namespace PBIRInspectorTests
             );
 
             var httpClient = new HttpClient(mockHandler);
-            var fs = new FabricFileSystem("test-workspace-id", "test-token", httpClient);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricFileSystem("test-workspace-id", mockCredential, httpClient);
 
             // Act & Assert - Different casing should work
             Assert.That(fs.DirectoryExists("report1"), Is.True);
@@ -454,13 +474,15 @@ namespace PBIRInspectorTests
         [Test]
         public void FabricFileSystem_ItemScopedConstructor_ValidatesParameters()
         {
-            // Arrange & Act & Assert
-            Assert.Throws<ArgumentNullException>(() => new FabricFileSystem("", "item1", "token", null));
-            Assert.Throws<ArgumentNullException>(() => new FabricFileSystem("workspace-id", "", "token", null));
-            Assert.Throws<ArgumentNullException>(() => new FabricFileSystem("workspace-id", "item1", "", null));
-            Assert.Throws<ArgumentNullException>(() => new FabricFileSystem(null!, "item1", "token", null));
-            Assert.Throws<ArgumentNullException>(() => new FabricFileSystem("workspace-id", null!, "token", null));
+            // Arrange
+            var mockCredential = new MockTokenCredential();
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => new FabricFileSystem("", "item1", mockCredential, null));
+            Assert.Throws<ArgumentNullException>(() => new FabricFileSystem("workspace-id", "", mockCredential, null));
             Assert.Throws<ArgumentNullException>(() => new FabricFileSystem("workspace-id", "item1", null!, null));
+            Assert.Throws<ArgumentNullException>(() => new FabricFileSystem(null!, "item1", mockCredential, null));
+            Assert.Throws<ArgumentNullException>(() => new FabricFileSystem("workspace-id", null!, mockCredential, null));
         }
 
         [Test]
@@ -484,9 +506,10 @@ namespace PBIRInspectorTests
             );
 
             var httpClient = new HttpClient(mockHandler);
+            var mockCredential = new MockTokenCredential();
 
             // Act - constructor should eagerly load item metadata
-            var fs = new FabricFileSystem("test-workspace-id", "item1", "test-token", httpClient);
+            var fs = new FabricFileSystem("test-workspace-id", "item1", mockCredential, httpClient);
 
             // Assert - if we got here, the item was loaded successfully
             Assert.That(fs, Is.Not.Null);
@@ -506,10 +529,11 @@ namespace PBIRInspectorTests
             );
 
             var httpClient = new HttpClient(mockHandler);
+            var mockCredential = new MockTokenCredential();
 
             // Act & Assert
             Assert.Throws<HttpRequestException>(() => 
-                new FabricFileSystem("test-workspace-id", "invalid-item", "test-token", httpClient));
+                new FabricFileSystem("test-workspace-id", "invalid-item", mockCredential, httpClient));
         }
 
         [Test]
@@ -533,7 +557,8 @@ namespace PBIRInspectorTests
             );
 
             var httpClient = new HttpClient(mockHandler);
-            var fs = new FabricFileSystem("test-workspace-id", "item1", "test-token", httpClient);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricFileSystem("test-workspace-id", "item1", mockCredential, httpClient);
 
             // Act
             var directories = fs.GetDirectories("").ToList();
@@ -564,7 +589,8 @@ namespace PBIRInspectorTests
             );
 
             var httpClient = new HttpClient(mockHandler);
-            var fs = new FabricFileSystem("test-workspace-id", "item1", "test-token", httpClient);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricFileSystem("test-workspace-id", "item1", mockCredential, httpClient);
 
             // Act & Assert
             Assert.That(fs.DirectoryExists("Report1"), Is.True);
@@ -593,7 +619,8 @@ namespace PBIRInspectorTests
             );
 
             var httpClient = new HttpClient(mockHandler);
-            var fs = new FabricFileSystem("test-workspace-id", "item1", "test-token", httpClient);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricFileSystem("test-workspace-id", "item1", mockCredential, httpClient);
 
             // Act & Assert - Different casing should work
             Assert.That(fs.DirectoryExists("report1"), Is.True);
@@ -640,7 +667,8 @@ namespace PBIRInspectorTests
             );
 
             var httpClient = new HttpClient(mockHandler);
-            var fs = new FabricFileSystem("test-workspace-id", "item1", "test-token", httpClient);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricFileSystem("test-workspace-id", "item1", mockCredential, httpClient);
 
             // Act & Assert
             Assert.That(fs.FileExists("Report1/definition.pbir"), Is.True);
@@ -668,7 +696,8 @@ namespace PBIRInspectorTests
             );
 
             var httpClient = new HttpClient(mockHandler);
-            var fs = new FabricFileSystem("test-workspace-id", "item1", "test-token", httpClient);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricFileSystem("test-workspace-id", "item1", mockCredential, httpClient);
 
             // Act - refresh should reload item metadata
             fs.RefreshWorkspaceItems();
@@ -700,9 +729,10 @@ namespace PBIRInspectorTests
             // Do NOT add workspace items endpoint - it should not be called
 
             var httpClient = new HttpClient(mockHandler);
+            var mockCredential = new MockTokenCredential();
             
             // Act - constructor and GetDirectories should work without workspace items endpoint
-            var fs = new FabricFileSystem("test-workspace-id", "item1", "test-token", httpClient);
+            var fs = new FabricFileSystem("test-workspace-id", "item1", mockCredential, httpClient);
             var directories = fs.GetDirectories("").ToList();
 
             // Assert - Should only return the scoped item

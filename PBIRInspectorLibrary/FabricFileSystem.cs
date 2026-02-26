@@ -6,6 +6,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Azure.Core;
 
 namespace PBIRInspectorLibrary
 {
@@ -24,15 +25,16 @@ namespace PBIRInspectorLibrary
     /// 
     /// Usage:
     /// // Workspace-scoped (access all items)
-    /// var fs = new FabricFileSystem(workspaceId, accessToken);
+    /// var credential = new DefaultAzureCredential();
+    /// var fs = new FabricFileSystem(workspaceId, credential);
     /// 
     /// // Item-scoped (access single item)
-    /// var fs = new FabricFileSystem(workspaceId, itemId, accessToken);
+    /// var fs = new FabricFileSystem(workspaceId, itemId, credential);
     /// </remarks>
     public class FabricFileSystem : IFileSystem
     {
         private readonly string _workspaceId;
-        private readonly string _accessToken;
+        private readonly TokenCredential _credential;
         private readonly HttpClient _httpClient;
         private readonly string _baseUrl = "https://api.fabric.microsoft.com/v1";
         
@@ -59,23 +61,22 @@ namespace PBIRInspectorLibrary
         /// Initializes a new instance of the FabricFileSystem class for workspace-scoped access
         /// </summary>
         /// <param name="workspaceId">The Fabric workspace ID (GUID)</param>
-        /// <param name="accessToken">Bearer token for authentication</param>
+        /// <param name="credential">Azure credential for authentication with automatic token refresh</param>
         /// <param name="httpClient">Optional HttpClient instance for testing/reuse</param>
-        public FabricFileSystem(string workspaceId, string accessToken, HttpClient? httpClient = null)
+        public FabricFileSystem(string workspaceId, TokenCredential credential, HttpClient? httpClient = null)
         {
             if (string.IsNullOrWhiteSpace(workspaceId))
                 throw new ArgumentNullException(nameof(workspaceId));
-            if (string.IsNullOrWhiteSpace(accessToken))
-                throw new ArgumentNullException(nameof(accessToken));
+            if (credential == null)
+                throw new ArgumentNullException(nameof(credential));
 
             _workspaceId = workspaceId;
-            _accessToken = accessToken;
+            _credential = credential;
             _httpClient = httpClient ?? new HttpClient();
             _scopedItemId = null;
             _scopedItemName = null;
             
             // Configure default headers
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
@@ -84,24 +85,23 @@ namespace PBIRInspectorLibrary
         /// </summary>
         /// <param name="workspaceId">The Fabric workspace ID (GUID)</param>
         /// <param name="itemId">The Fabric item ID (GUID) to scope access to</param>
-        /// <param name="accessToken">Bearer token for authentication</param>
+        /// <param name="credential">Azure credential for authentication with automatic token refresh</param>
         /// <param name="httpClient">Optional HttpClient instance for testing/reuse</param>
-        public FabricFileSystem(string workspaceId, string itemId, string accessToken, HttpClient? httpClient = null)
+        public FabricFileSystem(string workspaceId, string itemId, TokenCredential credential, HttpClient? httpClient = null)
         {
             if (string.IsNullOrWhiteSpace(workspaceId))
                 throw new ArgumentNullException(nameof(workspaceId));
             if (string.IsNullOrWhiteSpace(itemId))
                 throw new ArgumentNullException(nameof(itemId));
-            if (string.IsNullOrWhiteSpace(accessToken))
-                throw new ArgumentNullException(nameof(accessToken));
+            if (credential == null)
+                throw new ArgumentNullException(nameof(credential));
 
             _workspaceId = workspaceId;
-            _accessToken = accessToken;
+            _credential = credential;
             _httpClient = httpClient ?? new HttpClient();
             _scopedItemId = itemId;
             
             // Configure default headers
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             
             // Eagerly load item metadata to validate itemId and cache item name
@@ -110,6 +110,16 @@ namespace PBIRInspectorLibrary
         }
 
         #region Private Helper Methods
+
+        /// <summary>
+        /// Gets an access token from the credential and configures HTTP client authorization
+        /// </summary>
+        private async Task EnsureAuthenticatedAsync()
+        {
+            var tokenRequestContext = new TokenRequestContext(new[] { "https://api.fabric.microsoft.com/.default" });
+            var token = await _credential.GetTokenAsync(tokenRequestContext, default);
+            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
+        }
 
         /// <summary>
         /// Ensures workspace items are loaded (lazy loading)
@@ -149,6 +159,8 @@ namespace PBIRInspectorLibrary
         /// </summary>
         private async Task<FabricItem> LoadItemMetadataAsync(string itemId)
         {
+            await EnsureAuthenticatedAsync();
+            
             var url = $"{_baseUrl}/workspaces/{_workspaceId}/items/{itemId}";
             var response = await _httpClient.GetAsync(url);
             
@@ -176,6 +188,8 @@ namespace PBIRInspectorLibrary
         /// </summary>
         private async Task<List<FabricItem>> LoadWorkspaceItemsAsync()
         {
+            await EnsureAuthenticatedAsync();
+            
             var url = $"{_baseUrl}/workspaces/{_workspaceId}/items";
             var response = await _httpClient.GetAsync(url);
             
@@ -227,6 +241,8 @@ namespace PBIRInspectorLibrary
         /// </summary>
         private async Task<FabricItemDefinition> LoadItemDefinitionAsync(string itemId)
         {
+            await EnsureAuthenticatedAsync();
+            
             var url = $"{_baseUrl}/workspaces/{_workspaceId}/items/{itemId}/getDefinition";
             var response = await _httpClient.PostAsync(url, null);
             

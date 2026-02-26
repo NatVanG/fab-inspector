@@ -6,13 +6,14 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading;
+using Azure.Core;
 
 namespace PBIRInspectorClientLibrary
 {
     public class Main
     {
         public static event EventHandler<MessageIssuedEventArgs>? WinMessageIssued;
-        private static string? _token = null;
+        private static TokenCredential? _credential = null;
         private static Args? _args = null;
         private static int _errorCount = 0;
         private static int _warningCount = 0;
@@ -95,7 +96,7 @@ namespace PBIRInspectorClientLibrary
                     switch (args.AuthMethod.ToLower())
                     {
                         case "devicecode":
-                            _token = await FabricAuthenticationHelper.AuthenticateWithDeviceCodeAsync(
+                            _credential = FabricAuthenticationHelper.CreateDeviceCodeCredential(
                                 args.ClientId,
                                 args.TenantId,
                                 message => OnMessageIssued(MessageTypeEnum.Information, message)
@@ -103,14 +104,14 @@ namespace PBIRInspectorClientLibrary
                             break;
 
                         case "interactive":
-                            _token = await FabricAuthenticationHelper.AuthenticateInteractiveAsync(
+                            _credential = FabricAuthenticationHelper.CreateInteractiveCredential(
                                 args.ClientId,
                                 args.TenantId
                             );
                             break;
 
                         case "clientsecret":
-                            _token = await FabricAuthenticationHelper.AuthenticateWithClientSecretAsync(
+                            _credential = FabricAuthenticationHelper.CreateClientSecretCredential(
                                 args.ClientId,
                                 args.ClientSecret,
                                 args.TenantId
@@ -210,15 +211,15 @@ namespace PBIRInspectorClientLibrary
                 IFileSystem fileSystem;
                 if (!string.IsNullOrWhiteSpace(Main._args.FabricWorkspaceId))
                 {
-                    if (string.IsNullOrWhiteSpace(Main._token))
+                    if (Main._credential == null)
                     {
-                        throw new InvalidOperationException("Authentication token is required for Fabric workspace access.");
+                        throw new InvalidOperationException("Authentication credential is required for Fabric workspace access.");
                     }
                     
                     // Item-scoped vs workspace-scoped mode
                     fileSystem = string.IsNullOrWhiteSpace(Main._args.PBIFilePath)
-                        ? new FabricFileSystem(Main._args.FabricWorkspaceId, Main._token)
-                        : new FabricFileSystem(Main._args.FabricWorkspaceId, Main._args.PBIFilePath, Main._token);
+                        ? new FabricFileSystem(Main._args.FabricWorkspaceId, Main._credential)
+                        : new FabricFileSystem(Main._args.FabricWorkspaceId, Main._args.PBIFilePath, Main._credential);
                 }
                 else
                 {
