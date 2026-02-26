@@ -1,7 +1,7 @@
 using Microsoft.Identity.Client;
 using System.Text.Json;
 
-namespace PBIRInspectorLibrary
+namespace PBIRInspectorClientLibrary.Utils
 {
     /// <summary>
     /// Helper class for authenticating with Microsoft Fabric REST API
@@ -102,17 +102,6 @@ namespace PBIRInspectorLibrary
             try
             {
                 var authority = $"https://login.microsoftonline.com/{tenantId ?? "organizations"}";
-                /* var app = PublicClientApplicationBuilder.Create(clientId)
-                    .WithAuthority(authority)
-                    .WithDefaultRedirectUri()
-                    .Build();
-                */
-
-                // Use AzureCloudInstance for better reliability
-                //var app = PublicClientApplicationBuilder.Create(clientId)
-                //    .WithAuthority(AzureCloudInstance.AzurePublic, tenantId ?? "organizations")
-                //    .WithRedirectUri("msalf4a0f4d6-194e-4501-8a8a-d67c666ff63e://auth")
-                //    .Build();
 
                 var app = PublicClientApplicationBuilder.Create(clientId)
                      .WithAuthority(authority)
