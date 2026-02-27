@@ -107,7 +107,7 @@ namespace PBIRInspectorLibrary.Part
 
         public static PartInfo? TryGetPartInfo(JsonNode node, bool setAdvancedProperties = false)
         {
-            var fileSystem = ContextService.Current?.Part?.GetFileSystem() ?? new PhysicalFileSystem();
+            var fileSystem = ContextService.Current?.Part?.GetFileSystem() ?? new FabricLocalFileSystem();
             var fileSystemPath = TryGetFileSystemPath(node, fileSystem);
             if (fileSystemPath != null)
             {
@@ -119,7 +119,7 @@ namespace PBIRInspectorLibrary.Part
             }
         }
 
-        private static string? TryGetFileSystemPath(JsonNode node, IFileSystem fileSystem)
+        private static string? TryGetFileSystemPath(JsonNode node, IFabricFileSystem fileSystem)
         {            
             if (node is JsonValue filePathValue && filePathValue.TryGetValue(out string? stringFilePath) && fileSystem.FileExists(stringFilePath))
             {

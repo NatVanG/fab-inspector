@@ -7,7 +7,7 @@ namespace PBIRInspectorLibrary
     /// <summary>
     /// Abstraction for file system operations to enable in-memory and physical file system support
     /// </summary>
-    public interface IFileSystem
+    public interface IFabricFileSystem
     {
         /// <summary>
         /// Gets the root path for this file system instance
@@ -48,6 +48,15 @@ namespace PBIRInspectorLibrary
         /// Gets all files in a directory
         /// </summary>
         IEnumerable<string> GetFiles(string path);
+
+        /// <summary>
+        /// Gets all fabric items in a directory matching the search pattern
+        /// </summary>
+        /// <param name="path">The path to the directory</param>
+        /// <param name="searchPattern">The search pattern to match files</param>
+        /// <param name="searchOption">The search option to use</param>
+        /// <returns>An enumerable of fabric items </returns>
+        IEnumerable<FabricItem> GetFabricItems(string path, string searchPattern, SearchOption searchOption);
 
         /// <summary>
         /// Gets all directories in a directory

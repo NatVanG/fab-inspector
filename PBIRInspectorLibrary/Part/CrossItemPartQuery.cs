@@ -12,7 +12,7 @@ namespace PBIRInspectorLibrary.Part
         {
         }
 
-        public CrossItemPartQuery(string fileSystemPath, IFileSystem? fileSystem) : base(fileSystemPath, fileSystem)
+        public CrossItemPartQuery(string fileSystemPath, IFabricFileSystem? fileSystem) : base(fileSystemPath, fileSystem)
         {
             SetParts(new Part("root", fileSystemPath, null!, PartFileSystemTypeEnum.Folder, _fileSystem));
         }

@@ -29,7 +29,7 @@ namespace PBIRInspectorLibrary
         /// <param name="inspectionRules"></param>
         /// <param name="registries"></param>
         /// <param name="fileSystem"></param>
-        public Inspector(InspectionRules inspectionRules, IEnumerable<JsonLogicOperatorRegistry> registries, IFileSystem fileSystem) : base(inspectionRules, registries, fileSystem)
+        public Inspector(InspectionRules inspectionRules, IEnumerable<JsonLogicOperatorRegistry> registries, IFabricFileSystem fileSystem) : base(inspectionRules, registries, fileSystem)
         {
             this._inspectionRules = inspectionRules;
         }
@@ -46,6 +46,7 @@ namespace PBIRInspectorLibrary
                 RunRulesByItemType(testResults, rules, "*", fileSystemPath);
 
                 //Run rules that apply to specific itemtypes
+                //TODO: refactor to call _fileSystem.GetFabricItems() instead of searching for platform files and inferring item types.
                 var platformFiles = _fileSystem
                     .GetFiles(fileSystemPath, "*.platform", SearchOption.AllDirectories)
                     .ToList();

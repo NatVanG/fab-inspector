@@ -460,7 +460,7 @@ public class SuiteRunner
         {
             var sp = InitServiceProvider();
             var registries = sp.GetRequiredService<IEnumerable<JsonLogicOperatorRegistry>>();
-            var fileSystem = new PhysicalFileSystem(PBIPFilePath);
+            var fileSystem = new FabricLocalFileSystem(PBIPFilePath);
             var rules = JsonUtils.DeserialiseFromPath<InspectionRules>(RulesFilePath);
             Inspector insp = new Inspector(rules, registries, fileSystem);
 
@@ -490,7 +490,7 @@ public class SuiteRunner
         {
             var sp = InitServiceProvider();
             var registries = sp.GetRequiredService<IEnumerable<JsonLogicOperatorRegistry>>();
-            var fileSystem = new PhysicalFileSystem(PBIPFilePath);
+            var fileSystem = new FabricLocalFileSystem(PBIPFilePath);
             Inspector insp = new Inspector(inspectionRules, registries, fileSystem);
 
             var testResults = insp.Inspect();

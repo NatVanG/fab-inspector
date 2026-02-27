@@ -208,7 +208,7 @@ namespace PBIRInspectorClientLibrary
             try
             {
                 // Determine which file system to use based on Fabric workspace configuration
-                IFileSystem fileSystem;
+                IFabricFileSystem fileSystem;
                 if (!string.IsNullOrWhiteSpace(Main._args.FabricWorkspaceId))
                 {
                     if (Main._credential == null)
@@ -218,13 +218,13 @@ namespace PBIRInspectorClientLibrary
                     
                     // Item-scoped vs workspace-scoped mode
                     fileSystem = string.IsNullOrWhiteSpace(Main._args.PBIFilePath)
-                        ? new FabricFileSystem(Main._args.FabricWorkspaceId, Main._credential)
-                        : new FabricFileSystem(Main._args.FabricWorkspaceId, Main._args.PBIFilePath, Main._credential);
+                        ? new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._credential)
+                        : new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._args.PBIFilePath, Main._credential);
                 }
                 else
                 {
                     // Use PhysicalFileSystem with the specified path
-                    fileSystem = new PhysicalFileSystem(Main._args.PBIFilePath ?? string.Empty);
+                    fileSystem = new FabricLocalFileSystem(Main._args.PBIFilePath ?? string.Empty);
                 }
                 
                 insp = new Inspector(rules, registries, fileSystem);
@@ -321,7 +321,7 @@ namespace PBIRInspectorClientLibrary
             if (!(Main._args.ADOOutput || Main._args.GITHUBOutput) && (Main._args.PNGOutput || Main._args.HTMLOutput))
             {
                 // Create file system for field map inspection
-                IFileSystem fieldMapFileSystem = new PhysicalFileSystem(Main._args.PBIFilePath ?? string.Empty);
+                IFabricFileSystem fieldMapFileSystem = new FabricLocalFileSystem(Main._args.PBIFilePath ?? string.Empty);
                 var fieldMapPathRules = DeserialiseRulesFromPath(Constants.ReportPageFieldMapFilePath);
                 fieldMapInsp = new Inspector(fieldMapPathRules, registries, fieldMapFileSystem);
 

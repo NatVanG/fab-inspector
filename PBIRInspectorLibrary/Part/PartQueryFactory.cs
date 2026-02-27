@@ -9,7 +9,7 @@ namespace PBIRInspectorLibrary.Part
 {
     internal static class PartQueryFactory
     {
-        internal static IPartQuery CreatePartQuery(string type, string path, IFileSystem? fileSystem = null)
+        internal static IPartQuery CreatePartQuery(string type, string path, IFabricFileSystem? fileSystem = null)
         {
             switch (type.ToLowerInvariant())
             {

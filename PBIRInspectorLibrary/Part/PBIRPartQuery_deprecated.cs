@@ -12,7 +12,7 @@ namespace PBIRInspectorLibrary.Part
         {
         }
 
-        public PBIRPartQuery_deprecated(string fileSystemPath, IFileSystem? fileSystem) : base(fileSystemPath, fileSystem)
+        public PBIRPartQuery_deprecated(string fileSystemPath, IFabricFileSystem? fileSystem) : base(fileSystemPath, fileSystem)
         {
             SetParts(new Part("root", fileSystemPath, null!, PartFileSystemTypeEnum.Folder, _fileSystem));
         }

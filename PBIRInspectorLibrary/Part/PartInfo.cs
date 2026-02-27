@@ -8,7 +8,7 @@ namespace PBIRInspectorLibrary.Part
 {
     public class PartInfo
     { 
-        private readonly IFileSystem _fileSystem;
+        private readonly IFabricFileSystem _fileSystem;
 
         public string FileSystemName { get; set; }
         public string FileSystemPath { get; set; }
@@ -29,9 +29,9 @@ namespace PBIRInspectorLibrary.Part
             if (setAdvancedProps) this.setAdvancedProps();
         }
 
-        public PartInfo(string fileSystemPath, bool setAdvancedProps = false, IFileSystem fileSystem = null)
+        public PartInfo(string fileSystemPath, bool setAdvancedProps = false, IFabricFileSystem fileSystem = null)
         {
-            _fileSystem = fileSystem ?? new PhysicalFileSystem();
+            _fileSystem = fileSystem ?? new FabricLocalFileSystem();
             FileSystemName = _fileSystem.GetFileNameWithoutExtension(fileSystemPath);
             FileSystemPath = fileSystemPath;
             PartFileSystemType = _fileSystem.DirectoryExists(FileSystemPath) ? PartFileSystemTypeEnum.Folder : (_fileSystem.FileExists(fileSystemPath) ? PartFileSystemTypeEnum.File : PartFileSystemTypeEnum.None);

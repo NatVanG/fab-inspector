@@ -3,9 +3,9 @@
     public class InspectorBase
     {
         private readonly IEnumerable<JsonLogicOperatorRegistry> _registries;
-        protected readonly IFileSystem _fileSystem;
+        protected readonly IFabricFileSystem _fileSystem;
 
-        public InspectorBase(InspectionRules inspectionRules, IEnumerable<JsonLogicOperatorRegistry> registries, IFileSystem fileSystem)
+        public InspectorBase(InspectionRules inspectionRules, IEnumerable<JsonLogicOperatorRegistry> registries, IFabricFileSystem fileSystem)
         {
             if (fileSystem == null) throw new ArgumentNullException(nameof(fileSystem));
             _fileSystem = fileSystem;

@@ -1,3 +1,4 @@
+using Azure.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -5,8 +6,10 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading;
 using System.Threading.Tasks;
-using Azure.Core;
+using static System.Net.WebRequestMethods;
 
 namespace PBIRInspectorLibrary
 {
@@ -16,6 +19,15 @@ namespace PBIRInspectorLibrary
     /// Supports two instantiation modes:
     /// 1. Workspace-scoped: Access all items in a workspace
     /// 2. Item-scoped: Access only a specific item within a workspace
+    /// 
+    /// Long-Running Operation (LRO) Support:
+    /// The getDefinition API may return HTTP 202 (Accepted) for asynchronous processing.
+    /// This class automatically handles LRO polling following Microsoft's documented pattern:
+    /// - Extracts Location, x-ms-operation-id, and Retry-After headers from 202 responses
+    /// - Polls operation status respecting Retry-After header with exponential backoff (1s → 2s → 4s → max 10s)
+    /// - Handles status values: NotStarted, Running, Succeeded, Failed
+    /// - Retrieves final result from {Location}/result endpoint when operation succeeds
+    /// - Configurable via maxLroAttempts, initialRetryDelayMs, and maxRetryDelayMs constructor parameters
     /// </summary>
     /// <remarks>
     /// Virtual path structure: /{itemName}/{partPath}
@@ -30,13 +42,21 @@ namespace PBIRInspectorLibrary
     /// 
     /// // Item-scoped (access single item)
     /// var fs = new FabricFileSystem(workspaceId, itemId, credential);
+    /// 
+    /// // Custom LRO configuration
+    /// var fs = new FabricFileSystem(workspaceId, credential, maxLroAttempts: 60, maxRetryDelayMs: 30000);
     /// </remarks>
-    public class FabricFileSystem : IFileSystem
+    public class FabricRemoteFileSystem : IFabricFileSystem
     {
         private readonly string _workspaceId;
         private readonly TokenCredential _credential;
         private readonly HttpClient _httpClient;
         private readonly string _baseUrl = "https://api.fabric.microsoft.com/v1";
+        
+        // LRO configuration
+        private readonly int _maxLroAttempts;
+        private readonly int _initialRetryDelayMs;
+        private readonly int _maxRetryDelayMs;
         
         // Scope tracking fields (null for workspace-scoped, set for item-scoped)
         private readonly string? _scopedItemId;
@@ -63,7 +83,11 @@ namespace PBIRInspectorLibrary
         /// <param name="workspaceId">The Fabric workspace ID (GUID)</param>
         /// <param name="credential">Azure credential for authentication with automatic token refresh</param>
         /// <param name="httpClient">Optional HttpClient instance for testing/reuse</param>
-        public FabricFileSystem(string workspaceId, TokenCredential credential, HttpClient? httpClient = null)
+        /// <param name="maxLroAttempts">Maximum number of polling attempts for long-running operations (default: 30)</param>
+        /// <param name="initialRetryDelayMs">Initial retry delay in milliseconds (default: 1000, overridden by Retry-After header)</param>
+        /// <param name="maxRetryDelayMs">Maximum retry delay in milliseconds for exponential backoff (default: 10000)</param>
+        public FabricRemoteFileSystem(string workspaceId, TokenCredential credential, HttpClient? httpClient = null, 
+            int maxLroAttempts = 30, int initialRetryDelayMs = 1000, int maxRetryDelayMs = 10000)
         {
             if (string.IsNullOrWhiteSpace(workspaceId))
                 throw new ArgumentNullException(nameof(workspaceId));
@@ -75,6 +99,9 @@ namespace PBIRInspectorLibrary
             _httpClient = httpClient ?? new HttpClient();
             _scopedItemId = null;
             _scopedItemName = null;
+            _maxLroAttempts = maxLroAttempts;
+            _initialRetryDelayMs = initialRetryDelayMs;
+            _maxRetryDelayMs = maxRetryDelayMs;
             
             // Configure default headers
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -87,7 +114,11 @@ namespace PBIRInspectorLibrary
         /// <param name="itemId">The Fabric item ID (GUID) to scope access to</param>
         /// <param name="credential">Azure credential for authentication with automatic token refresh</param>
         /// <param name="httpClient">Optional HttpClient instance for testing/reuse</param>
-        public FabricFileSystem(string workspaceId, string itemId, TokenCredential credential, HttpClient? httpClient = null)
+        /// <param name="maxLroAttempts">Maximum number of polling attempts for long-running operations (default: 30)</param>
+        /// <param name="initialRetryDelayMs">Initial retry delay in milliseconds (default: 1000, overridden by Retry-After header)</param>
+        /// <param name="maxRetryDelayMs">Maximum retry delay in milliseconds for exponential backoff (default: 10000)</param>
+        public FabricRemoteFileSystem(string workspaceId, string itemId, TokenCredential credential, HttpClient? httpClient = null,
+            int maxLroAttempts = 30, int initialRetryDelayMs = 1000, int maxRetryDelayMs = 10000)
         {
             if (string.IsNullOrWhiteSpace(workspaceId))
                 throw new ArgumentNullException(nameof(workspaceId));
@@ -100,6 +131,9 @@ namespace PBIRInspectorLibrary
             _credential = credential;
             _httpClient = httpClient ?? new HttpClient();
             _scopedItemId = itemId;
+            _maxLroAttempts = maxLroAttempts;
+            _initialRetryDelayMs = initialRetryDelayMs;
+            _maxRetryDelayMs = maxRetryDelayMs;
             
             // Configure default headers
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -116,7 +150,7 @@ namespace PBIRInspectorLibrary
         /// </summary>
         private async Task EnsureAuthenticatedAsync()
         {
-            var tokenRequestContext = new TokenRequestContext(new[] { "https://api.fabric.microsoft.com/.default" });
+            var tokenRequestContext = new TokenRequestContext(new[] { "https://api.fabric.microsoft.com/Workspace.Read.All", "https://api.fabric.microsoft.com/Item.ReadWrite.All" });
             var token = await _credential.GetTokenAsync(tokenRequestContext, default);
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
         }
@@ -231,27 +265,172 @@ namespace PBIRInspectorLibrary
                 if (_itemDefinitions.ContainsKey(itemId))
                     return;
 
-                var definition = LoadItemDefinitionAsync(itemId).GetAwaiter().GetResult();
+                var definition = LoadItemDefinitionAsync(itemId, CancellationToken.None).GetAwaiter().GetResult();
                 _itemDefinitions[itemId] = definition;
             }
         }
 
         /// <summary>
         /// Loads a specific item's definition from Fabric REST API
+        /// Handles HTTP 202 (Accepted) responses by polling until the operation completes.
+        /// Follows the Microsoft Fabric REST API long-running operation (LRO) pattern:
+        /// - Extracts Location, x-ms-operation-id, and Retry-After headers from 202 response
+        /// - Polls the operation status URL respecting Retry-After with exponential backoff
+        /// - Handles Running, Succeeded, and Failed status values
+        /// - Retrieves final result from {Location}/result when status is Succeeded
         /// </summary>
-        private async Task<FabricItemDefinition> LoadItemDefinitionAsync(string itemId)
+        /// <param name="itemId">The item ID to get definition for</param>
+        /// <param name="cancellationToken">Cancellation token to stop polling</param>
+        private async Task<FabricItemDefinition> LoadItemDefinitionAsync(string itemId, CancellationToken cancellationToken = default)
         {
             await EnsureAuthenticatedAsync();
             
             var url = $"{_baseUrl}/workspaces/{_workspaceId}/items/{itemId}/getDefinition";
-            var response = await _httpClient.PostAsync(url, null);
+            var initialResponse = await _httpClient.PostAsync(url, null, cancellationToken);
             
-            if (!response.IsSuccessStatusCode)
+            // Handle HTTP 202 (Accepted) - operation is asynchronous
+            if (initialResponse.StatusCode == System.Net.HttpStatusCode.Accepted)
             {
-                throw new HttpRequestException($"Failed to load item definition for {itemId}: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
+                // Extract required headers from LRO response
+                var locationHeader = initialResponse.Headers.Location?.ToString();
+                if (string.IsNullOrEmpty(locationHeader))
+                {
+                    throw new HttpRequestException($"Received HTTP 202 but no Location header for item {itemId}");
+                }
+
+                // Extract optional headers for diagnostics and retry timing
+                var operationId = initialResponse.Headers.TryGetValues("x-ms-operation-id", out var opIdValues) 
+                    ? opIdValues.FirstOrDefault() 
+                    : null;
+                
+                var retryAfterSeconds = initialResponse.Headers.RetryAfter?.Delta?.TotalSeconds 
+                    ?? (_initialRetryDelayMs / 1000.0);
+
+                var pollingUri = new Uri(locationHeader, UriKind.RelativeOrAbsolute);
+                if (!pollingUri.IsAbsoluteUri)
+                {
+                    pollingUri = new Uri(new Uri(_baseUrl), locationHeader);
+                }
+
+                // Poll until operation completes
+                int currentDelayMs = Math.Max(_initialRetryDelayMs, (int)(retryAfterSeconds * 1000));
+                bool operationComplete = false;
+                HttpResponseMessage? resultResponse = null;
+                
+                for (int attempt = 0; attempt < _maxLroAttempts; attempt++)
+                {
+                    await Task.Delay(currentDelayMs, cancellationToken);
+                    
+                    var pollResponse = await _httpClient.GetAsync(pollingUri, cancellationToken);
+
+                    if (pollResponse.IsSuccessStatusCode)
+                    {
+                        var pollContent = await pollResponse.Content.ReadAsStringAsync();
+
+                        // Try to deserialize as operation status
+                        FabricOperationResult? operationResult;
+                        try
+                        {
+                            operationResult = JsonSerializer.Deserialize<FabricOperationResult>(pollContent, new JsonSerializerOptions
+                            {
+                                PropertyNameCaseInsensitive = true
+                            });
+                        }
+                        catch (JsonException)
+                        {
+                            // If we can't deserialize as operation result, this might be the actual result
+                            // This can happen if the operation completed synchronously
+                            operationResult = null;
+                        }
+
+                        if (operationResult != null)
+                        {
+                            // Check operation status
+                            if (string.Equals(operationResult.Status, "Succeeded", StringComparison.OrdinalIgnoreCase))
+                            {
+                                // Operation succeeded - get the actual result
+                                var resultUri = new Uri(pollingUri.ToString() + "/result");
+                                resultResponse = await _httpClient.GetAsync(resultUri, cancellationToken);
+                                operationComplete = true;
+                                break;
+                            }
+                            else if (string.Equals(operationResult.Status, "Failed", StringComparison.OrdinalIgnoreCase))
+                            {
+                                // Operation failed - throw with error details
+                                var errorMessage = operationResult.Error?.Message ?? "Operation failed";
+                                var errorCode = operationResult.Error?.Code ?? "Unknown";
+                                var errorDetails = operationResult.Error?.Details ?? string.Empty;
+                                throw new HttpRequestException(
+                                    $"Long-running operation failed for item {itemId}. " +
+                                    $"Error Code: {errorCode}, Message: {errorMessage}, Details: {errorDetails}");
+                            }
+                            else if (string.Equals(operationResult.Status, "Running", StringComparison.OrdinalIgnoreCase) ||
+                                     string.Equals(operationResult.Status, "NotStarted", StringComparison.OrdinalIgnoreCase))
+                            {
+                                // Still running - continue polling with exponential backoff
+                                currentDelayMs = Math.Min(currentDelayMs * 2, _maxRetryDelayMs);
+                                continue;
+                            }
+                            else
+                            {
+                                // Unknown status - treat as error
+                                throw new HttpRequestException(
+                                    $"Unknown operation status '{operationResult.Status}' for item {itemId}");
+                            }
+                        }
+                        else
+                        {
+                            // Could not deserialize as operation result - assume this is the final result
+                            resultResponse = pollResponse;
+                            operationComplete = true;
+                            break;
+                        }
+                    }
+                    else if (pollResponse.StatusCode == System.Net.HttpStatusCode.Accepted)
+                    {
+                        // Still processing - continue polling
+                        currentDelayMs = Math.Min(currentDelayMs * 2, _maxRetryDelayMs);
+                        continue;
+                    }
+                    else
+                    {
+                        // Error occurred during polling
+                        var errorContent = await pollResponse.Content.ReadAsStringAsync();
+                        throw new HttpRequestException(
+                            $"Failed while polling item definition for {itemId}: {pollResponse.StatusCode} - {errorContent}");
+                    }
+                }
+                
+                // Check if we exceeded max attempts
+                if (!operationComplete)
+                {
+                    throw new TimeoutException(
+                        $"Timed out waiting for item definition for {itemId} after {_maxLroAttempts} attempts. " +
+                        $"Operation ID: {operationId ?? "unknown"}");
+                }
+
+                // Use the result response
+                if (resultResponse == null || !resultResponse.IsSuccessStatusCode)
+                {
+                    var errorContent = resultResponse != null 
+                        ? await resultResponse.Content.ReadAsStringAsync() 
+                        : "No response";
+                    throw new HttpRequestException(
+                        $"Failed to get operation result for item {itemId}: {resultResponse?.StatusCode} - {errorContent}");
+                }
+
+                initialResponse = resultResponse;
+            }
+            
+            // Handle synchronous success (200 OK) or final result from LRO
+            if (!initialResponse.IsSuccessStatusCode)
+            {
+                var errorContent = await initialResponse.Content.ReadAsStringAsync();
+                throw new HttpRequestException(
+                    $"Failed to load item definition for {itemId}: {initialResponse.StatusCode} - {errorContent}");
             }
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await initialResponse.Content.ReadAsStringAsync();
             var result = JsonSerializer.Deserialize<FabricItemDefinitionResponse>(json, new JsonSerializerOptions 
             { 
                 PropertyNameCaseInsensitive = true 
@@ -266,7 +445,7 @@ namespace PBIRInspectorLibrary
         private (string itemName, string partPath) ParsePath(string path)
         {
             var normalizedPath = NormalizePath(path);
-            var segments = normalizedPath.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+            var segments = normalizedPath.Split(new[] { Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
             
             if (segments.Length == 0)
                 return (string.Empty, string.Empty);
@@ -274,7 +453,7 @@ namespace PBIRInspectorLibrary
             if (segments.Length == 1)
                 return (segments[0], string.Empty);
             
-            return (segments[0], string.Join(Path.DirectorySeparatorChar.ToString(), segments.Skip(1)));
+            return (segments[0], string.Join(Path.AltDirectorySeparatorChar.ToString(), segments.Skip(1)));
         }
 
         /// <summary>
@@ -310,11 +489,14 @@ namespace PBIRInspectorLibrary
         {
             if (string.IsNullOrEmpty(path))
                 return string.Empty;
-            
-            path = path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
-            path = path.TrimStart(Path.DirectorySeparatorChar);
-            path = path.TrimEnd(Path.DirectorySeparatorChar);
-            
+
+            path = path.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            //path = path.TrimStart(Path.DirectorySeparatorChar);
+            //path = path.TrimEnd(Path.DirectorySeparatorChar);
+
+            path = path.TrimStart(Path.AltDirectorySeparatorChar);
+            path = path.TrimEnd(Path.AltDirectorySeparatorChar);
+
             return path;
         }
 
@@ -378,7 +560,7 @@ namespace PBIRInspectorLibrary
                 // Check if this is a subdirectory by seeing if any parts start with this path
                 EnsureItemDefinitionLoaded(item.Id);
                 var definition = _itemDefinitions[item.Id];
-                var normalizedPartPath = NormalizePath(partPath) + Path.DirectorySeparatorChar;
+                var normalizedPartPath = NormalizePath(partPath) + Path.AltDirectorySeparatorChar;
                 
                 return definition.Parts?.Any(p => p.Path?.StartsWith(normalizedPartPath, StringComparison.OrdinalIgnoreCase) ?? false) ?? false;
             }
@@ -460,7 +642,7 @@ namespace PBIRInspectorLibrary
                     continue;
 
                 var normalizedCurrentPath = NormalizePath(part.Path);
-                var partDirectory = Path.GetDirectoryName(normalizedCurrentPath)?.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar) ?? string.Empty;
+                var partDirectory = NormalizePath(Path.GetDirectoryName(normalizedCurrentPath)) ?? string.Empty;
 
                 bool isMatch = false;
                 if (searchOption == SearchOption.AllDirectories)
@@ -468,7 +650,7 @@ namespace PBIRInspectorLibrary
                     // Match if part is in the directory or any subdirectory
                     isMatch = string.IsNullOrEmpty(normalizedPartPath) ||
                              partDirectory.Equals(normalizedPartPath, StringComparison.OrdinalIgnoreCase) ||
-                             partDirectory.StartsWith(normalizedPartPath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+                             partDirectory.StartsWith(normalizedPartPath + Path.AltDirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
                 }
                 else
                 {
@@ -481,7 +663,7 @@ namespace PBIRInspectorLibrary
                     // Check search pattern
                     if (string.IsNullOrEmpty(searchPattern) || searchPattern == "*" || MatchesPattern(Path.GetFileName(part.Path), searchPattern))
                     {
-                        results.Add(Path.Combine(itemName, part.Path));
+                        results.Add(NormalizePath(Path.Combine(itemName, part.Path)));
                     }
                 }
             }
@@ -530,7 +712,7 @@ namespace PBIRInspectorLibrary
                     continue;
 
                 var normalizedCurrentPath = NormalizePath(part.Path);
-                var partDirectory = Path.GetDirectoryName(normalizedCurrentPath)?.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar) ?? string.Empty;
+                var partDirectory = NormalizePath(Path.GetDirectoryName(normalizedCurrentPath)) ?? string.Empty;
 
                 // Check if this part is in a subdirectory of the current path
                 if (string.IsNullOrEmpty(normalizedPartPath))
@@ -538,16 +720,16 @@ namespace PBIRInspectorLibrary
                     // Looking for top-level subdirectories within the item
                     if (!string.IsNullOrEmpty(partDirectory))
                     {
-                        var firstSegment = partDirectory.Split(Path.DirectorySeparatorChar)[0];
-                        results.Add(Path.Combine(itemName, firstSegment));
+                        var firstSegment = partDirectory.Split(Path.AltDirectorySeparatorChar)[0];
+                        results.Add(NormalizePath(PathCombine(itemName, firstSegment)));
                     }
                 }
-                else if (partDirectory.StartsWith(normalizedPartPath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                else if (partDirectory.StartsWith(normalizedPartPath + Path.AltDirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                 {
                     // Part is in a subdirectory of the current path
                     var relativePath = partDirectory.Substring(normalizedPartPath.Length + 1);
-                    var firstSegment = relativePath.Split(Path.DirectorySeparatorChar)[0];
-                    results.Add(Path.Combine(itemName, normalizedPartPath, firstSegment));
+                    var firstSegment = relativePath.Split(Path.AltDirectorySeparatorChar)[0];
+                    results.Add(NormalizePath(PathCombine(itemName, normalizedPartPath, firstSegment)));
                 }
             }
 
@@ -560,7 +742,7 @@ namespace PBIRInspectorLibrary
                 return path;
             
             var normalizedPath = NormalizePath(path);
-            var lastSeparatorIndex = normalizedPath.LastIndexOf(Path.DirectorySeparatorChar);
+            var lastSeparatorIndex = normalizedPath.LastIndexOf(Path.AltDirectorySeparatorChar);
             
             return lastSeparatorIndex >= 0 ? normalizedPath.Substring(lastSeparatorIndex + 1) : normalizedPath;
         }
@@ -571,7 +753,7 @@ namespace PBIRInspectorLibrary
                 return string.Empty;
             
             var normalizedPath = NormalizePath(path);
-            var lastSeparatorIndex = normalizedPath.LastIndexOf(Path.DirectorySeparatorChar);
+            var lastSeparatorIndex = normalizedPath.LastIndexOf(Path.AltDirectorySeparatorChar);
             
             return lastSeparatorIndex >= 0 ? normalizedPath.Substring(0, lastSeparatorIndex) : string.Empty;
         }
@@ -597,9 +779,9 @@ namespace PBIRInspectorLibrary
                 if (string.IsNullOrEmpty(paths[i]))
                     continue;
                 
-                result = result.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
-                    + Path.DirectorySeparatorChar
-                    + paths[i].TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                result = result.TrimEnd(Path.AltDirectorySeparatorChar)
+                    + Path.AltDirectorySeparatorChar
+                    + paths[i].TrimStart(Path.AltDirectorySeparatorChar);
             }
             
             return NormalizePath(result);
@@ -699,6 +881,11 @@ namespace PBIRInspectorLibrary
             return fileName.Substring(0, fileName.Length - extension.Length);
         }
 
+        public IEnumerable<FabricItem> GetFabricItems(string path, string searchPattern, SearchOption searchOption)
+        {
+            throw new NotImplementedException();
+        }
+
         #endregion
 
         #region Data Models
@@ -706,15 +893,6 @@ namespace PBIRInspectorLibrary
         private class FabricItemsResponse
         {
             public List<FabricItem>? Value { get; set; }
-        }
-
-        private class FabricItem
-        {
-            public string Id { get; set; } = string.Empty;
-            public string DisplayName { get; set; } = string.Empty;
-            public string Type { get; set; } = string.Empty;
-            public string? Description { get; set; }
-            public string WorkspaceId { get; set; } = string.Empty;
         }
 
         private class FabricItemDefinitionResponse
@@ -732,6 +910,45 @@ namespace PBIRInspectorLibrary
             public string? Path { get; set; }
             public string? Payload { get; set; }
             public string? PayloadType { get; set; }
+        }
+
+        /// <summary>
+        /// Represents the result of a Fabric REST API long-running operation (LRO) status check.
+        /// Used when polling operation status after receiving HTTP 202 Accepted.
+        /// Status values: NotStarted, Running, Succeeded, Failed
+        /// </summary>
+        private class FabricOperationResult
+        {
+            [JsonPropertyName("status")]
+            public string Status { get; set; } = string.Empty;
+            
+            [JsonPropertyName("createdTimeUtc")]
+            public DateTimeOffset? CreatedTimeUtc { get; set; }
+
+            [JsonPropertyName("lastUpdatedTimeUtc")]
+            public DateTimeOffset? LastUpdatedTimeUtc { get; set; }
+
+            [JsonPropertyName("percentComplete")]
+            public int? PercentComplete { get; set; }
+
+            [JsonPropertyName("error")]
+            public FabricOperationError? Error { get; set; }
+        }
+
+        /// <summary>
+        /// Represents error details from a failed long-running operation.
+        /// Populated in FabricOperationResult when Status is "Failed".
+        /// </summary>
+        private class FabricOperationError
+        {
+            [JsonPropertyName("code")]
+            public string? Code { get; set; }
+            
+            [JsonPropertyName("message")]
+            public string? Message { get; set; }
+            
+            [JsonPropertyName("details")]
+            public string? Details { get; set; }
         }
 
         #endregion

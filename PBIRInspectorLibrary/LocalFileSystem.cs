@@ -7,14 +7,14 @@ namespace PBIRInspectorLibrary
     /// <summary>
     /// Physical file system implementation that uses actual file system operations
     /// </summary>
-    public class PhysicalFileSystem : IFileSystem
+    public class LocalFileSystem
     {
         private readonly string _rootPath;
 
         /// <summary>
         /// Initializes a new instance of PhysicalFileSystem with an empty root path
         /// </summary>
-        public PhysicalFileSystem() : this(string.Empty)
+        public LocalFileSystem() : this(string.Empty)
         {
         }
 
@@ -22,7 +22,7 @@ namespace PBIRInspectorLibrary
         /// Initializes a new instance of PhysicalFileSystem with a specified root path
         /// </summary>
         /// <param name="rootPath">The root path for this file system instance</param>
-        public PhysicalFileSystem(string rootPath)
+        public LocalFileSystem(string rootPath)
         {
             _rootPath = rootPath ?? string.Empty;
         }

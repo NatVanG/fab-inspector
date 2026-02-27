@@ -1,6 +1,7 @@
 using Azure.Core;
 using Azure.Identity;
 using System.Text.Json;
+using static System.Net.WebRequestMethods;
 
 namespace PBIRInspectorClientLibrary.Utils
 {
@@ -9,12 +10,29 @@ namespace PBIRInspectorClientLibrary.Utils
     /// </summary>
     public static class FabricAuthenticationHelper
     {
+        /// <summary>
+        /// Required scopes for Microsoft Fabric REST API
+        /// </summary>
+        private static readonly string[] FabricScopes = new[]
+        {
+            "https://api.fabric.microsoft.com/Workspace.Read.All", "https://api.fabric.microsoft.com/Item.ReadWrite.All"
+        };
+
+        /// <summary>
+        /// Creates a device code credential with Fabric API scopes
+        /// </summary>
+        /// <param name="clientId">Azure AD app client ID</param>
+        /// <param name="tenantId">Azure AD tenant ID (optional, uses "organizations" if null)</param>
+        /// <param name="onDeviceCodeMessage">Optional callback for device code messages</param>
+        /// <returns>TokenCredential for Fabric API</returns>
         public static TokenCredential CreateDeviceCodeCredential(string clientId, string? tenantId = null, Action<string>? onDeviceCodeMessage = null)
         {
             var options = new DeviceCodeCredentialOptions
             {
                 ClientId = clientId,
                 TenantId = tenantId ?? "organizations",
+                // AddauthorityHost if needed for specific clouds
+                // AuthorityHost = AzureAuthorityHosts.AzurePublicCloud,
                 DeviceCodeCallback = (deviceCodeInfo, cancellationToken) =>
                 {
                     try
@@ -81,6 +99,18 @@ namespace PBIRInspectorClientLibrary.Utils
         public static TokenCredential CreateCertificateCredential(string clientId, System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, string tenantId)
         {
             return new ClientCertificateCredential(tenantId, clientId, certificate);
+        }
+
+        /// <summary>
+        /// Gets a Fabric API access token for testing/debugging purposes
+        /// </summary>
+        /// <param name="credential">TokenCredential to use</param>
+        /// <returns>Access token string</returns>
+        public static async Task<string> GetAccessTokenAsync(TokenCredential credential)
+        {
+            var tokenRequestContext = new TokenRequestContext(FabricScopes);
+            var token = await credential.GetTokenAsync(tokenRequestContext, CancellationToken.None);
+            return token.Token;
         }
     }
 }

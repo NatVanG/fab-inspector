@@ -19,9 +19,9 @@ namespace PBIRInspectorClientLibrary.Utils
             return Deserialise<T>(jsonString);
         }
 
-        public static T? DeserialiseFromPath<T>(string path, IFileSystem? fileSystem)
+        public static T? DeserialiseFromPath<T>(string path, IFabricFileSystem? fileSystem)
         {
-            var fs = fileSystem ?? new PhysicalFileSystem();
+            var fs = fileSystem ?? new FabricLocalFileSystem();
             if (!fs.FileExists(path)) throw new FileNotFoundException(string.Format("Path \"{0}\" was not found", path));
 
             string jsonString = fs.ReadAllText(path);

@@ -16,15 +16,15 @@ namespace PBIRInspectorLibrary.Part
         private const string NAMEPOINTER = "/name";
         private const string DISPLAYNAMEPOINTER = "/displayName";
 
-        protected readonly IFileSystem _fileSystem;
+        protected readonly IFabricFileSystem _fileSystem;
 
         public BasePartQuery(string fileSystemPath) : this(fileSystemPath, null)
         {
         }
 
-        public BasePartQuery(string fileSystemPath, IFileSystem? fileSystem)
+        public BasePartQuery(string fileSystemPath, IFabricFileSystem? fileSystem)
         {
-            _fileSystem = fileSystem ?? new PhysicalFileSystem();
+            _fileSystem = fileSystem ?? new FabricLocalFileSystem();
         }
 
         public Part RootPart { get; set; }

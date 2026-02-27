@@ -29,7 +29,7 @@ namespace PBIRInspectorLibrary.Part
         {
         }
 
-        public PBIRPartQuery(string path, IFileSystem? fileSystem) : base(path, fileSystem)
+        public PBIRPartQuery(string path, IFabricFileSystem? fileSystem) : base(path, fileSystem)
         {
             if (path == null || path.Length == 0) throw new ArgumentNullException(nameof(path));
             if (!_fileSystem.FileExists(path) && path.EndsWith(PBIPEXT)) throw new ArgumentException($"PBI Desktop file {path} does not exist.");

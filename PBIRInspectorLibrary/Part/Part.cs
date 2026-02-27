@@ -5,7 +5,7 @@ namespace PBIRInspectorLibrary.Part
 {
     public class Part
     {
-        private readonly IFileSystem _fileSystem;
+        private readonly IFabricFileSystem _fileSystem;
 
         public Part Parent { get; private set; }
 
@@ -20,18 +20,18 @@ namespace PBIRInspectorLibrary.Part
 
         public JsonNode? JsonContent { get; set; }
 
-        public Part(string fileSystemName, string fileSystemPath, Part parent = null, PartFileSystemTypeEnum partType = default, IFileSystem fileSystem = null)
+        public Part(string fileSystemName, string fileSystemPath, Part parent = null, PartFileSystemTypeEnum partType = default, IFabricFileSystem fileSystem = null)
         {
             Parent = parent;
             FileSystemName = fileSystemName;
             FileSystemPath = fileSystemPath;
             PartFileSystemType = partType;
-            _fileSystem = fileSystem ?? parent?._fileSystem ?? new PhysicalFileSystem();
+            _fileSystem = fileSystem ?? parent?._fileSystem ?? new FabricLocalFileSystem();
         }
 
         public List<Part> Parts { get; set; }
 
-        public IFileSystem GetFileSystem()
+        public IFabricFileSystem GetFileSystem()
         {
             return _fileSystem;
         }
