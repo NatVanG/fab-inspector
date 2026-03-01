@@ -59,8 +59,7 @@ namespace PBIRInspectorLibrary
         private readonly int _maxRetryDelayMs;
         
         // Scope tracking fields (null for workspace-scoped, set for item-scoped)
-        private readonly string? _scopedItemId;
-        private string? _scopedItemName;
+        private FabricItem _scopedItem;
         
         // Cache for workspace items (lazy loaded once)
         private List<FabricItem>? _workspaceItems;
@@ -73,8 +72,8 @@ namespace PBIRInspectorLibrary
         /// <summary>
         /// Gets the root path for this file system instance
         /// </summary>
-        public string RootPath => _scopedItemId != null && _scopedItemName != null 
-            ? $"/{_scopedItemName}" 
+        public string RootPath => _scopedItem != null 
+            ? $"/{_scopedItem.DisplayName}" 
             : "/";
 
         /// <summary>
@@ -97,8 +96,7 @@ namespace PBIRInspectorLibrary
             _workspaceId = workspaceId;
             _credential = credential;
             _httpClient = httpClient ?? new HttpClient();
-            _scopedItemId = null;
-            _scopedItemName = null;
+            //_scopedItem = null;
             _maxLroAttempts = maxLroAttempts;
             _initialRetryDelayMs = initialRetryDelayMs;
             _maxRetryDelayMs = maxRetryDelayMs;
@@ -130,17 +128,18 @@ namespace PBIRInspectorLibrary
             _workspaceId = workspaceId;
             _credential = credential;
             _httpClient = httpClient ?? new HttpClient();
-            _scopedItemId = itemId;
+            //_scopedItemId = itemId;
             _maxLroAttempts = maxLroAttempts;
             _initialRetryDelayMs = initialRetryDelayMs;
             _maxRetryDelayMs = maxRetryDelayMs;
             
             // Configure default headers
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            
+
             // Eagerly load item metadata to validate itemId and cache item name
-            var item = LoadItemMetadataAsync(itemId).GetAwaiter().GetResult();
-            _scopedItemName = item.DisplayName;
+            _scopedItem = LoadItemMetadataAsync(itemId).GetAwaiter().GetResult();
+            _scopedItem.DirectoryPath = NormalizePath(Path.Combine(Path.AltDirectorySeparatorChar.ToString(), _scopedItem.DisplayName)); // Set directory path to root for item-scoped access
+            //_scopedItemName = item.DisplayName;
         }
 
         #region Private Helper Methods
@@ -169,16 +168,11 @@ namespace PBIRInspectorLibrary
                     return;
 
                 // If scoped to a single item, create synthetic single-item list
-                if (_scopedItemId != null)
+                if (_scopedItem != null)
                 {
                     _workspaceItems = new List<FabricItem>
                     {
-                        new FabricItem
-                        {
-                            Id = _scopedItemId,
-                            DisplayName = _scopedItemName ?? string.Empty,
-                            WorkspaceId = _workspaceId
-                        }
+                        _scopedItem
                     };
                 }
                 else
@@ -464,7 +458,7 @@ namespace PBIRInspectorLibrary
             EnsureWorkspaceItemsLoaded();
             
             // If scoped to a single item, only return it if the name matches
-            if (_scopedItemId != null && !string.Equals(_scopedItemName, itemName, StringComparison.OrdinalIgnoreCase))
+            if (_scopedItem != null && !string.Equals(_scopedItem.DisplayName, itemName, StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }
@@ -817,10 +811,10 @@ namespace PBIRInspectorLibrary
                 _workspaceItems = null;
                 
                 // If scoped to a single item, also refresh the item metadata
-                if (_scopedItemId != null)
+                if (_scopedItem != null)
                 {
-                    var item = LoadItemMetadataAsync(_scopedItemId).GetAwaiter().GetResult();
-                    _scopedItemName = item.DisplayName;
+                    var item = LoadItemMetadataAsync(_scopedItem.Id).GetAwaiter().GetResult();
+                    _scopedItem = item;
                 }
             }
             EnsureWorkspaceItemsLoaded();
@@ -881,9 +875,25 @@ namespace PBIRInspectorLibrary
             return fileName.Substring(0, fileName.Length - extension.Length);
         }
 
-        public IEnumerable<FabricItem> GetFabricItems(string path, string searchPattern, SearchOption searchOption)
+        public IEnumerable<FabricItem> GetFabricItems(string path)
         {
-            throw new NotImplementedException();
+            var fabricItems = new List<FabricItem>();
+            var (itemName, partPath) = ParsePath(path);
+            EnsureWorkspaceItemsLoaded();
+            if (string.IsNullOrEmpty(itemName))
+            {
+                // Root level - return all items
+                fabricItems.AddRange(_workspaceItems!);
+            }
+            else
+            {
+                var item = FindItem(itemName);
+                if (item != null)
+                {
+                    fabricItems.Add(item);
+                }
+            }
+            return fabricItems;
         }
 
         #endregion

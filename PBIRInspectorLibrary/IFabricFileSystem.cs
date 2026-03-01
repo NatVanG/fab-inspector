@@ -53,10 +53,7 @@ namespace PBIRInspectorLibrary
         /// Gets all fabric items in a directory matching the search pattern
         /// </summary>
         /// <param name="path">The path to the directory</param>
-        /// <param name="searchPattern">The search pattern to match files</param>
-        /// <param name="searchOption">The search option to use</param>
-        /// <returns>An enumerable of fabric items </returns>
-        IEnumerable<FabricItem> GetFabricItems(string path, string searchPattern, SearchOption searchOption);
+        IEnumerable<FabricItem> GetFabricItems(string path);
 
         /// <summary>
         /// Gets all directories in a directory

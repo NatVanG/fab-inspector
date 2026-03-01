@@ -46,27 +46,15 @@ namespace PBIRInspectorLibrary
                 RunRulesByItemType(testResults, rules, "*", fileSystemPath);
 
                 //Run rules that apply to specific itemtypes
-                //TODO: refactor to call _fileSystem.GetFabricItems() instead of searching for platform files and inferring item types.
-                var platformFiles = _fileSystem
-                    .GetFiles(fileSystemPath, "*.platform", SearchOption.AllDirectories)
-                    .ToList();
+                var fabricItems = _fileSystem.GetFabricItems(fileSystemPath);
 
-                if (platformFiles != null && platformFiles.Count != 0)
+                if (fabricItems != null && fabricItems.Any())
                 {
-                    foreach (var platformFile in platformFiles)
+                    foreach (var fabricItem in fabricItems)
                     {
-                        JsonNode? platformNode = JsonNode.Parse(_fileSystem.ReadAllBytes(platformFile));
-                        if (platformNode == null)
-                        {
-                            OnMessageIssued(MessageTypeEnum.Error, string.Format("Could not parse platform file at \"{0}\".", platformFile));
-                            continue;
-                        }
-
-                        var itemType = PartUtils.TryGetJsonNodeStringValue(platformNode, "/metadata/type")!.ToLowerInvariant();
-
-                        var dir = _fileSystem.GetDirectoryName(platformFile);
-                        RunRulesByItemType(testResults, rules, itemType, dir);
-                        RunDeprecatedRulesByItemType(testResults, rules, itemType, dir);
+                        
+                        RunRulesByItemType(testResults, rules, fabricItem.Type, fabricItem.DirectoryPath);
+                        RunDeprecatedRulesByItemType(testResults, rules, fabricItem.Type, fabricItem.DirectoryPath);
                     }
                 }
                 else
