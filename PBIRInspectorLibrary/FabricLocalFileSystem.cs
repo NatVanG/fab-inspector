@@ -63,5 +63,11 @@ namespace PBIRInspectorLibrary
             }
             return fabricItems;
         }
+
+        public string GetRelativePath(string fullPath)
+        {
+            if (string.IsNullOrEmpty(fullPath) || string.IsNullOrEmpty(this.RootPath)) return fullPath;
+            return fullPath.Substring(fullPath.IndexOf(this.RootPath) + this.RootPath.Length);
+        }
     }
 }

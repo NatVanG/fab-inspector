@@ -229,7 +229,8 @@ namespace PBIRInspectorLibrary
                             var node = PartUtils.ToJsonNode(part);
                             var newdata = MapRuleDataPointersToValues(node, rule);
 
-                            var itemPath = part.FileSystemPath.Substring(part.FileSystemPath.IndexOf(this._fileSystem.RootPath) + this._fileSystem.RootPath.Length);
+                            var itemPath = this._fileSystem.GetRelativePath(part.FileSystemPath);
+                            //var itemPath = part.FileSystemPath.Substring(part.FileSystemPath.IndexOf(this._fileSystem.RootPath) + this._fileSystem.RootPath.Length);
                             itemPath = string.IsNullOrEmpty(itemPath) ? "root" : itemPath;
                             var parentPageName = part.FileSystemName.ToLowerInvariant().EndsWith("page.json") ? partQuery.PartName(part) : null;
                             var parentPageDisplayName = part.FileSystemName.ToLowerInvariant().EndsWith("page.json") ? partQuery.PartDisplayName(part) ?? partQuery.PartName(part) : "N/A";

@@ -927,6 +927,11 @@ namespace PBIRInspectorLibrary
             return fabricItems;
         }
 
+        public string GetRelativePath(string fullPath)
+        {
+            return fullPath; // In this implementation, we treat all paths as relative to the workspace root, so we can return the full path as-is.
+        }
+
         #endregion
 
         #region Data Models

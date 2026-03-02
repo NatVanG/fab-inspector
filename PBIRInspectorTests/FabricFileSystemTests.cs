@@ -232,8 +232,8 @@ namespace PBIRInspectorTests
             var fs = new FabricRemoteFileSystem("test-workspace-id", mockCredential, httpClient);
 
             // Act
-            bool report1Exists = fs.DirectoryExists("Report1");
-            bool pipeline1Exists = fs.DirectoryExists("Pipeline1");
+            bool report1Exists = fs.DirectoryExists("Report1.Report");
+            bool pipeline1Exists = fs.DirectoryExists("Pipeline1.DataPipeline");
             bool nonExistentExists = fs.DirectoryExists("NonExistent");
 
             // Assert
@@ -565,9 +565,9 @@ namespace PBIRInspectorTests
             var fs = new FabricRemoteFileSystem("test-workspace-id", mockCredential, httpClient);
 
             // Act & Assert - Different casing should work
-            Assert.That(fs.DirectoryExists("report1"), Is.True);
-            Assert.That(fs.DirectoryExists("REPORT1"), Is.True);
-            Assert.That(fs.DirectoryExists("Report1"), Is.True);
+            Assert.That(fs.DirectoryExists("report1.report"), Is.True);
+            Assert.That(fs.DirectoryExists("REPORT1.REPORT"), Is.True);
+            Assert.That(fs.DirectoryExists("Report1.Report"), Is.True);
         }
 
         #region Item-Scoped Constructor Tests
@@ -694,9 +694,9 @@ namespace PBIRInspectorTests
             var fs = new FabricRemoteFileSystem("test-workspace-id", "item1", mockCredential, httpClient);
 
             // Act & Assert
-            Assert.That(fs.DirectoryExists("Report1"), Is.True);
-            Assert.That(fs.DirectoryExists("OtherReport"), Is.False);
-            Assert.That(fs.DirectoryExists("Pipeline1"), Is.False);
+            Assert.That(fs.DirectoryExists("Report1.Report"), Is.True);
+            Assert.That(fs.DirectoryExists("OtherReport.Report"), Is.False);
+            Assert.That(fs.DirectoryExists("Pipeline1.DataPipeline"), Is.False);
         }
 
         [Test]
@@ -724,9 +724,9 @@ namespace PBIRInspectorTests
             var fs = new FabricRemoteFileSystem("test-workspace-id", "item1", mockCredential, httpClient);
 
             // Act & Assert - Different casing should work
-            Assert.That(fs.DirectoryExists("report1"), Is.True);
-            Assert.That(fs.DirectoryExists("REPORT1"), Is.True);
-            Assert.That(fs.DirectoryExists("Report1"), Is.True);
+            Assert.That(fs.DirectoryExists("report1.Report"), Is.True);
+            Assert.That(fs.DirectoryExists("REPORT1.Report"), Is.True);
+            Assert.That(fs.DirectoryExists("Report1.Report"), Is.True);
         }
 
         [Test]
@@ -804,7 +804,7 @@ namespace PBIRInspectorTests
             fs.RefreshWorkspaceItems();
 
             // Assert - if we got here, refresh worked successfully
-            Assert.That(fs.DirectoryExists("Report1"), Is.True);
+            Assert.That(fs.DirectoryExists("Report1.Report"), Is.True);
         }
 
         [Test]

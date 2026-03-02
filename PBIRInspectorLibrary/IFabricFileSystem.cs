@@ -15,6 +15,11 @@ namespace PBIRInspectorLibrary
         string RootPath { get; }
 
         /// <summary>
+        /// Get the relative path from the root path for a given full path. If the full path is not under the root path, returns the full path.
+        /// </summary>
+        string GetRelativePath(string fullPath);
+
+        /// <summary>
         /// Checks if a file exists at the specified path
         /// </summary>
         bool FileExists(string path);
