@@ -73,7 +73,7 @@ namespace PBIRInspectorLibrary
         /// Gets the root path for this file system instance
         /// </summary>
         public string RootPath => _scopedItem != null 
-            ? $"/{_scopedItem.DisplayName}" 
+            ? $"/{BuildItemDirectoryPath(_scopedItem)}" 
             : "/";
 
         /// <summary>
@@ -138,7 +138,7 @@ namespace PBIRInspectorLibrary
 
             // Eagerly load item metadata to validate itemId and cache item name
             _scopedItem = LoadItemMetadataAsync(itemId).GetAwaiter().GetResult();
-            _scopedItem.DirectoryPath = NormalizePath(Path.Combine(Path.AltDirectorySeparatorChar.ToString(), _scopedItem.DisplayName)); // Set directory path to root for item-scoped access
+            _scopedItem.DirectoryPath = BuildItemDirectoryPath(_scopedItem); // Set directory path to root for item-scoped access
             //_scopedItemName = item.DisplayName;
         }
 
@@ -208,6 +208,8 @@ namespace PBIRInspectorLibrary
                 throw new HttpRequestException($"Failed to deserialize item metadata for {itemId}");
             }
 
+            result.DirectoryPath = BuildItemDirectoryPath(result);
+
             return result;
         }
 
@@ -232,7 +234,36 @@ namespace PBIRInspectorLibrary
                 PropertyNameCaseInsensitive = true 
             });
 
+            result?.Value?.ForEach(item => item.DirectoryPath = BuildItemDirectoryPath(item));
+
             return result?.Value ?? new List<FabricItem>();
+        }
+
+
+        private string BuildItemName(FabricItem item)
+        {
+            if (item == null)
+                return string.Empty;
+            return string.Concat(item.DisplayName, ".", item.Type);
+        }
+
+        private string BuildItemDirectoryPath(FabricItem item)
+        {
+            if (item == null)
+                return string.Empty;
+            //TODO: prefix with workspace folder recursive path
+            EnsureWorkspaceFolderPathsLoaded();
+            //var folderPath = _workspaceFolderPaths.ContainsKey(item.Id) ? _workspaceFolderPaths[item.Id] : string.Empty;
+            var folderPath = string.Empty; // For now, we don't have folder path information, so this will be empty. In the future, we can build this from the item's parent folders.
+            return NormalizePath(string.Concat(Path.AltDirectorySeparatorChar, folderPath, BuildItemName(item)));
+        }
+
+        private void EnsureWorkspaceFolderPathsLoaded()
+        {
+            // This method would implement logic to load folder paths for items if the API provides that information.
+            // For now, it's a placeholder since we don't have folder path data in the current item model.
+            // In the future, we could call an API endpoint to get folder structures and build a mapping of itemId to folderPath.
+            
         }
 
         /// <summary>
@@ -454,16 +485,16 @@ namespace PBIRInspectorLibrary
         /// Finds an item by name (case-insensitive)
         /// </summary>
         private FabricItem? FindItem(string itemName)
-        {
+        { 
             EnsureWorkspaceItemsLoaded();
             
             // If scoped to a single item, only return it if the name matches
-            if (_scopedItem != null && !string.Equals(_scopedItem.DisplayName, itemName, StringComparison.OrdinalIgnoreCase))
+            if (_scopedItem != null && !string.Equals(BuildItemName(_scopedItem), itemName, StringComparison.OrdinalIgnoreCase))
             {
                 return null;
             }
             
-            return _workspaceItems!.FirstOrDefault(i => string.Equals(i.DisplayName, itemName, StringComparison.OrdinalIgnoreCase));
+            return _workspaceItems!.FirstOrDefault(i => string.Equals(BuildItemName(i), itemName, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
