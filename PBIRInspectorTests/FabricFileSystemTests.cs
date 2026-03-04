@@ -204,8 +204,20 @@ namespace PBIRInspectorTests
             var fs = new FabricRemoteFileSystem("test-workspace-id", mockCredential, httpClient);
 
             // Act & Assert
-            Assert.That(fs.DirectoryExists(""), Is.True);
             Assert.That(fs.DirectoryExists("/"), Is.True);
+        }
+
+        [Test]
+        public void FabricFileSystem_DirectoryExists_ReturnsFalseForEmptyPath()
+        {
+            // Arrange
+            var mockHandler = new MockHttpMessageHandler();
+            var httpClient = new HttpClient(mockHandler);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricRemoteFileSystem("test-workspace-id", mockCredential, httpClient);
+
+            // Act & Assert
+            Assert.That(fs.DirectoryExists(""), Is.False);
         }
 
         [Test]

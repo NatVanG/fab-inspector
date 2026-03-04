@@ -68,6 +68,10 @@ namespace PBIRInspectorLibrary
         // Cache for item definitions (lazy loaded per item)
         private readonly Dictionary<string, FabricItemDefinition> _itemDefinitions = new Dictionary<string, FabricItemDefinition>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, object> _definitionLocks = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        
+        // Cache for workspace folder paths (lazy loaded once)
+        private Dictionary<string, string>? _workspaceFolderPaths;
+        private readonly object _folderPathsLock = new object();
 
         /// <summary>
         /// Gets the root path for this file system instance
@@ -247,24 +251,103 @@ namespace PBIRInspectorLibrary
             return string.Concat(item.DisplayName, ".", item.Type);
         }
 
+        #region folderLogic
         private string BuildItemDirectoryPath(FabricItem item)
         {
             if (item == null)
                 return string.Empty;
-            //TODO: prefix with workspace folder recursive path
+            
             EnsureWorkspaceFolderPathsLoaded();
-            //var folderPath = _workspaceFolderPaths.ContainsKey(item.Id) ? _workspaceFolderPaths[item.Id] : string.Empty;
-            var folderPath = string.Empty; // For now, we don't have folder path information, so this will be empty. In the future, we can build this from the item's parent folders.
+            
+            // Get folder path if item has a folder ID
+            var folderPath = string.Empty;
+            if (!string.IsNullOrEmpty(item.FolderId) && 
+                _workspaceFolderPaths != null && 
+                _workspaceFolderPaths.ContainsKey(item.FolderId))
+            {
+                folderPath = _workspaceFolderPaths[item.FolderId] + Path.AltDirectorySeparatorChar;
+            }
+            
             return NormalizePath(string.Concat(Path.AltDirectorySeparatorChar, folderPath, BuildItemName(item)));
         }
 
         private void EnsureWorkspaceFolderPathsLoaded()
         {
-            // This method would implement logic to load folder paths for items if the API provides that information.
-            // For now, it's a placeholder since we don't have folder path data in the current item model.
-            // In the future, we could call an API endpoint to get folder structures and build a mapping of itemId to folderPath.
-            
+            if (_workspaceFolderPaths != null)
+                return;
+
+            lock (_folderPathsLock)
+            {
+                if (_workspaceFolderPaths != null)
+                    return;
+
+                _workspaceFolderPaths = LoadWorkspaceFolderPathsAsync().GetAwaiter().GetResult();
+            }
         }
+
+        /// <summary>
+        /// Loads all folders in the workspace from Fabric REST API and builds hierarchical paths
+        /// </summary>
+        private async Task<Dictionary<string, string>> LoadWorkspaceFolderPathsAsync()
+        {
+            await EnsureAuthenticatedAsync();
+            
+            var url = $"{_baseUrl}/workspaces/{_workspaceId}/folders";
+            var response = await _httpClient.GetAsync(url);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                // If folders API is not available or fails, return empty dictionary
+                // This ensures backward compatibility if the API endpoint doesn't exist
+                return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<FabricFoldersResponse>(json, new JsonSerializerOptions 
+            { 
+                PropertyNameCaseInsensitive = true 
+            });
+
+            var folders = result?.Value ?? new List<FabricFolder>();
+            
+            // Build hierarchical paths
+            var folderPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            
+            // Create a lookup dictionary for quick parent access
+            var folderLookup = folders.ToDictionary(f => f.Id, f => f, StringComparer.OrdinalIgnoreCase);
+            
+            // Build path for each folder
+            foreach (var folder in folders)
+            {
+                folderPaths[folder.Id] = BuildFolderPath(folder, folderLookup);
+            }
+            
+            return folderPaths;
+        }
+
+        /// <summary>
+        /// Recursively builds the hierarchical path for a folder
+        /// </summary>
+        private string BuildFolderPath(FabricFolder folder, Dictionary<string, FabricFolder> folderLookup)
+        {
+            const string rootFolderName = "rootfolder";
+            if (string.IsNullOrEmpty(folder.ParentFolderId))
+            {
+                // Root folder - return just the folder name
+                return folder.DisplayName.Replace(rootFolderName, "");
+            }
+            
+            if (folderLookup.TryGetValue(folder.ParentFolderId, out var parentFolder))
+            {
+                // Build parent path recursively and append current folder
+                var parentPath = BuildFolderPath(parentFolder, folderLookup);
+                return $"{parentPath}{Path.AltDirectorySeparatorChar}{folder.DisplayName}";
+            }
+            
+            // Parent not found, treat as root folder
+            return folder.DisplayName.Replace(rootFolderName, "");
+        }
+        #endregion
 
         /// <summary>
         /// Ensures a specific item's definition is loaded (lazy loading per item)
@@ -466,18 +549,52 @@ namespace PBIRInspectorLibrary
 
         /// <summary>
         /// Parses a virtual path into item name and part path
+        /// If path starts with a known _workspaceItem DirectoryPath, splits there
+        /// Otherwise splits on item type suffixes (e.g., .Report, .CopyJob)
         /// </summary>
         private (string itemName, string partPath) ParsePath(string path)
         {
+            EnsureWorkspaceItemsLoaded();
+
             var normalizedPath = NormalizePath(path);
+
+            // If path is empty or root, return empty values
+            if (string.IsNullOrEmpty(normalizedPath))
+                return (string.Empty, string.Empty);
+
+            // Try to match against known workspace item directory paths
+            // This handles folder structures properly
+            foreach (var workspaceItem in _workspaceItems!)
+            {
+                if (string.IsNullOrEmpty(workspaceItem.DirectoryPath))
+                    continue;
+
+                var normalizedItemPath = NormalizePath(workspaceItem.DirectoryPath);
+
+                // Check if the path starts with this item's directory path
+                if (normalizedPath.Equals(normalizedItemPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    // Exact match - this is the item directory itself
+                    return (normalizedItemPath, string.Empty);
+                }
+                else if (normalizedPath.StartsWith(normalizedItemPath + Path.AltDirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                {
+                    // Path is within this item's directory
+                    var partPath = normalizedPath.Substring(normalizedItemPath.Length + 1);
+                    return (normalizedItemPath, partPath);
+                }
+            }
+
+            // Fallback: If no workspace item match found, use legacy splitting logic
+            // This handles cases where items might not be loaded or path format is different
             var segments = normalizedPath.Split(new[] { Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
-            
+
             if (segments.Length == 0)
                 return (string.Empty, string.Empty);
-            
+
             if (segments.Length == 1)
                 return (segments[0], string.Empty);
-            
+
             return (segments[0], string.Join(Path.AltDirectorySeparatorChar.ToString(), segments.Skip(1)));
         }
 
@@ -494,7 +611,7 @@ namespace PBIRInspectorLibrary
                 return null;
             }
             
-            return _workspaceItems!.FirstOrDefault(i => string.Equals(BuildItemName(i), itemName, StringComparison.OrdinalIgnoreCase));
+            return _workspaceItems!.FirstOrDefault(i => string.Equals(i.DirectoryPath, itemName, StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -995,6 +1112,24 @@ namespace PBIRInspectorLibrary
             
             [JsonPropertyName("details")]
             public string? Details { get; set; }
+        }
+
+        /// <summary>
+        /// Represents the response from the Fabric REST API folders list endpoint
+        /// </summary>
+        private class FabricFoldersResponse
+        {
+            public List<FabricFolder>? Value { get; set; }
+        }
+
+        /// <summary>
+        /// Represents a folder in a Fabric workspace
+        /// </summary>
+        private class FabricFolder
+        {
+            public string Id { get; set; } = string.Empty;
+            public string DisplayName { get; set; } = string.Empty;
+            public string? ParentFolderId { get; set; }
         }
 
         #endregion
