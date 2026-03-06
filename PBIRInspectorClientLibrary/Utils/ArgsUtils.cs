@@ -88,6 +88,12 @@ namespace PBIRInspectorClientLibrary.Utils
                 }
             }
 
+            // Validate parallel execution is not enabled with remote auth methods due to potential token caching issues
+            if ((authMethod != "local" || string.IsNullOrEmpty(authMethod?.Trim())) && bool.TryParse(parallelString, out bool isParallel) && isParallel)
+            {
+                throw new ArgumentException("Parallel execution is not supported when using remote authentication methods (devicecode, interactive, clientsecret) due to potential token caching issues. Please set -parallel to false (default) when using remote authentication.");
+            }
+
             // Validate Fabric workspace access requirements
             if (!string.IsNullOrWhiteSpace(fabricWorkspaceId))
             {

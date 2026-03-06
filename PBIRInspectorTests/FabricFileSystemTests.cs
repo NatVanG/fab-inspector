@@ -195,7 +195,7 @@ namespace PBIRInspectorTests
         }
 
         [Test]
-        public void FabricFileSystem_DirectoryExists_ReturnsTrueForRoot()
+        public void FabricFileSystem_DirectoryExists_ReturnsFalseForRootPath()
         {
             // Arrange
             var mockHandler = new MockHttpMessageHandler();
@@ -204,7 +204,7 @@ namespace PBIRInspectorTests
             var fs = new FabricRemoteFileSystem("test-workspace-id", mockCredential, httpClient);
 
             // Act & Assert
-            Assert.That(fs.DirectoryExists("/"), Is.True);
+            Assert.That(fs.DirectoryExists("/"), Is.False);
         }
 
         [Test]

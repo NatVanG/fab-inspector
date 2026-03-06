@@ -1,5 +1,6 @@
 using Azure.Core;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -58,16 +59,22 @@ namespace PBIRInspectorLibrary
         private readonly int _initialRetryDelayMs;
         private readonly int _maxRetryDelayMs;
         
+        // Token caching (#1)
+        private AccessToken _cachedToken;
+        private bool _tokenInitialized;
+        private readonly SemaphoreSlim _tokenSemaphore = new SemaphoreSlim(1, 1);
+        
         // Scope tracking fields (null for workspace-scoped, set for item-scoped)
         private FabricItem _scopedItem;
+        private string? _scopedItemName; // Cached built name (#6)
         
         // Cache for workspace items (lazy loaded once)
         private List<FabricItem>? _workspaceItems;
+        private Dictionary<string, FabricItem>? _workspaceItemsByPath; // Indexed lookup (#2)
         private readonly object _itemsLock = new object();
         
-        // Cache for item definitions (lazy loaded per item)
-        private readonly Dictionary<string, FabricItemDefinition> _itemDefinitions = new Dictionary<string, FabricItemDefinition>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, object> _definitionLocks = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        // Cache for item definitions (lazy loaded per item) - uses ConcurrentDictionary + Lazy (#5)
+        private readonly ConcurrentDictionary<string, Lazy<FabricItemDefinition>> _itemDefinitions = new ConcurrentDictionary<string, Lazy<FabricItemDefinition>>(StringComparer.OrdinalIgnoreCase);
         
         // Cache for workspace folder paths (lazy loaded once)
         private Dictionary<string, string>? _workspaceFolderPaths;
@@ -143,23 +150,46 @@ namespace PBIRInspectorLibrary
             // Eagerly load item metadata to validate itemId and cache item name
             _scopedItem = LoadItemMetadataAsync(itemId).GetAwaiter().GetResult();
             _scopedItem.DirectoryPath = BuildItemDirectoryPath(_scopedItem); // Set directory path to root for item-scoped access
-            //_scopedItemName = item.DisplayName;
+            _scopedItemName = BuildItemName(_scopedItem); // Cache built name to avoid repeated string concat (#6)
         }
 
         #region Private Helper Methods
 
         /// <summary>
-        /// Gets an access token from the credential and configures HTTP client authorization
+        /// Gets an access token from the credential and configures HTTP client authorization.
+        /// Caches token and only refreshes when within 5 minutes of expiry (#1).
         /// </summary>
         private async Task EnsureAuthenticatedAsync()
         {
-            var tokenRequestContext = new TokenRequestContext(new[] { "https://api.fabric.microsoft.com/Workspace.Read.All", "https://api.fabric.microsoft.com/Item.ReadWrite.All" });
-            var token = await _credential.GetTokenAsync(tokenRequestContext, default);
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.Token);
+            // Fast path: token is valid with 5-minute buffer
+            if (_tokenInitialized && _cachedToken.ExpiresOn > DateTimeOffset.UtcNow.AddMinutes(5))
+            {
+                return;
+            }
+
+            await _tokenSemaphore.WaitAsync();
+            try
+            {
+                // Double-check after acquiring lock
+                if (_tokenInitialized && _cachedToken.ExpiresOn > DateTimeOffset.UtcNow.AddMinutes(5))
+                {
+                    return;
+                }
+
+                var tokenRequestContext = new TokenRequestContext(new[] { "https://api.fabric.microsoft.com/.default" });
+                _cachedToken = await _credential.GetTokenAsync(tokenRequestContext, default);
+                _tokenInitialized = true;
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _cachedToken.Token);
+            }
+            finally
+            {
+                _tokenSemaphore.Release();
+            }
         }
 
         /// <summary>
-        /// Ensures workspace items are loaded (lazy loading)
+        /// Ensures workspace items are loaded (lazy loading).
+        /// Also builds an indexed dictionary for O(1) path lookups (#2).
         /// </summary>
         private void EnsureWorkspaceItemsLoaded()
         {
@@ -182,6 +212,17 @@ namespace PBIRInspectorLibrary
                 else
                 {
                     _workspaceItems = LoadWorkspaceItemsAsync().GetAwaiter().GetResult();
+                }
+
+                // Build indexed lookup for O(1) ParsePath and FindItem lookups (#2)
+                _workspaceItemsByPath = new Dictionary<string, FabricItem>(StringComparer.OrdinalIgnoreCase);
+                foreach (var item in _workspaceItems)
+                {
+                    if (!string.IsNullOrEmpty(item.DirectoryPath))
+                    {
+                        var key = NormalizePath(item.DirectoryPath);
+                        _workspaceItemsByPath[key] = item;
+                    }
                 }
             }
         }
@@ -257,15 +298,16 @@ namespace PBIRInspectorLibrary
             if (item == null)
                 return string.Empty;
             
-            EnsureWorkspaceFolderPathsLoaded();
-            
-            // Get folder path if item has a folder ID
+            // Only load folder paths when item actually has a folder (#4)
             var folderPath = string.Empty;
-            if (!string.IsNullOrEmpty(item.FolderId) && 
-                _workspaceFolderPaths != null && 
-                _workspaceFolderPaths.ContainsKey(item.FolderId))
+            if (!string.IsNullOrEmpty(item.FolderId))
             {
-                folderPath = _workspaceFolderPaths[item.FolderId] + Path.AltDirectorySeparatorChar;
+                EnsureWorkspaceFolderPathsLoaded();
+                if (_workspaceFolderPaths != null && 
+                    _workspaceFolderPaths.TryGetValue(item.FolderId, out var path))
+                {
+                    folderPath = path + Path.AltDirectorySeparatorChar;
+                }
             }
             
             return NormalizePath(string.Concat(Path.AltDirectorySeparatorChar, folderPath, BuildItemName(item)));
@@ -350,32 +392,14 @@ namespace PBIRInspectorLibrary
         #endregion
 
         /// <summary>
-        /// Ensures a specific item's definition is loaded (lazy loading per item)
+        /// Ensures a specific item's definition is loaded (lazy loading per item).
+        /// Uses ConcurrentDictionary + Lazy for lock-free thread safety (#5).
         /// </summary>
         private void EnsureItemDefinitionLoaded(string itemId)
         {
-            if (_itemDefinitions.ContainsKey(itemId))
-                return;
-
-            // Get or create lock for this specific item
-            object itemLock;
-            lock (_definitionLocks)
-            {
-                if (!_definitionLocks.ContainsKey(itemId))
-                {
-                    _definitionLocks[itemId] = new object();
-                }
-                itemLock = _definitionLocks[itemId];
-            }
-
-            lock (itemLock)
-            {
-                if (_itemDefinitions.ContainsKey(itemId))
-                    return;
-
-                var definition = LoadItemDefinitionAsync(itemId, CancellationToken.None).GetAwaiter().GetResult();
-                _itemDefinitions[itemId] = definition;
-            }
+            _itemDefinitions.GetOrAdd(itemId, id =>
+                new Lazy<FabricItemDefinition>(() =>
+                    LoadItemDefinitionAsync(id, CancellationToken.None).GetAwaiter().GetResult()));
         }
 
         /// <summary>
@@ -395,7 +419,26 @@ namespace PBIRInspectorLibrary
             
             var url = $"{_baseUrl}/workspaces/{_workspaceId}/items/{itemId}/getDefinition";
             var initialResponse = await _httpClient.PostAsync(url, null, cancellationToken);
-            
+
+            // Handle BadRequest "errorCode":"OperationNotSupportedForItem"
+            if (initialResponse.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                var errorContent = await initialResponse.Content.ReadAsStringAsync();
+                if (errorContent.Contains("OperationNotSupportedForItem", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (_scopedItem != null)
+                    {
+                        throw new NotSupportedException($"GetDefinition operation is not supported for item {itemId}: {errorContent}");
+                    }
+                    else
+                    {
+                        //TODO: skip gracefully and carry on inspecting the rest of the workspace items
+                        return new FabricItemDefinition { Parts = new List<FabricItemPart>() };
+                    }
+                }
+                throw new HttpRequestException($"Failed to load item definition for {itemId}: {initialResponse.StatusCode} - {errorContent}");
+            }
+
             // Handle HTTP 202 (Accepted) - operation is asynchronous
             if (initialResponse.StatusCode == System.Net.HttpStatusCode.Accepted)
             {
@@ -453,6 +496,7 @@ namespace PBIRInspectorLibrary
 
                         if (operationResult != null)
                         {
+                            // TODO: Handle continuation token
                             // Check operation status
                             if (string.Equals(operationResult.Status, "Succeeded", StringComparison.OrdinalIgnoreCase))
                             {
@@ -562,26 +606,19 @@ namespace PBIRInspectorLibrary
             if (string.IsNullOrEmpty(normalizedPath))
                 return (string.Empty, string.Empty);
 
-            // Try to match against known workspace item directory paths
-            // This handles folder structures properly
-            foreach (var workspaceItem in _workspaceItems!)
+            // Try exact match first - O(1) dictionary lookup (#2)
+            if (_workspaceItemsByPath!.ContainsKey(normalizedPath))
+                return (normalizedPath, string.Empty);
+
+            // Try prefix match: progressively shorten path to find item boundary
+            var separatorIndex = normalizedPath.Length;
+            while ((separatorIndex = normalizedPath.LastIndexOf(Path.AltDirectorySeparatorChar, separatorIndex - 1)) > 0)
             {
-                if (string.IsNullOrEmpty(workspaceItem.DirectoryPath))
-                    continue;
-
-                var normalizedItemPath = NormalizePath(workspaceItem.DirectoryPath);
-
-                // Check if the path starts with this item's directory path
-                if (normalizedPath.Equals(normalizedItemPath, StringComparison.OrdinalIgnoreCase))
+                var candidate = normalizedPath.Substring(0, separatorIndex);
+                if (_workspaceItemsByPath.ContainsKey(candidate))
                 {
-                    // Exact match - this is the item directory itself
-                    return (normalizedItemPath, string.Empty);
-                }
-                else if (normalizedPath.StartsWith(normalizedItemPath + Path.AltDirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
-                {
-                    // Path is within this item's directory
-                    var partPath = normalizedPath.Substring(normalizedItemPath.Length + 1);
-                    return (normalizedItemPath, partPath);
+                    var partPath = normalizedPath.Substring(separatorIndex + 1);
+                    return (candidate, partPath);
                 }
             }
 
@@ -599,19 +636,28 @@ namespace PBIRInspectorLibrary
         }
 
         /// <summary>
-        /// Finds an item by name (case-insensitive)
+        /// Finds an item by name (case-insensitive).
+        /// Callers must ensure EnsureWorkspaceItemsLoaded has been called (#3).
+        /// Uses cached name (#6) and dictionary lookup (#2).
         /// </summary>
         private FabricItem? FindItem(string itemName)
         { 
-            EnsureWorkspaceItemsLoaded();
-            
-            // If scoped to a single item, only return it if the name matches
-            if (_scopedItem != null && !string.Equals(BuildItemName(_scopedItem), itemName, StringComparison.OrdinalIgnoreCase))
+            // Fast path for scoped item - uses cached name (#6)
+            if (_scopedItem != null)
             {
-                return null;
+                return string.Equals(_scopedItem.DirectoryPath, itemName, StringComparison.OrdinalIgnoreCase) 
+                    || string.Equals(_scopedItemName, itemName, StringComparison.OrdinalIgnoreCase)
+                    ? _scopedItem 
+                    : null;
             }
             
-            return _workspaceItems!.FirstOrDefault(i => string.Equals(i.DirectoryPath, itemName, StringComparison.OrdinalIgnoreCase));
+            // O(1) dictionary lookup instead of linear scan (#2)
+            if (_workspaceItemsByPath != null && _workspaceItemsByPath.TryGetValue(itemName, out var item))
+            {
+                return item;
+            }
+            
+            return null;
         }
 
         /// <summary>
@@ -620,7 +666,7 @@ namespace PBIRInspectorLibrary
         private FabricItemPart? FindPart(string itemId, string partPath)
         {
             EnsureItemDefinitionLoaded(itemId);
-            var definition = _itemDefinitions[itemId];
+            var definition = _itemDefinitions[itemId].Value;
             return definition.Parts?.FirstOrDefault(p => string.Equals(p.Path, partPath, StringComparison.OrdinalIgnoreCase));
         }
 
@@ -701,7 +747,7 @@ namespace PBIRInspectorLibrary
 
                 // Check if this is a subdirectory by seeing if any parts start with this path
                 EnsureItemDefinitionLoaded(item.Id);
-                var definition = _itemDefinitions[item.Id];
+                var definition = _itemDefinitions[item.Id].Value;
                 var normalizedPartPath = NormalizePath(partPath) + Path.AltDirectorySeparatorChar;
                 
                 return definition.Parts?.Any(p => p.Path?.StartsWith(normalizedPartPath, StringComparison.OrdinalIgnoreCase) ?? false) ?? false;
@@ -740,6 +786,7 @@ namespace PBIRInspectorLibrary
             }
 
             // Decode base64 payload
+            // TODO: cache decoded base64 payload?
             if (part.PayloadType == "InlineBase64" && !string.IsNullOrEmpty(part.Payload))
             {
                 return DecodeBase64(part.Payload);
@@ -771,7 +818,7 @@ namespace PBIRInspectorLibrary
             }
 
             EnsureItemDefinitionLoaded(item.Id);
-            var definition = _itemDefinitions[item.Id];
+            var definition = _itemDefinitions[item.Id].Value;
 
             if (definition.Parts == null)
                 return results;
@@ -841,7 +888,7 @@ namespace PBIRInspectorLibrary
             }
 
             EnsureItemDefinitionLoaded(item.Id);
-            var definition = _itemDefinitions[item.Id];
+            var definition = _itemDefinitions[item.Id].Value;
 
             if (definition.Parts == null)
                 return new List<string>();
@@ -957,12 +1004,14 @@ namespace PBIRInspectorLibrary
             lock (_itemsLock)
             {
                 _workspaceItems = null;
+                _workspaceItemsByPath = null; // Clear indexed lookup (#2)
                 
                 // If scoped to a single item, also refresh the item metadata
                 if (_scopedItem != null)
                 {
                     var item = LoadItemMetadataAsync(_scopedItem.Id).GetAwaiter().GetResult();
                     _scopedItem = item;
+                    _scopedItemName = BuildItemName(_scopedItem); // Refresh cached name (#6)
                 }
             }
             EnsureWorkspaceItemsLoaded();
@@ -973,10 +1022,7 @@ namespace PBIRInspectorLibrary
         /// </summary>
         public void RefreshItemDefinition(string itemId)
         {
-            lock (_definitionLocks)
-            {
-                _itemDefinitions.Remove(itemId);
-            }
+            _itemDefinitions.TryRemove(itemId, out _); // Thread-safe removal (#5)
             EnsureItemDefinitionLoaded(itemId);
         }
 

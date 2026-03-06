@@ -687,6 +687,124 @@ namespace PBIRInspectorTests
                 && string.IsNullOrEmpty(parsedArgs.FabricWorkspaceId));
         }
 
+        // Parallel execution with remote auth validation tests (lines 90-94 of ArgsUtils.cs)
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_ParallelWithDeviceCodeAuth()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id -parallel true".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+            
+            Assert.That(ex.Message.Contains("Parallel execution is not supported when using remote authentication methods"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_ParallelWithInteractiveAuth()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -parallel true".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+            
+            Assert.That(ex.Message.Contains("Parallel execution is not supported when using remote authentication methods"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_ParallelWithClientSecretAuth()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod clientsecret -tenantid test-tenant-id -clientid test-client-id -clientsecret test-secret -parallel true".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+            
+            Assert.That(ex.Message.Contains("Parallel execution is not supported when using remote authentication methods"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_ParallelWithLocalAuth()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -parallel true".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("local", StringComparison.OrdinalIgnoreCase) 
+                && parsedArgs.Parallel);
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_ParallelWithLocalAuthExplicit()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod local -parallel true".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("local", StringComparison.OrdinalIgnoreCase) 
+                && parsedArgs.Parallel);
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_NoParallelWithDeviceCodeAuth()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase) 
+                && !parsedArgs.Parallel);
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_NoParallelWithInteractiveAuth()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("interactive", StringComparison.OrdinalIgnoreCase) 
+                && !parsedArgs.Parallel);
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_NoParallelWithClientSecretAuth()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod clientsecret -tenantid test-tenant-id -clientid test-client-id -clientsecret test-secret".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("clientsecret", StringComparison.OrdinalIgnoreCase) 
+                && !parsedArgs.Parallel);
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_ParallelFalseWithDeviceCodeAuth()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id -parallel false".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase) 
+                && !parsedArgs.Parallel);
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_ParallelFalseWithInteractiveAuth()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -parallel false".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("interactive", StringComparison.OrdinalIgnoreCase) 
+                && !parsedArgs.Parallel);
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_ParallelFalseWithClientSecretAuth()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod clientsecret -tenantid test-tenant-id -clientid test-client-id -clientsecret test-secret -parallel false".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("clientsecret", StringComparison.OrdinalIgnoreCase) 
+                && !parsedArgs.Parallel);
+        }
+
 
     }
 }

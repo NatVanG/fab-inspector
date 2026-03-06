@@ -1,22 +1,30 @@
-﻿using PBIRInspectorClientLibrary.Utils;
+﻿using Azure.Core;
+using PBIRInspectorClientLibrary.Utils;
 using PBIRInspectorLibrary;
 using PBIRInspectorLibrary.Exceptions;
 using PBIRInspectorLibrary.Output;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Threading;
-using Azure.Core;
 
 namespace PBIRInspectorClientLibrary
 {
     public class Main
     {
         public static event EventHandler<MessageIssuedEventArgs>? WinMessageIssued;
-        private static TokenCredential? _credential = null;
+        
         private static Args? _args = null;
         private static int _errorCount = 0;
         private static int _warningCount = 0;
+        // Token caching (#1)
+        private static readonly HttpClient _httpClient = new HttpClient();
+        private static TokenCredential? _credential = null;
+        private static AccessToken _cachedToken;
+        private static bool _tokenInitialized;
+        private static readonly SemaphoreSlim _tokenSemaphore = new SemaphoreSlim(1, 1);
 
         public static int ErrorCount
         {
@@ -122,7 +130,10 @@ namespace PBIRInspectorClientLibrary
                             throw new ArgumentException($"Unsupported authentication method: {args.AuthMethod}");
                     }
 
+                    //authenticate here
+                    await Main.EnsureAuthenticatedAsync();
                     OnMessageIssued(MessageTypeEnum.Information, "Authentication successful.");
+
                 }
                 catch (Exception ex)
                 {
@@ -138,6 +149,42 @@ namespace PBIRInspectorClientLibrary
             else
             {
                 RunParallel(args, pageRenderer, registries);
+            }
+        }
+
+        /// <summary>
+        /// Gets an access token from the credential and configures HTTP client authorization.
+        /// Caches token and only refreshes when within 5 minutes of expiry (#1).
+        /// </summary>
+        private static async Task EnsureAuthenticatedAsync()
+        {
+            // Fast path: token is valid with 5-minute buffer
+            if (_tokenInitialized && _cachedToken.ExpiresOn > DateTimeOffset.UtcNow.AddMinutes(5))
+            {
+                return;
+            }
+
+            await _tokenSemaphore.WaitAsync();
+            try
+            {
+                // Double-check after acquiring lock
+                if (_tokenInitialized && _cachedToken.ExpiresOn > DateTimeOffset.UtcNow.AddMinutes(5))
+                {
+                    return;
+                }
+
+                var tokenRequestContext = new TokenRequestContext(new[] { "https://api.fabric.microsoft.com/.default" });
+                _cachedToken = await _credential.GetTokenAsync(tokenRequestContext, default);
+                _tokenInitialized = true;
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _cachedToken.Token);
+                if (!_httpClient.DefaultRequestHeaders.Accept.Contains(new MediaTypeWithQualityHeaderValue("application/json")))
+                {
+                    _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                }
+            }
+            finally
+            {
+                _tokenSemaphore.Release();
             }
         }
 
@@ -215,11 +262,11 @@ namespace PBIRInspectorClientLibrary
                     {
                         throw new InvalidOperationException("Authentication credential is required for Fabric workspace access.");
                     }
-                    
+
                     // Item-scoped vs workspace-scoped mode
                     fileSystem = string.IsNullOrWhiteSpace(Main._args.PBIFilePath)
-                        ? new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._credential)
-                        : new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._args.PBIFilePath, Main._credential);
+                        ? new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._credential, Main._httpClient)
+                        : new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._args.PBIFilePath, Main._credential, Main._httpClient);
                 }
                 else
                 {

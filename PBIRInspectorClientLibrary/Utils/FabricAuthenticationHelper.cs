@@ -1,7 +1,5 @@
 using Azure.Core;
 using Azure.Identity;
-using System.Text.Json;
-using static System.Net.WebRequestMethods;
 
 namespace PBIRInspectorClientLibrary.Utils
 {
