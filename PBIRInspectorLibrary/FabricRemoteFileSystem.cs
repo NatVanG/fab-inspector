@@ -259,29 +259,51 @@ namespace PBIRInspectorLibrary
         }
 
         /// <summary>
-        /// Loads all items in the workspace from Fabric REST API
+        /// Loads all items in the workspace from Fabric REST API, handling pagination via continuation tokens.
         /// </summary>
         private async Task<List<FabricItem>> LoadWorkspaceItemsAsync()
         {
             await EnsureAuthenticatedAsync();
-            
-            var url = $"{_baseUrl}/workspaces/{_workspaceId}/items";
-            var response = await _httpClient.GetAsync(url);
-            
-            if (!response.IsSuccessStatusCode)
+
+            var allItems = new List<FabricItem>();
+            string? nextUrl = $"{_baseUrl}/workspaces/{_workspaceId}/items";
+
+            while (nextUrl != null)
             {
-                throw new HttpRequestException($"Failed to load workspace items: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
+                var response = await _httpClient.GetAsync(nextUrl);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new HttpRequestException($"Failed to load workspace items: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+                var result = JsonSerializer.Deserialize<FabricItemsResponse>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (result?.Value != null)
+                {
+                    result.Value.ForEach(item => item.DirectoryPath = BuildItemDirectoryPath(item));
+                    allItems.AddRange(result.Value);
+                }
+
+                if (!string.IsNullOrEmpty(result?.ContinuationUri))
+                {
+                    nextUrl = result.ContinuationUri;
+                }
+                else if (!string.IsNullOrEmpty(result?.ContinuationToken))
+                {
+                    nextUrl = $"{_baseUrl}/workspaces/{_workspaceId}/items?continuationToken={Uri.EscapeDataString(result.ContinuationToken)}";
+                }
+                else
+                {
+                    nextUrl = null;
+                }
             }
 
-            var json = await response.Content.ReadAsStringAsync();
-            var result = JsonSerializer.Deserialize<FabricItemsResponse>(json, new JsonSerializerOptions 
-            { 
-                PropertyNameCaseInsensitive = true 
-            });
-
-            result?.Value?.ForEach(item => item.DirectoryPath = BuildItemDirectoryPath(item));
-
-            return result?.Value ?? new List<FabricItem>();
+            return allItems;
         }
 
 
@@ -328,42 +350,64 @@ namespace PBIRInspectorLibrary
         }
 
         /// <summary>
-        /// Loads all folders in the workspace from Fabric REST API and builds hierarchical paths
+        /// Loads all folders in the workspace from Fabric REST API and builds hierarchical paths,
+        /// handling pagination via continuation tokens.
         /// </summary>
         private async Task<Dictionary<string, string>> LoadWorkspaceFolderPathsAsync()
         {
             await EnsureAuthenticatedAsync();
-            
-            var url = $"{_baseUrl}/workspaces/{_workspaceId}/folders";
-            var response = await _httpClient.GetAsync(url);
-            
-            if (!response.IsSuccessStatusCode)
+
+            var allFolders = new List<FabricFolder>();
+            string? nextUrl = $"{_baseUrl}/workspaces/{_workspaceId}/folders";
+
+            while (nextUrl != null)
             {
-                // If folders API is not available or fails, return empty dictionary
-                // This ensures backward compatibility if the API endpoint doesn't exist
-                return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                var response = await _httpClient.GetAsync(nextUrl);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    // If folders API is not available or fails, return empty dictionary
+                    // This ensures backward compatibility if the API endpoint doesn't exist
+                    return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                }
+
+                var json = await response.Content.ReadAsStringAsync();
+                var result = JsonSerializer.Deserialize<FabricFoldersResponse>(json, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                if (result?.Value != null)
+                {
+                    allFolders.AddRange(result.Value);
+                }
+
+                if (!string.IsNullOrEmpty(result?.ContinuationUri))
+                {
+                    nextUrl = result.ContinuationUri;
+                }
+                else if (!string.IsNullOrEmpty(result?.ContinuationToken))
+                {
+                    nextUrl = $"{_baseUrl}/workspaces/{_workspaceId}/folders?continuationToken={Uri.EscapeDataString(result.ContinuationToken)}";
+                }
+                else
+                {
+                    nextUrl = null;
+                }
             }
 
-            var json = await response.Content.ReadAsStringAsync();
-            var result = JsonSerializer.Deserialize<FabricFoldersResponse>(json, new JsonSerializerOptions 
-            { 
-                PropertyNameCaseInsensitive = true 
-            });
-
-            var folders = result?.Value ?? new List<FabricFolder>();
-            
             // Build hierarchical paths
             var folderPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            
+
             // Create a lookup dictionary for quick parent access
-            var folderLookup = folders.ToDictionary(f => f.Id, f => f, StringComparer.OrdinalIgnoreCase);
-            
+            var folderLookup = allFolders.ToDictionary(f => f.Id, f => f, StringComparer.OrdinalIgnoreCase);
+
             // Build path for each folder
-            foreach (var folder in folders)
+            foreach (var folder in allFolders)
             {
                 folderPaths[folder.Id] = BuildFolderPath(folder, folderLookup);
             }
-            
+
             return folderPaths;
         }
 
@@ -1102,6 +1146,8 @@ namespace PBIRInspectorLibrary
         private class FabricItemsResponse
         {
             public List<FabricItem>? Value { get; set; }
+            public string? ContinuationToken { get; set; }
+            public string? ContinuationUri { get; set; }
         }
 
         private class FabricItemDefinitionResponse
@@ -1166,6 +1212,8 @@ namespace PBIRInspectorLibrary
         private class FabricFoldersResponse
         {
             public List<FabricFolder>? Value { get; set; }
+            public string? ContinuationToken { get; set; }
+            public string? ContinuationUri { get; set; }
         }
 
         /// <summary>
