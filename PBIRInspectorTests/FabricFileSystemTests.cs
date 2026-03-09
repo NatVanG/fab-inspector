@@ -1410,5 +1410,299 @@ namespace PBIRInspectorTests
         }
 
         #endregion
+
+        #region Pagination Tests
+
+        [Test]
+        public void FabricFileSystem_LoadWorkspaceItems_PaginatesWithContinuationToken()
+        {
+            // Arrange
+            var mockHandler = new MockHttpMessageHandler();
+
+            // Page 1: returns 2 items with continuationToken
+            var page1Response = new
+            {
+                value = new[]
+                {
+                    new { id = "item1", displayName = "Report1", type = "Report", workspaceId = "test-workspace-id" },
+                    new { id = "item2", displayName = "Report2", type = "Report", workspaceId = "test-workspace-id" }
+                },
+                continuationToken = "token-page2"
+            };
+            mockHandler.AddResponse(
+                "https://api.fabric.microsoft.com/v1/workspaces/test-workspace-id/items",
+                HttpStatusCode.OK,
+                JsonSerializer.Serialize(page1Response)
+            );
+
+            // Page 2: returns 1 item with no continuation
+            var page2Response = new
+            {
+                value = new[]
+                {
+                    new { id = "item3", displayName = "Report3", type = "Report", workspaceId = "test-workspace-id" }
+                }
+            };
+            mockHandler.AddResponse(
+                "https://api.fabric.microsoft.com/v1/workspaces/test-workspace-id/items?continuationToken=token-page2",
+                HttpStatusCode.OK,
+                JsonSerializer.Serialize(page2Response)
+            );
+
+            var httpClient = new HttpClient(mockHandler);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricRemoteFileSystem("test-workspace-id", mockCredential, httpClient);
+
+            // Act
+            var directories = fs.GetDirectories("").ToList();
+
+            // Assert - all 3 items from both pages should be present
+            Assert.That(directories, Has.Count.EqualTo(3));
+            Assert.That(directories, Does.Contain("Report1"));
+            Assert.That(directories, Does.Contain("Report2"));
+            Assert.That(directories, Does.Contain("Report3"));
+        }
+
+        [Test]
+        public void FabricFileSystem_LoadWorkspaceItems_PaginatesWithContinuationUri()
+        {
+            // Arrange
+            var mockHandler = new MockHttpMessageHandler();
+
+            var continuationUri = "https://api.fabric.microsoft.com/v1/workspaces/test-workspace-id/items?skipToken=abc123";
+
+            // Page 1: returns 2 items with continuationUri
+            var page1Response = new
+            {
+                value = new[]
+                {
+                    new { id = "item1", displayName = "Report1", type = "Report", workspaceId = "test-workspace-id" },
+                    new { id = "item2", displayName = "Pipeline1", type = "DataPipeline", workspaceId = "test-workspace-id" }
+                },
+                continuationUri
+            };
+            mockHandler.AddResponse(
+                "https://api.fabric.microsoft.com/v1/workspaces/test-workspace-id/items",
+                HttpStatusCode.OK,
+                JsonSerializer.Serialize(page1Response)
+            );
+
+            // Page 2: returns 1 item with no continuation
+            var page2Response = new
+            {
+                value = new[]
+                {
+                    new { id = "item3", displayName = "Lakehouse1", type = "Lakehouse", workspaceId = "test-workspace-id" }
+                }
+            };
+            mockHandler.AddResponse(
+                continuationUri,
+                HttpStatusCode.OK,
+                JsonSerializer.Serialize(page2Response)
+            );
+
+            var httpClient = new HttpClient(mockHandler);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricRemoteFileSystem("test-workspace-id", mockCredential, httpClient);
+
+            // Act
+            var directories = fs.GetDirectories("").ToList();
+
+            // Assert - all 3 items from both pages should be present
+            Assert.That(directories, Has.Count.EqualTo(3));
+            Assert.That(directories, Does.Contain("Report1"));
+            Assert.That(directories, Does.Contain("Pipeline1"));
+            Assert.That(directories, Does.Contain("Lakehouse1"));
+        }
+
+        [Test]
+        public void FabricFileSystem_LoadWorkspaceItems_PaginatesMultiplePages()
+        {
+            // Arrange
+            var mockHandler = new MockHttpMessageHandler();
+
+            // Page 1
+            var page1Response = new
+            {
+                value = new[]
+                {
+                    new { id = "item1", displayName = "Report1", type = "Report", workspaceId = "test-workspace-id" }
+                },
+                continuationToken = "token-page2"
+            };
+            mockHandler.AddResponse(
+                "https://api.fabric.microsoft.com/v1/workspaces/test-workspace-id/items",
+                HttpStatusCode.OK,
+                JsonSerializer.Serialize(page1Response)
+            );
+
+            // Page 2
+            var page2Response = new
+            {
+                value = new[]
+                {
+                    new { id = "item2", displayName = "Report2", type = "Report", workspaceId = "test-workspace-id" }
+                },
+                continuationToken = "token-page3"
+            };
+            mockHandler.AddResponse(
+                "https://api.fabric.microsoft.com/v1/workspaces/test-workspace-id/items?continuationToken=token-page2",
+                HttpStatusCode.OK,
+                JsonSerializer.Serialize(page2Response)
+            );
+
+            // Page 3 (final)
+            var page3Response = new
+            {
+                value = new[]
+                {
+                    new { id = "item3", displayName = "Report3", type = "Report", workspaceId = "test-workspace-id" }
+                }
+            };
+            mockHandler.AddResponse(
+                "https://api.fabric.microsoft.com/v1/workspaces/test-workspace-id/items?continuationToken=token-page3",
+                HttpStatusCode.OK,
+                JsonSerializer.Serialize(page3Response)
+            );
+
+            var httpClient = new HttpClient(mockHandler);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricRemoteFileSystem("test-workspace-id", mockCredential, httpClient);
+
+            // Act
+            var directories = fs.GetDirectories("").ToList();
+
+            // Assert - all 3 items from 3 pages should be present
+            Assert.That(directories, Has.Count.EqualTo(3));
+            Assert.That(directories, Does.Contain("Report1"));
+            Assert.That(directories, Does.Contain("Report2"));
+            Assert.That(directories, Does.Contain("Report3"));
+        }
+
+        [Test]
+        public void FabricFileSystem_LoadWorkspaceFolderPaths_PaginatesWithContinuationToken()
+        {
+            // Arrange
+            var mockHandler = new MockHttpMessageHandler();
+
+            // Workspace items response with items that have folder IDs
+            var workspaceItemsResponse = new
+            {
+                value = new[]
+                {
+                    new { id = "item1", displayName = "Report1", type = "Report", workspaceId = "test-workspace-id", folderId = "folder2" }
+                }
+            };
+            mockHandler.AddResponse(
+                "https://api.fabric.microsoft.com/v1/workspaces/test-workspace-id/items",
+                HttpStatusCode.OK,
+                JsonSerializer.Serialize(workspaceItemsResponse)
+            );
+
+            // Folders page 1: parent folder with continuationToken
+            var foldersPage1 = new
+            {
+                value = new[]
+                {
+                    new { id = "folder1", displayName = "ParentFolder", parentFolderId = (string?)null }
+                },
+                continuationToken = "folder-token-page2"
+            };
+            mockHandler.AddResponse(
+                "https://api.fabric.microsoft.com/v1/workspaces/test-workspace-id/folders",
+                HttpStatusCode.OK,
+                JsonSerializer.Serialize(foldersPage1)
+            );
+
+            // Folders page 2: child folder (no continuation)
+            var foldersPage2 = new
+            {
+                value = new[]
+                {
+                    new { id = "folder2", displayName = "ChildFolder", parentFolderId = "folder1" }
+                }
+            };
+            mockHandler.AddResponse(
+                "https://api.fabric.microsoft.com/v1/workspaces/test-workspace-id/folders?continuationToken=folder-token-page2",
+                HttpStatusCode.OK,
+                JsonSerializer.Serialize(foldersPage2)
+            );
+
+            var httpClient = new HttpClient(mockHandler);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricRemoteFileSystem("test-workspace-id", mockCredential, httpClient);
+
+            // Act - DirectoryExists triggers loading items, which triggers loading folders for items with FolderIds
+            bool exists = fs.DirectoryExists("ParentFolder/ChildFolder/Report1.Report");
+
+            // Assert - the item should be found at the correct folder path
+            Assert.That(exists, Is.True);
+        }
+
+        [Test]
+        public void FabricFileSystem_LoadWorkspaceFolderPaths_PaginatesWithContinuationUri()
+        {
+            // Arrange
+            var mockHandler = new MockHttpMessageHandler();
+
+            var folderContinuationUri = "https://api.fabric.microsoft.com/v1/workspaces/test-workspace-id/folders?skipToken=folderPage2";
+
+            // Workspace items response with items that have folder IDs
+            var workspaceItemsResponse = new
+            {
+                value = new[]
+                {
+                    new { id = "item1", displayName = "Report1", type = "Report", workspaceId = "test-workspace-id", folderId = "folder2" }
+                }
+            };
+            mockHandler.AddResponse(
+                "https://api.fabric.microsoft.com/v1/workspaces/test-workspace-id/items",
+                HttpStatusCode.OK,
+                JsonSerializer.Serialize(workspaceItemsResponse)
+            );
+
+            // Folders page 1: parent folder with continuationUri
+            var foldersPage1 = new
+            {
+                value = new[]
+                {
+                    new { id = "folder1", displayName = "ParentFolder", parentFolderId = (string?)null }
+                },
+                continuationUri = folderContinuationUri
+            };
+            mockHandler.AddResponse(
+                "https://api.fabric.microsoft.com/v1/workspaces/test-workspace-id/folders",
+                HttpStatusCode.OK,
+                JsonSerializer.Serialize(foldersPage1)
+            );
+
+            // Folders page 2: child folder (no continuation)
+            var foldersPage2 = new
+            {
+                value = new[]
+                {
+                    new { id = "folder2", displayName = "ChildFolder", parentFolderId = "folder1" }
+                }
+            };
+            mockHandler.AddResponse(
+                folderContinuationUri,
+                HttpStatusCode.OK,
+                JsonSerializer.Serialize(foldersPage2)
+            );
+
+            var httpClient = new HttpClient(mockHandler);
+            var mockCredential = new MockTokenCredential();
+            var fs = new FabricRemoteFileSystem("test-workspace-id", mockCredential, httpClient);
+
+            // Act
+            bool exists = fs.DirectoryExists("ParentFolder/ChildFolder/Report1.Report");
+
+            // Assert
+            Assert.That(exists, Is.True);
+        }
+
+        #endregion
+
+       
     }
 }
