@@ -117,7 +117,7 @@ namespace PBIRInspectorClientLibrary.Utils
 
             return new Args 
             { 
-                PBIFilePath = pbiFilePath, 
+                FabricItem = pbiFilePath, 
                 RulesFilePath = rulesPath, 
                 OutputPath = outputPath, 
                 FormatsString = formatsString, 

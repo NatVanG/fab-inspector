@@ -1,5 +1,6 @@
 using Azure.Core;
 using Azure.Identity;
+using PBIRInspectorLibrary;
 
 namespace PBIRInspectorClientLibrary.Utils
 {
@@ -7,14 +8,8 @@ namespace PBIRInspectorClientLibrary.Utils
     /// Helper class for authenticating with Microsoft Fabric REST API
     /// </summary>
     public static class FabricAuthenticationHelper
-    {
-        /// <summary>
-        /// Required scopes for Microsoft Fabric REST API
-        /// </summary>
-        private static readonly string[] FabricScopes = new[]
-        {
-            "https://api.fabric.microsoft.com/Workspace.Read.All", "https://api.fabric.microsoft.com/Item.ReadWrite.All"
-        };
+    { 
+
 
         /// <summary>
         /// Creates a device code credential with Fabric API scopes
@@ -104,11 +99,12 @@ namespace PBIRInspectorClientLibrary.Utils
         /// </summary>
         /// <param name="credential">TokenCredential to use</param>
         /// <returns>Access token string</returns>
-        public static async Task<string> GetAccessTokenAsync(TokenCredential credential)
-        {
-            var tokenRequestContext = new TokenRequestContext(FabricScopes);
-            var token = await credential.GetTokenAsync(tokenRequestContext, CancellationToken.None);
-            return token.Token;
-        }
+        //public static async Task<string> GetAccessTokenAsync(TokenCredential credential)
+        //{
+        //    var tokenRequestContext = new TokenRequestContext(AuthenticationHelper.FabricScopes);
+        //    var token = await credential.GetTokenAsync(tokenRequestContext, CancellationToken.None);
+        //    return token.Token;
+        //}
+
     }
 }

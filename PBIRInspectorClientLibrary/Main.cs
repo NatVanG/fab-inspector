@@ -60,7 +60,7 @@ namespace PBIRInspectorClientLibrary
 
             string resolvedPbiFilePath = string.Empty;
 
-            var args = new Args { PBIFilePath = pbiFilePath, RulesFilePath = rulesFilePath, OutputPath = outputPath, FormatsString = formatsString, VerboseString = verboseString, ParallelString = parallelString };
+            var args = new Args { FabricItem = pbiFilePath, RulesFilePath = rulesFilePath, OutputPath = outputPath, FormatsString = formatsString, VerboseString = verboseString, ParallelString = parallelString };
 
             Run(args, pageRenderer, registries);
         }
@@ -173,7 +173,7 @@ namespace PBIRInspectorClientLibrary
                     return;
                 }
 
-                var tokenRequestContext = new TokenRequestContext(new[] { "https://api.fabric.microsoft.com/.default" });
+                var tokenRequestContext = new TokenRequestContext(AuthenticationHelper.FabricScopes);
                 _cachedToken = await _credential.GetTokenAsync(tokenRequestContext, default);
                 _tokenInitialized = true;
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _cachedToken.Token);
@@ -181,6 +181,11 @@ namespace PBIRInspectorClientLibrary
                 {
                     _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 }
+
+                // Expose the authenticated client and credential context for JSON Logic operators (e.g. daxquery)
+                PBIRInspectorLibrary.Part.ContextService.HttpClient = _httpClient;
+                PBIRInspectorLibrary.Part.ContextService.Credential = _credential;
+                
             }
             finally
             {
@@ -194,6 +199,8 @@ namespace PBIRInspectorClientLibrary
             IEnumerable<TestResult> testResults = null;
             
             OnMessageIssued(MessageTypeEnum.Information, string.Concat("Test run started at (UTC): ", DateTime.Now.ToUniversalTime()));
+
+            SetPartContext();
 
             var rules = DeserialiseRulesFromPath(Main._args.RulesFilePath);
             testResults = RunSingleThreaded(rules, registries);
@@ -212,6 +219,9 @@ namespace PBIRInspectorClientLibrary
         public static void RunParallel(Args args, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
             _args = args;
+
+            SetPartContext();
+
             var rules = DeserialiseRulesFromPath(Main._args.RulesFilePath);
             var ruleBuckets = ChunkInspectionRules(rules);
             var globalResults = new ConcurrentBag<TestResult>();
@@ -230,6 +240,15 @@ namespace PBIRInspectorClientLibrary
 
             OutputResults(globalResults.ToList().OrderBy(_ => _.RuleId), pageRenderer, registries);
             OnMessageIssued(MessageTypeEnum.Complete, string.Concat("Test run completed at (UTC): ", DateTime.Now.ToUniversalTime()));
+        }
+
+        private static void SetPartContext()
+        {
+            if (_args != null)
+            {
+                PBIRInspectorLibrary.Part.ContextService.FabricWorkspaceId = _args.FabricWorkspaceId;
+                PBIRInspectorLibrary.Part.ContextService.FabricItem = _args.FabricItem;
+            }
         }
 
         private static List<InspectionRules> ChunkInspectionRules(InspectionRules rules)
@@ -264,14 +283,14 @@ namespace PBIRInspectorClientLibrary
                     }
 
                     // Item-scoped vs workspace-scoped mode
-                    fileSystem = string.IsNullOrWhiteSpace(Main._args.PBIFilePath)
+                    fileSystem = string.IsNullOrWhiteSpace(Main._args.FabricItem)
                         ? new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._credential, Main._httpClient)
-                        : new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._args.PBIFilePath, Main._credential, Main._httpClient);
+                        : new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._args.FabricItem, Main._credential, Main._httpClient);
                 }
                 else
                 {
                     // Use PhysicalFileSystem with the specified path
-                    fileSystem = new FabricLocalFileSystem(Main._args.PBIFilePath ?? string.Empty);
+                    fileSystem = new FabricLocalFileSystem(Main._args.FabricItem ?? string.Empty);
                 }
                 
                 insp = new Inspector(rules, registries, fileSystem);
@@ -345,7 +364,7 @@ namespace PBIRInspectorClientLibrary
             if (!(Main._args.ADOOutput || Main._args.GITHUBOutput) && (Main._args.JSONOutput || Main._args.HTMLOutput))
             {
                 var outputFilePath = string.Empty;
-                var pbiFileNameWOextension = Path.GetFileNameWithoutExtension(Main._args.PBIFilePath);
+                var pbiFileNameWOextension = Path.GetFileNameWithoutExtension(Main._args.FabricItem);
 
                 if (!string.IsNullOrEmpty(Main._args.OutputDirPath))
                 {
@@ -356,7 +375,7 @@ namespace PBIRInspectorClientLibrary
                     throw new ArgumentException("Directory with path \"{0}\" does not exist", Main._args.OutputDirPath);
                 }
 
-                var testRun = new TestRun() { CompletionTime = DateTime.Now, TestedFilePath = Main._args.PBIFilePath, RulesFilePath = Main._args.RulesFilePath, Verbose = Main._args.Verbose, Results = testResults };
+                var testRun = new TestRun() { CompletionTime = DateTime.Now, TestedFilePath = Main._args.FabricItem, RulesFilePath = Main._args.RulesFilePath, Verbose = Main._args.Verbose, Results = testResults };
                 jsonTestRun = JsonSerializer.Serialize(testRun);
                 if (Main._args.JSONOutput)
                 {
@@ -368,7 +387,7 @@ namespace PBIRInspectorClientLibrary
             if (!(Main._args.ADOOutput || Main._args.GITHUBOutput) && (Main._args.PNGOutput || Main._args.HTMLOutput))
             {
                 // Create file system for field map inspection
-                IFabricFileSystem fieldMapFileSystem = new FabricLocalFileSystem(Main._args.PBIFilePath ?? string.Empty);
+                IFabricFileSystem fieldMapFileSystem = new FabricLocalFileSystem(Main._args.FabricItem ?? string.Empty);
                 var fieldMapPathRules = DeserialiseRulesFromPath(Constants.ReportPageFieldMapFilePath);
                 fieldMapInsp = new Inspector(fieldMapPathRules, registries, fieldMapFileSystem);
 

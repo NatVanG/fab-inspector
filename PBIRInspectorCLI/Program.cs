@@ -74,7 +74,9 @@ internal partial class Program
         registries.Add(new JsonLogicOperatorRegistry(
         new FabInspectorSerializerContext(),
         new IJsonLogicOperator[] {
-                new RectangleOverlapOperator()}));
+                new RectangleOverlapOperator(),
+                new DaxQueryOperator()
+        }));
 
         services.AddTransient<IEnumerable<JsonLogicOperatorRegistry>>(provider => registries);
 

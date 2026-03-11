@@ -52,7 +52,7 @@ namespace PBIRInspectorLibrary
                 {
                     foreach (var fabricItem in fabricItems)
                     {
-                        
+                        ContextService.FabricItem = string.IsNullOrEmpty(fabricItem.FilePath) ? fabricItem.Id : fabricItem.FilePath; //TODO: improve this logic for setting ContextService.FabricItem
                         RunRulesByItemType(testResults, rules, fabricItem.Type, fabricItem.DirectoryPath);
                         RunDeprecatedRulesByItemType(testResults, rules, fabricItem.Type, fabricItem.DirectoryPath);
                     }

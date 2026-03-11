@@ -50,7 +50,7 @@ namespace PBIRInspectorLibrary
                     var itemType = PartUtils.TryGetJsonNodeStringValue(platformNode, "/metadata/type")!.ToLowerInvariant();
                     var fabricItem = new FabricItem
                     {
-                        Id = Guid.NewGuid().ToString(),
+                        Id = Guid.NewGuid().ToString(), //TODO: set to null/empty string?
                         DisplayName = PartUtils.TryGetJsonNodeStringValue(platformNode, "/metadata/displayName") ?? System.IO.Path.GetFileNameWithoutExtension(platformFile),
                         Type = itemType,
                         Description = "",

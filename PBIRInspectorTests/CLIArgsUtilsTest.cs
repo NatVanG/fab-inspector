@@ -29,7 +29,7 @@ namespace PBIRInspectorTests
             string[] args = "-fabricitem fabricitempath -rules rulesPath -verbose true".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.PBIFilePath.Equals("fabricitempath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.Verbose);
+            Assert.That(parsedArgs.FabricItem.Equals("fabricitempath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.Verbose);
         }
 
         [Test]
@@ -38,7 +38,7 @@ namespace PBIRInspectorTests
             string[] args = "-fabricitem fabricitempath -rules rulesPath -output outputPath -formats HTML -overwriteoutput true".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.PBIFilePath.Equals("fabricitempath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.HTMLOutput && parsedArgs.OverwriteOutput);
+            Assert.That(parsedArgs.FabricItem.Equals("fabricitempath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.HTMLOutput && parsedArgs.OverwriteOutput);
         }
 
         [Test]
@@ -47,7 +47,7 @@ namespace PBIRInspectorTests
             string[] args = "-fabricitem fabricitempath -rules rulesPath -output outputPath -formats HTML -overwriteoutput false".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.PBIFilePath.Equals("fabricitempath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.HTMLOutput && !parsedArgs.OverwriteOutput);
+            Assert.That(parsedArgs.FabricItem.Equals("fabricitempath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.HTMLOutput && !parsedArgs.OverwriteOutput);
         }
 
         [Test]
@@ -56,7 +56,7 @@ namespace PBIRInspectorTests
             string[] args = "-fabricitem fabricitempath -rules rulesPath -output outputPath -formats HTML".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.PBIFilePath.Equals("fabricitempath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.HTMLOutput && !parsedArgs.OverwriteOutput);
+            Assert.That(parsedArgs.FabricItem.Equals("fabricitempath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.HTMLOutput && !parsedArgs.OverwriteOutput);
         }
 
         [Test]
@@ -65,7 +65,7 @@ namespace PBIRInspectorTests
             string[] args = "-fabricitem fabricitempath -rules rulesPath -output outputPath -formats Html -OverwriteOutput true".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.PBIFilePath.Equals("fabricitempath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.HTMLOutput && parsedArgs.OverwriteOutput);
+            Assert.That(parsedArgs.FabricItem.Equals("fabricitempath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.HTMLOutput && parsedArgs.OverwriteOutput);
         }
 
 
@@ -75,7 +75,7 @@ namespace PBIRInspectorTests
             string[] args = "-fabricitem fabricitempath -rules rulesPath -verbose true -parallel true".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.PBIFilePath.Equals("fabricitempath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.Verbose && parsedArgs.Parallel);
+            Assert.That(parsedArgs.FabricItem.Equals("fabricitempath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.Verbose && parsedArgs.Parallel);
         }
 
         [Test]
@@ -84,7 +84,7 @@ namespace PBIRInspectorTests
             string[] args = "-pbip pbipPath -rules rulesPath -verbose true".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.PBIFilePath.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.Verbose);
+            Assert.That(parsedArgs.FabricItem.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.Verbose);
         }
 
         [Test]
@@ -93,7 +93,7 @@ namespace PBIRInspectorTests
             string[] args = "-pbipreport pbipPath -rules rulesPath -verbose true".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.PBIFilePath.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.Verbose);
+            Assert.That(parsedArgs.FabricItem.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.Verbose);
         }
 
         [Test]
@@ -102,7 +102,7 @@ namespace PBIRInspectorTests
             string[] args = "-pbipreport pbipPath -rules rulesPath".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.PBIFilePath.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && !parsedArgs.Verbose);
+            Assert.That(parsedArgs.FabricItem.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && !parsedArgs.Verbose);
         }
 
         [Test]
@@ -111,7 +111,7 @@ namespace PBIRInspectorTests
             string[] args = "-pbipreport pbipPath -rules rulesPath -verbose false".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.PBIFilePath.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && !parsedArgs.Verbose);
+            Assert.That(parsedArgs.FabricItem.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && !parsedArgs.Verbose);
         }
 
         [Test]
@@ -120,7 +120,7 @@ namespace PBIRInspectorTests
             string[] args = "-pbipreport pbipPath -rules rulesPath -verbose XYZ".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.PBIFilePath.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && !parsedArgs.Verbose);
+            Assert.That(parsedArgs.FabricItem.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && !parsedArgs.Verbose);
         }
 
         //[Test]
@@ -238,7 +238,7 @@ namespace PBIRInspectorTests
             string[] args = "-pbip pbipPath -rules rulesPath -formats CONSOLE,HTML,PNG,JSON -verbose true".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.PBIFilePath.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.CONSOLEOutput && parsedArgs.HTMLOutput && parsedArgs.PNGOutput && parsedArgs.JSONOutput && parsedArgs.Verbose);
+            Assert.That(parsedArgs.FabricItem.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.CONSOLEOutput && parsedArgs.HTMLOutput && parsedArgs.PNGOutput && parsedArgs.JSONOutput && parsedArgs.Verbose);
         }
 
         [Test]
@@ -247,7 +247,7 @@ namespace PBIRInspectorTests
             string[] args = "-pbip pbipPath -rules rulesPath -verbose true".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.PBIFilePath.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.CONSOLEOutput && !parsedArgs.HTMLOutput && !parsedArgs.PNGOutput && !parsedArgs.JSONOutput && parsedArgs.Verbose);
+            Assert.That(parsedArgs.FabricItem.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.CONSOLEOutput && !parsedArgs.HTMLOutput && !parsedArgs.PNGOutput && !parsedArgs.JSONOutput && parsedArgs.Verbose);
         }
 
         [Test]
@@ -256,7 +256,7 @@ namespace PBIRInspectorTests
             string[] args = "-pbip pbipPath -rules rulesPath -formats XYZ -verbose true".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.PBIFilePath.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.CONSOLEOutput && !parsedArgs.HTMLOutput && !parsedArgs.PNGOutput && !parsedArgs.JSONOutput && parsedArgs.Verbose);
+            Assert.That(parsedArgs.FabricItem.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.CONSOLEOutput && !parsedArgs.HTMLOutput && !parsedArgs.PNGOutput && !parsedArgs.JSONOutput && parsedArgs.Verbose);
         }
 
         [Test]
@@ -265,7 +265,7 @@ namespace PBIRInspectorTests
             string[] args = "-pbip pbipPath -rules rulesPath -verbose true".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.PBIFilePath.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.Verbose);
+            Assert.That(parsedArgs.FabricItem.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.Verbose);
         }
 
         [Test]
@@ -274,7 +274,7 @@ namespace PBIRInspectorTests
             string[] args = "-pbip pbipPath -rules rulesPath -verbose false".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.PBIFilePath.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && !parsedArgs.Verbose);
+            Assert.That(parsedArgs.FabricItem.Equals("pbipPath", StringComparison.OrdinalIgnoreCase) && parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase) && !parsedArgs.Verbose);
         }
 
         // Authentication Method Tests
@@ -614,7 +614,7 @@ namespace PBIRInspectorTests
 
             Assert.That(parsedArgs.FabricWorkspaceId == workspaceId 
                 && parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase)
-                && string.IsNullOrEmpty(parsedArgs.PBIFilePath));
+                && string.IsNullOrEmpty(parsedArgs.FabricItem));
         }
 
         [Test]
@@ -626,7 +626,7 @@ namespace PBIRInspectorTests
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
             Assert.That(parsedArgs.FabricWorkspaceId == workspaceId 
-                && parsedArgs.PBIFilePath == itemId
+                && parsedArgs.FabricItem == itemId
                 && parsedArgs.AuthMethod.Equals("interactive", StringComparison.OrdinalIgnoreCase));
         }
 
@@ -639,7 +639,7 @@ namespace PBIRInspectorTests
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
             Assert.That(parsedArgs.FabricWorkspaceId == workspaceId 
-                && parsedArgs.PBIFilePath == itemId
+                && parsedArgs.FabricItem == itemId
                 && parsedArgs.AuthMethod.Equals("clientsecret", StringComparison.OrdinalIgnoreCase)
                 && parsedArgs.ClientId.Equals("testclient")
                 && parsedArgs.TenantId.Equals("testtenant")
@@ -682,7 +682,7 @@ namespace PBIRInspectorTests
             string[] args = "-fabricitem C:\\path\\to\\folder -rules rulesPath".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.PBIFilePath.Contains("C:\\path\\to\\folder") 
+            Assert.That(parsedArgs.FabricItem.Contains("C:\\path\\to\\folder") 
                 && parsedArgs.AuthMethod.Equals("local")
                 && string.IsNullOrEmpty(parsedArgs.FabricWorkspaceId));
         }

@@ -3,7 +3,7 @@ namespace PBIRInspectorClientLibrary.Utils
 {
     public class Args
     {
-        public string? PBIFilePath { get; set; }
+        public string? FabricItem { get; set; }
 
         public string? RulesFilePath { get; set; }
 
