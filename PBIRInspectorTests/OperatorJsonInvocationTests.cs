@@ -4,6 +4,7 @@ using FabInspector.Operators;
 using Ric.Operators;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using NUnit.Framework.Constraints;
 
 namespace PBIRInspectorTests
 {
@@ -45,7 +46,8 @@ namespace PBIRInspectorTests
             var fabRegistry = new JsonLogicOperatorRegistry(
                 new FabInspectorSerializerContext(),
                 new IJsonLogicOperator[] {
-                    new RectangleOverlapOperator()
+                    new RectangleOverlapOperator(),
+                    new DaxQueryOperator()
                 });
             fabRegistry.RegisterAll();
 
@@ -79,6 +81,16 @@ namespace PBIRInspectorTests
             
             var resultArray = result as JsonArray;
             Assert.That(resultArray!.Count, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void DaxQuery_CanBeDeserialized()
+        {
+            var jsonRule = @"{""daxquery"": [""EVALUATE SUMMARIZECOLUMNS('Table'[Column])""]}";
+            var rule = JsonSerializer.Deserialize<Rule>(jsonRule, _serializerOptions);
+            
+            Assert.That(rule, Is.Not.Null);
+            Assert.That(rule, Is.InstanceOf<DaxQueryRule>());
         }
 
         [Test]
