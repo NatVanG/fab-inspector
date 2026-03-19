@@ -67,7 +67,7 @@ namespace PBIRInspectorLibrary
         // Scope tracking fields (null for workspace-scoped, set for item-scoped)
         private FabricItem _scopedItem;
         private string? _scopedItemName; // Cached built name (#6)
-        
+
         // Cache for workspace items (lazy loaded once)
         private List<FabricItem>? _workspaceItems;
         private Dictionary<string, FabricItem>? _workspaceItemsByPath; // Indexed lookup (#2)
@@ -86,6 +86,8 @@ namespace PBIRInspectorLibrary
         public string RootPath => _scopedItem != null 
             ? $"/{BuildItemDirectoryPath(_scopedItem)}" 
             : "/";
+
+        public IEnumerable<string>? ScopedItemTypes { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the FabricFileSystem class for workspace-scoped access
@@ -258,15 +260,49 @@ namespace PBIRInspectorLibrary
             return result;
         }
 
+        private async Task<List<FabricItem>> LoadWorkspaceItemsAsync()
+        {
+            var items = new List<FabricItem>();
+            if (this.ScopedItemTypes == null) // If no specific item types provided, load all items
+            {
+                items = await LoadWorkspaceItemsByTypeAsync();
+            }
+            else
+            {
+                foreach (var itemType in this.ScopedItemTypes)
+                {
+                    if (string.IsNullOrWhiteSpace(itemType))
+                        continue;
+                    var itemsOfType = await LoadWorkspaceItemsByTypeAsync(itemType);
+                    if (itemsOfType != null)
+                    {
+                        itemsOfType.ForEach(item => item.DirectoryPath = BuildItemDirectoryPath(item));
+                        items.AddRange(itemsOfType);
+                    }
+                }
+            }
+
+            return items;
+        }
+
         /// <summary>
         /// Loads all items in the workspace from Fabric REST API, handling pagination via continuation tokens.
         /// </summary>
-        private async Task<List<FabricItem>> LoadWorkspaceItemsAsync()
+        private async Task<List<FabricItem>> LoadWorkspaceItemsByTypeAsync(string? itemType = null)
         {
             await EnsureAuthenticatedAsync();
 
+            if (!string.IsNullOrEmpty(itemType) && itemType.Equals("report_deprecated", StringComparison.OrdinalIgnoreCase))
+            {
+                itemType = "report";
+            }
+
             var allItems = new List<FabricItem>();
             string? nextUrl = $"{_baseUrl}/workspaces/{_workspaceId}/items";
+            if (!string.IsNullOrEmpty(itemType))
+            {
+                nextUrl += $"?type={Uri.EscapeDataString(itemType)}";
+            }
 
             while (nextUrl != null)
             {
@@ -1134,10 +1170,33 @@ namespace PBIRInspectorLibrary
             return fabricItems;
         }
 
+        //public IEnumerable<FabricItem> GetFabricItems(string path, IEnumerable<string> itemTypes)
+        //{
+        //    var fabricItems = new List<FabricItem>();
+        //    var (itemName, partPath) = ParsePath(path);
+        //    EnsureWorkspaceItemsLoaded(itemTypes);
+        //    if (string.IsNullOrEmpty(itemName))
+        //    {
+        //        // Root level - return all items
+        //        fabricItems.AddRange(_workspaceItems!);
+        //    }
+        //    else
+        //    {
+        //        var item = FindItem(itemName);
+        //        if (item != null)
+        //        {
+        //            fabricItems.Add(item);
+        //        }
+        //    }
+        //    return fabricItems;
+        //}
+
         public string GetRelativePath(string fullPath)
         {
             return fullPath; // In this implementation, we treat all paths as relative to the workspace root, so we can return the full path as-is.
         }
+
+
 
         #endregion
 

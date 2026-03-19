@@ -32,6 +32,8 @@ namespace PBIRInspectorLibrary
         /// </summary>
         public string RootPath => _rootPath;
 
+        public IEnumerable<string>? ScopedItemTypes { get; set; }
+
         public bool FileExists(string path)
         {
             return File.Exists(path);

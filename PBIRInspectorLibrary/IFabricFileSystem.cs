@@ -15,6 +15,11 @@ namespace PBIRInspectorLibrary
         string RootPath { get; }
 
         /// <summary>
+        /// Gets the collection of Fabric item types to handle when scanning for Fabric items. If null or empty, all items will be returned.
+        /// </summary>
+        IEnumerable<string>? ScopedItemTypes { get; set; }
+
+        /// <summary>
         /// Get the relative path from the root path for a given full path. If the full path is not under the root path, returns the full path.
         /// </summary>
         string GetRelativePath(string fullPath);
@@ -55,7 +60,7 @@ namespace PBIRInspectorLibrary
         IEnumerable<string> GetFiles(string path);
 
         /// <summary>
-        /// Gets all fabric items in a directory matching the search pattern
+        /// Gets all fabric items in a directory
         /// </summary>
         /// <param name="path">The path to the directory</param>
         IEnumerable<FabricItem> GetFabricItems(string path);

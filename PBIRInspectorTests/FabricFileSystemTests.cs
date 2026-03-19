@@ -858,7 +858,6 @@ namespace PBIRInspectorTests
         #region Long-Running Operation Tests
 
         [Test]
-        [Ignore("Mock handler needs refinement")]
         public void FabricFileSystem_LRO_SynchronousCompletion_ReturnsImmediately()
         {
             // Arrange
@@ -890,7 +889,7 @@ namespace PBIRInspectorTests
                 }
             };
             mockHandler.AddResponse(
-                "getDefinition",
+                "https://api.fabric.microsoft.com/v1/workspaces/test-workspace-id/items/item1/getDefinition",
                 HttpStatusCode.OK,
                 JsonSerializer.Serialize(itemDefinitionResponse)
             );
@@ -900,15 +899,14 @@ namespace PBIRInspectorTests
             var fs = new FabricRemoteFileSystem("test-workspace-id", mockCredential, httpClient);
 
             // Act
-            var fileExists = fs.FileExists("Report1/definition.pbir");
+            var fileExists = fs.FileExists("Report1.Report/definition.pbir");
 
             // Assert
             Assert.That(fileExists, Is.True);
-            Assert.That(mockHandler.GetCallCount("getDefinition"), Is.EqualTo(1));
+            Assert.That(mockHandler.GetCallCount("https://api.fabric.microsoft.com/v1/workspaces/test-workspace-id/items/item1/getDefinition"), Is.EqualTo(1));
         }
 
         [Test]
-        [Ignore("Mock handler needs refinement")]
         public void FabricFileSystem_LRO_AsyncOperation_PollsUntilSucceeded()
         {
             // Arrange
@@ -932,7 +930,7 @@ namespace PBIRInspectorTests
             var operationId = "op-12345";
             var locationUrl = $"https://api.fabric.microsoft.com/v1/operations/{operationId}";
             mockHandler.AddResponse(
-                "getDefinition",
+                "https://api.fabric.microsoft.com/v1/workspaces/test-workspace-id/items/item1/getDefinition",
                 HttpStatusCode.Accepted,
                 string.Empty,
                 new Dictionary<string, string>
@@ -971,7 +969,7 @@ namespace PBIRInspectorTests
                     percentComplete = 100
                 }), null)
             };
-            mockHandler.AddSequentialResponses($"/operations/{operationId}", pollingResponses);
+            mockHandler.AddSequentialResponses($"https://api.fabric.microsoft.com/v1/operations/{operationId}", pollingResponses);
 
             // Mock result endpoint
             var resultDefinition = new
@@ -985,7 +983,7 @@ namespace PBIRInspectorTests
                 }
             };
             mockHandler.AddResponse(
-                $"/operations/{operationId}/result",
+                $"https://api.fabric.microsoft.com/v1/operations/{operationId}/result",
                 HttpStatusCode.OK,
                 JsonSerializer.Serialize(resultDefinition)
             );
@@ -995,11 +993,11 @@ namespace PBIRInspectorTests
             var fs = new FabricRemoteFileSystem("test-workspace-id", mockCredential, httpClient, maxLroAttempts: 10, initialRetryDelayMs: 10);
 
             // Act
-            var fileExists = fs.FileExists("Report1/definition.pbir");
+            var fileExists = fs.FileExists("Report1.Report/definition.pbir");
 
             // Assert
             Assert.That(fileExists, Is.True);
-            Assert.That(mockHandler.GetCallCount($"/operations/{operationId}"), Is.EqualTo(3)); // 3 polls
+            Assert.That(mockHandler.GetCallCount($"https://api.fabric.microsoft.com/v1/operations/{operationId}"), Is.EqualTo(3)); // 3 polls
         }
 
         [Test]
@@ -1027,7 +1025,7 @@ namespace PBIRInspectorTests
             var operationId = "op-fail-123";
             var locationUrl = $"https://api.fabric.microsoft.com/v1/operations/{operationId}";
             mockHandler.AddResponse(
-                "getDefinition",
+                "https://api.fabric.microsoft.com/v1/workspaces/test-workspace-id/items/item1/getDefinition",
                 HttpStatusCode.Accepted,
                 string.Empty,
                 new Dictionary<string, string>
@@ -1053,7 +1051,7 @@ namespace PBIRInspectorTests
                 }
             };
             mockHandler.AddResponse(
-                $"/operations/{operationId}",
+                $"https://api.fabric.microsoft.com/v1/operations/{operationId}",
                 HttpStatusCode.OK,
                 JsonSerializer.Serialize(failedResponse)
             );
@@ -1063,7 +1061,7 @@ namespace PBIRInspectorTests
             var fs = new FabricRemoteFileSystem("test-workspace-id", mockCredential, httpClient, maxLroAttempts: 10, initialRetryDelayMs: 10);
 
             // Act & Assert
-            var ex = Assert.Throws<HttpRequestException>(() => fs.FileExists("Report1/definition.pbir"));
+            var ex = Assert.Throws<HttpRequestException>(() => fs.FileExists("Report1.Report/definition.pbir"));
             Assert.That(ex!.Message, Does.Contain("Long-running operation failed"));
             Assert.That(ex.Message, Does.Contain("InvalidDefinition"));
             Assert.That(ex.Message, Does.Contain("The item definition is invalid"));

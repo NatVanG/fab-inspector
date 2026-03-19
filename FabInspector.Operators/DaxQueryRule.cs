@@ -56,6 +56,9 @@ public class DaxQueryRule : Json.Logic.Rule
         var semanticModelId = ContextService.FabricItem
             ?? throw new InvalidOperationException("ContextService.FabricItem is not configured.");
 
+        var credential = ContextService.Credential
+            ?? throw new InvalidOperationException("ContextService.Credential is not configured. Ensure authentication has been completed before running daxquery rules.");
+
         var url = $"{PowerBIApiBaseUrl}/groups/{Uri.EscapeDataString(workspaceId)}/datasets/{Uri.EscapeDataString(semanticModelId)}/executeQueries";
 
         var requestBody = JsonSerializer.Serialize(new
@@ -68,11 +71,11 @@ public class DaxQueryRule : Json.Logic.Rule
         var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
         //var response = httpClient.PostAsync(url, content).GetAwaiter().GetResult();
 
-        // Power BI API call — same HttpClient, different token
+        // Power BI API call — same HttpClient, different token for Power BI scopes instead of Fabric scopes
         var pbiRequest = AuthenticationHelper.CreateAuthenticatedRequestAsync(
             HttpMethod.Post,
             url,
-            ContextService.Credential,
+            credential,
             AuthenticationHelper.PowerBIScopes,
             content).GetAwaiter().GetResult();
 

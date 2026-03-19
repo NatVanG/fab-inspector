@@ -61,7 +61,7 @@ namespace PBIRInspectorLibrary
                     fabricItems.Add(fabricItem);
                 }
             }
-            return fabricItems;
+            return fabricItems.Where(_ => this.ScopedItemTypes == null || this.ScopedItemTypes.Contains(_.Type, StringComparer.OrdinalIgnoreCase));
         }
 
         public string GetRelativePath(string fullPath)
