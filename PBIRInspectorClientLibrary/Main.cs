@@ -67,11 +67,30 @@ namespace PBIRInspectorClientLibrary
 
         public static InspectionRules DeserialiseRulesFromPath(string rulesPath)
         {
+            var isOneLakeRulesPath = OneLakeRulesFileDownloader.IsOneLakeDfsUrl(rulesPath);
+
             try
             {
                 //TODO: consider validating rules file against schema here to provide more specific error message if rules file is invalid. 
+                InspectionRules? inspectionRules;
+                if (isOneLakeRulesPath)
+                {
+                    if (_credential == null)
+                    {
+                        throw new InvalidOperationException(
+                            "OneLake rules URL requires authentication. Use -authmethod devicecode, interactive, or clientsecret.");
+                    }
 
-                var inspectionRules = JsonUtils.DeserialiseFromPath<InspectionRules>(rulesPath);
+                    using var rulesStream = OneLakeRulesFileDownloader
+                        .DownloadFileToMemoryStreamAsync(rulesPath, _credential)
+                        .GetAwaiter()
+                        .GetResult();
+                    inspectionRules = JsonUtils.Deserialise<InspectionRules>(rulesStream);
+                }
+                else
+                {
+                    inspectionRules = JsonUtils.DeserialiseFromPath<InspectionRules>(rulesPath);
+                }
 
                 if (inspectionRules == null || inspectionRules.Rules == null || inspectionRules.Rules.Count == 0)
                 {
@@ -89,6 +108,10 @@ namespace PBIRInspectorClientLibrary
             catch (System.Text.Json.JsonException e)
             {
                 throw new PBIRInspectorException(string.Format("Could not deserialise rules file with path \"{0}\". Check that the file is valid json and following the correct schema for PBI Inspector rules.", rulesPath), e);
+            }
+            catch (InvalidOperationException e) when (isOneLakeRulesPath)
+            {
+                throw new PBIRInspectorException(string.Format("Could not load rules file from OneLake URL \"{0}\".", rulesPath), e);
             }
         }
 

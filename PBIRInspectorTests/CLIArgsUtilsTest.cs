@@ -805,6 +805,38 @@ namespace PBIRInspectorTests
                 && !parsedArgs.Parallel);
         }
 
+        [Test]
+        public void TestCLIArgsUtilsThrows_OneLakeRulesUrlWithLocalAuth()
+        {
+            string oneLakeRulesUrl = "https://onelake.dfs.fabric.microsoft.com/MyWorkspace/MyLakehouse.Lakehouse/Files/rules.json";
+            string[] args = $"-fabricitem fabricitempath -rules {oneLakeRulesUrl}".Split(" ");
+
+            var ex = Assert.Throws<ArgumentException>(() => ArgsUtils.ParseArgs(args));
+            Assert.That(ex.Message.Contains("OneLake rules URL requires authentication"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_OneLakeRulesUrlWithDeviceCodeAuth()
+        {
+            string oneLakeRulesUrl = "https://onelake.dfs.fabric.microsoft.com/MyWorkspace/MyLakehouse.Lakehouse/Files/rules.json";
+            string[] args = $"-fabricitem fabricitempath -rules {oneLakeRulesUrl} -authmethod devicecode -clientid test-client-id".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.RulesFilePath.Equals(oneLakeRulesUrl, StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_OneLakeRulesUrlWithClientSecretAuth()
+        {
+            string oneLakeRulesUrl = "https://onelake.dfs.fabric.microsoft.com/MyWorkspace/MyLakehouse.Lakehouse/Files/rules.json";
+            string[] args = $"-fabricitem fabricitempath -rules {oneLakeRulesUrl} -authmethod clientsecret -tenantid test-tenant-id -clientid test-client-id -clientsecret test-secret".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.RulesFilePath.Equals(oneLakeRulesUrl, StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.AuthMethod.Equals("clientsecret", StringComparison.OrdinalIgnoreCase));
+        }
+
 
     }
 }
