@@ -837,6 +837,38 @@ namespace PBIRInspectorTests
                 && parsedArgs.AuthMethod.Equals("clientsecret", StringComparison.OrdinalIgnoreCase));
         }
 
+        [Test]
+        public void TestCLIArgsUtilsThrows_OneLakeOutputUrlWithLocalAuth()
+        {
+            string oneLakeOutputUrl = "https://onelake.dfs.fabric.microsoft.com/MyWorkspace/MyLakehouse.Lakehouse/Files/output";
+            string[] args = $"-fabricitem fabricitempath -rules rulesPath -output {oneLakeOutputUrl}".Split(" ");
+
+            var ex = Assert.Throws<ArgumentException>(() => ArgsUtils.ParseArgs(args));
+            Assert.That(ex.Message.Contains("OneLake output URL requires authentication"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_OneLakeOutputUrlWithDeviceCodeAuth()
+        {
+            string oneLakeOutputUrl = "https://onelake.dfs.fabric.microsoft.com/MyWorkspace/MyLakehouse.Lakehouse/Files/output";
+            string[] args = $"-fabricitem fabricitempath -rules rulesPath -output {oneLakeOutputUrl} -authmethod devicecode -clientid test-client-id".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.OutputDirPath.Equals(oneLakeOutputUrl, StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_OneLakeOutputUrlWithClientSecretAuth()
+        {
+            string oneLakeOutputUrl = "https://onelake.dfs.fabric.microsoft.com/MyWorkspace/MyLakehouse.Lakehouse/Files/output";
+            string[] args = $"-fabricitem fabricitempath -rules rulesPath -output {oneLakeOutputUrl} -authmethod clientsecret -tenantid test-tenant-id -clientid test-client-id -clientsecret test-secret".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.OutputDirPath.Equals(oneLakeOutputUrl, StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.AuthMethod.Equals("clientsecret", StringComparison.OrdinalIgnoreCase));
+        }
+
 
     }
 }

@@ -7,6 +7,7 @@ namespace PBIRInspectorLibrary
         /// <summary>
         /// Required scopes for Microsoft Fabric REST API
         /// </summary>
+        /// additional scopes? "https://onelake.dfs.fabric.microsoft.com/.default", "storage.azure.com/.default"
         public static readonly string[] FabricScopes = new[]
         {
             "https://analysis.windows.net/powerbi/api/.default"

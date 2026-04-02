@@ -83,6 +83,11 @@ namespace PBIRInspectorClientLibrary.Utils
                 throw new ArgumentException("OneLake rules URL requires authentication. Use -authmethod devicecode, interactive, or clientsecret.");
             }
 
+            if (OneLakeOutputUploader.IsOneLakeDfsUrl(outputPath) && authMethod == "local")
+            {
+                throw new ArgumentException("OneLake output URL requires authentication. Use -authmethod devicecode, interactive, or clientsecret.");
+            }
+
             // Validate incompatible format and auth method combinations
             if ((authMethod == "devicecode" || authMethod == "interactive") && !string.IsNullOrWhiteSpace(formatsString))
             {

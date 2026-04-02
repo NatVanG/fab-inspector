@@ -352,117 +352,227 @@ namespace PBIRInspectorClientLibrary
             string jsonTestRun = string.Empty;
             Inspector? fieldMapInsp = null;
             IEnumerable<TestResult> fieldMapResults = null;
+            var outputArtifacts = new List<(string LocalPath, string RelativePath)>();
 
-            if (Main._args.CONSOLEOutput || Main._args.ADOOutput || Main._args.GITHUBOutput)
+            var outputRootPath = Main._args.OutputDirPath ?? string.Empty;
+            var isOneLakeOutput = OneLakeOutputUploader.IsOneLakeDfsUrl(outputRootPath);
+            var localOutputDirPath = outputRootPath;
+            var localStagingCreated = false;
+
+            if (isOneLakeOutput)
             {
-                foreach (var result in testResults)
-                {
-                    //TODO: use Test log type json property instead
-                    var msgType = result.Pass ? MessageTypeEnum.Information : result.LogType;
-                    OnMessageIssued(result.ItemPath, msgType, result.Message);
-                }
-
-                // Summarise error and warning counts
-                if (testResults != null && testResults.Any())
-                {
-                    OnMessageIssued(MessageTypeEnum.Information, string.Format("Test run summary: {0} errors, {1} warnings.", 
-                        testResults.Count(_ => _.LogType == MessageTypeEnum.Error), 
-                        testResults.Count(_ => _.LogType == MessageTypeEnum.Warning)));
-                }
-                else
-                {
-                    OnMessageIssued(MessageTypeEnum.Information, "Test run summary: No test results found.");
-                }
+                localOutputDirPath = Path.Combine(AppUtils.GetTempRootFolderPath(), Guid.NewGuid().ToString());
+                Directory.CreateDirectory(localOutputDirPath);
+                localStagingCreated = true;
+                OnMessageIssued(MessageTypeEnum.Information, string.Format("Staging output artifacts locally at \"{0}\" before uploading to OneLake.", localOutputDirPath));
             }
 
-            //Ensure output dir exists
-            if (!(Main._args.ADOOutput || Main._args.GITHUBOutput) && (Main._args.JSONOutput || Main._args.HTMLOutput || Main._args.PNGOutput))
+            try
             {
-                if (!Directory.Exists(Main._args.OutputDirPath))
+                if (Main._args.CONSOLEOutput || Main._args.ADOOutput || Main._args.GITHUBOutput)
                 {
-                    Directory.CreateDirectory(Main._args.OutputDirPath);
-                }
-            }
-
-            if (!(Main._args.ADOOutput || Main._args.GITHUBOutput) && (Main._args.JSONOutput || Main._args.HTMLOutput))
-            {
-                var outputFilePath = string.Empty;
-                var pbiFileNameWOextension = Path.GetFileNameWithoutExtension(Main._args.FabricItem);
-
-                if (!string.IsNullOrEmpty(Main._args.OutputDirPath))
-                {
-                    outputFilePath = Path.Combine(Main._args.OutputDirPath, string.Concat("TestRun_", pbiFileNameWOextension, ".json"));
-                }
-                else
-                {
-                    throw new ArgumentException("Directory with path \"{0}\" does not exist", Main._args.OutputDirPath);
-                }
-
-                var testRun = new TestRun() { CompletionTime = DateTime.Now, TestedFilePath = Main._args.FabricItem, RulesFilePath = Main._args.RulesFilePath, Verbose = Main._args.Verbose, Results = testResults };
-                jsonTestRun = JsonSerializer.Serialize(testRun);
-                if (Main._args.JSONOutput)
-                {
-                    OnMessageIssued(MessageTypeEnum.Information, string.Format("Writing JSON output to file at \"{0}\".", outputFilePath));
-                    File.WriteAllText(outputFilePath, jsonTestRun, System.Text.Encoding.UTF8);
-                }
-            }
-
-            if (!(Main._args.ADOOutput || Main._args.GITHUBOutput) && (Main._args.PNGOutput || Main._args.HTMLOutput))
-            {
-                // Create file system for field map inspection
-                IFabricFileSystem fieldMapFileSystem = new FabricLocalFileSystem(Main._args.FabricItem ?? string.Empty);
-                var fieldMapPathRules = DeserialiseRulesFromPath(Constants.ReportPageFieldMapFilePath);
-                fieldMapInsp = new Inspector(fieldMapPathRules, registries, fieldMapFileSystem);
-
-                fieldMapResults = fieldMapInsp.Inspect();
-
-                var outputPNGDirPath = Path.Combine(Main._args.OutputDirPath, Constants.PNGOutputDir);
-
-                if (Directory.Exists(outputPNGDirPath))
-                {
-                    if (Main._args.OverwriteOutput)
+                    foreach (var result in testResults)
                     {
-                        Directory.Delete(outputPNGDirPath, true);
+                        //TODO: use Test log type json property instead
+                        var msgType = result.Pass ? MessageTypeEnum.Information : result.LogType;
+                        OnMessageIssued(result.ItemPath, msgType, result.Message);
+                    }
+
+                    // Summarise error and warning counts
+                    if (testResults != null && testResults.Any())
+                    {
+                        OnMessageIssued(MessageTypeEnum.Information, string.Format("Test run summary: {0} errors, {1} warnings.",
+                            testResults.Count(_ => _.LogType == MessageTypeEnum.Error),
+                            testResults.Count(_ => _.LogType == MessageTypeEnum.Warning)));
                     }
                     else
                     {
-                        //If the directory already exists and overwrite is not set, ask user if they want to delete existing content.
-                        var eventArgs = RaiseWinMessage(MessageTypeEnum.Dialog, string.Format("Directory already exists at \"{0}\". Do you want to overwrite existing content?", outputPNGDirPath));
-                        if (eventArgs.DialogOKResponse)
+                        OnMessageIssued(MessageTypeEnum.Information, "Test run summary: No test results found.");
+                    }
+                }
+
+                //Ensure output dir exists
+                if (!(Main._args.ADOOutput || Main._args.GITHUBOutput) && (Main._args.JSONOutput || Main._args.HTMLOutput || Main._args.PNGOutput))
+                {
+                    if (!Directory.Exists(localOutputDirPath))
+                    {
+                        Directory.CreateDirectory(localOutputDirPath);
+                    }
+                }
+
+                if (!(Main._args.ADOOutput || Main._args.GITHUBOutput) && (Main._args.JSONOutput || Main._args.HTMLOutput))
+                {
+                    var outputFilePath = string.Empty;
+                    var pbiFileNameWOextension = Path.GetFileNameWithoutExtension(Main._args.FabricItem);
+                    var timestampSuffix = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+                    var jsonFileName = isOneLakeOutput
+                        ? string.Concat("TestRun_", pbiFileNameWOextension, "_", timestampSuffix, ".json")
+                        : string.Concat("TestRun_", pbiFileNameWOextension, ".json");
+
+                    if (!string.IsNullOrEmpty(localOutputDirPath))
+                    {
+                        outputFilePath = Path.Combine(localOutputDirPath, jsonFileName);
+                    }
+                    else
+                    {
+                        throw new ArgumentException("Directory with path \"{0}\" does not exist", localOutputDirPath);
+                    }
+
+                    var testRun = new TestRun() { CompletionTime = DateTime.Now, TestedFilePath = Main._args.FabricItem, RulesFilePath = Main._args.RulesFilePath, Verbose = Main._args.Verbose, Results = testResults };
+                    jsonTestRun = JsonSerializer.Serialize(testRun);
+                    if (Main._args.JSONOutput)
+                    {
+                        OnMessageIssued(MessageTypeEnum.Information, string.Format("Writing JSON output to file at \"{0}\".", outputFilePath));
+                        File.WriteAllText(outputFilePath, jsonTestRun, System.Text.Encoding.UTF8);
+
+                        if (isOneLakeOutput)
+                        {
+                            outputArtifacts.Add((outputFilePath, jsonFileName));
+                        }
+                    }
+                }
+
+                if (!(Main._args.ADOOutput || Main._args.GITHUBOutput) && (Main._args.PNGOutput || Main._args.HTMLOutput))
+                {
+                    // Determine which file system to use based on Fabric workspace configuration
+                    IFabricFileSystem fieldMapFileSystem;
+                    if (!string.IsNullOrWhiteSpace(Main._args.FabricWorkspaceId))
+                    {
+                        if (Main._credential == null)
+                        {
+                            throw new InvalidOperationException("Authentication credential is required for Fabric workspace access.");
+                        }
+
+                        // Item-scoped vs workspace-scoped mode
+                        fieldMapFileSystem = string.IsNullOrWhiteSpace(Main._args.FabricItem)
+                            ? new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._credential, Main._httpClient)
+                            : new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._args.FabricItem, Main._credential, Main._httpClient);
+                    }
+                    else
+                    {
+                        // Use PhysicalFileSystem with the specified path
+                        fieldMapFileSystem = new FabricLocalFileSystem(Main._args.FabricItem ?? string.Empty);
+                    }
+                    // Create file system for field map inspection
+                    //IFabricFileSystem fieldMapFileSystem = new FabricLocalFileSystem(Main._args.FabricItem ?? string.Empty);
+                    var fieldMapPathRules = DeserialiseRulesFromPath(Constants.ReportPageFieldMapFilePath);
+                    fieldMapInsp = new Inspector(fieldMapPathRules, registries, fieldMapFileSystem);
+
+                    fieldMapResults = fieldMapInsp.Inspect();
+
+                    var outputPNGDirPath = Path.Combine(localOutputDirPath, Constants.PNGOutputDir);
+
+                    if (Directory.Exists(outputPNGDirPath))
+                    {
+                        if (Main._args.OverwriteOutput)
                         {
                             Directory.Delete(outputPNGDirPath, true);
                         }
                         else
                         {
-                            OnMessageIssued(MessageTypeEnum.Information, "Skipping PNG output as directory already exists and overwrite not set.");
-                            return;
+                            if (isOneLakeOutput)
+                            {
+                                throw new PBIRInspectorException(string.Format("Output directory already exists at \"{0}\" and overwriteoutput is false.", outputPNGDirPath));
+                            }
+
+                            //If the directory already exists and overwrite is not set, ask user if they want to delete existing content.
+                            var eventArgs = RaiseWinMessage(MessageTypeEnum.Dialog, string.Format("Directory already exists at \"{0}\". Do you want to overwrite existing content?", outputPNGDirPath));
+                            if (eventArgs.DialogOKResponse)
+                            {
+                                Directory.Delete(outputPNGDirPath, true);
+                            }
+                            else
+                            {
+                                OnMessageIssued(MessageTypeEnum.Information, "Skipping PNG output as directory already exists and overwrite not set.");
+                                return;
+                            }
+                        }
+                    }
+                    Directory.CreateDirectory(outputPNGDirPath);
+                    OnMessageIssued(MessageTypeEnum.Information, string.Format("Writing report page wireframe images to files at \"{0}\".", outputPNGDirPath));
+                    pageRenderer.DrawReportPages(fieldMapResults, testResults, outputPNGDirPath);
+
+                    if (isOneLakeOutput)
+                    {
+                        foreach (var pngPath in Directory.GetFiles(outputPNGDirPath, "*.png", SearchOption.TopDirectoryOnly))
+                        {
+                            var relativePngPath = Path.Combine(Constants.PNGOutputDir, Path.GetFileName(pngPath));
+                            outputArtifacts.Add((pngPath, relativePngPath));
                         }
                     }
                 }
-                Directory.CreateDirectory(outputPNGDirPath);
-                OnMessageIssued(MessageTypeEnum.Information, string.Format("Writing report page wireframe images to files at \"{0}\".", outputPNGDirPath));
-                pageRenderer.DrawReportPages(fieldMapResults, testResults, outputPNGDirPath);
+
+                if (!(Main._args.ADOOutput || Main._args.GITHUBOutput) && Main._args.HTMLOutput)
+                {
+                    string pbiinspectorlogobase64 = string.Concat(Constants.Base64ImgPrefix, pageRenderer.ConvertBitmapToBase64(Constants.PBIInspectorPNG));
+                    //string nowireframebase64 = string.Concat(Base64ImgPrefix, ImageUtils.ConvertBitmapToBase64(@"Files\png\nowireframe.png"));
+                    string template = File.ReadAllText(Constants.TestRunHTMLTemplate);
+                    string html = template.Replace(Constants.LogoPlaceholder, pbiinspectorlogobase64, StringComparison.OrdinalIgnoreCase);
+                    html = html.Replace(Constants.VersionPlaceholder, AppUtils.About(), StringComparison.OrdinalIgnoreCase);
+                    html = html.Replace(Constants.JsonPlaceholder, jsonTestRun, StringComparison.OrdinalIgnoreCase);
+
+                    var outputHTMLFilePath = Path.Combine(localOutputDirPath, Constants.TestRunHTMLFileName);
+
+                    OnMessageIssued(MessageTypeEnum.Information, string.Format("Writing HTML output to file at \"{0}\".", outputHTMLFilePath));
+                    File.WriteAllText(outputHTMLFilePath, html);
+
+                    if (isOneLakeOutput)
+                    {
+                        outputArtifacts.Add((outputHTMLFilePath, Constants.TestRunHTMLFileName));
+                    }
+
+                    //Results have been written to a temporary directory so show output to user automatically.
+                    if (!isOneLakeOutput && Main._args.DeleteOutputDirOnExit && !Main._args.CONSOLEOutput)
+                    {
+                        AppUtils.OpenUrl(outputHTMLFilePath);
+                    }
+                }
+
+                if (isOneLakeOutput && outputArtifacts.Any())
+                {
+                    UploadOutputArtifactsToOneLakeAsync(outputRootPath, outputArtifacts, Main._args.OverwriteOutput)
+                        .GetAwaiter()
+                        .GetResult();
+                }
+            }
+            finally
+            {
+                if (localStagingCreated && Directory.Exists(localOutputDirPath))
+                {
+                    Directory.Delete(localOutputDirPath, true);
+                }
+            }
+        }
+
+        private static async Task UploadOutputArtifactsToOneLakeAsync(
+            string outputRootUrl,
+            IEnumerable<(string LocalPath, string RelativePath)> artifacts,
+            bool overwrite)
+        {
+            if (_credential == null)
+            {
+                throw new InvalidOperationException("OneLake output upload requires authentication.");
             }
 
-            if (!(Main._args.ADOOutput || Main._args.GITHUBOutput) && Main._args.HTMLOutput)
+            foreach (var artifact in artifacts)
             {
-                string pbiinspectorlogobase64 = string.Concat(Constants.Base64ImgPrefix, pageRenderer.ConvertBitmapToBase64(Constants.PBIInspectorPNG));
-                //string nowireframebase64 = string.Concat(Base64ImgPrefix, ImageUtils.ConvertBitmapToBase64(@"Files\png\nowireframe.png"));
-                string template = File.ReadAllText(Constants.TestRunHTMLTemplate);
-                string html = template.Replace(Constants.LogoPlaceholder, pbiinspectorlogobase64, StringComparison.OrdinalIgnoreCase);
-                html = html.Replace(Constants.VersionPlaceholder, AppUtils.About(), StringComparison.OrdinalIgnoreCase);
-                html = html.Replace(Constants.JsonPlaceholder, jsonTestRun, StringComparison.OrdinalIgnoreCase);
-
-                var outputHTMLFilePath = Path.Combine(Main._args.OutputDirPath, Constants.TestRunHTMLFileName);
-
-                OnMessageIssued(MessageTypeEnum.Information, string.Format("Writing HTML output to file at \"{0}\".", outputHTMLFilePath));
-                File.WriteAllText(outputHTMLFilePath, html);
-
-                //Results have been written to a temporary directory so show output to user automatically.
-                if (Main._args.DeleteOutputDirOnExit && !Main._args.CONSOLEOutput)
+                var remoteUrl = OneLakeOutputUploader.CombineUrl(outputRootUrl, artifact.RelativePath);
+                if (!overwrite)
                 {
-                    AppUtils.OpenUrl(outputHTMLFilePath);
+                    var exists = await OneLakeOutputUploader.FileExistsAsync(remoteUrl, _credential);
+                    if (exists)
+                    {
+                        throw new PBIRInspectorException(
+                            $"Output artifact already exists at '{remoteUrl}'. Set -overwriteoutput true to overwrite.");
+                    }
                 }
+            }
+
+            foreach (var artifact in artifacts)
+            {
+                var remoteUrl = OneLakeOutputUploader.CombineUrl(outputRootUrl, artifact.RelativePath);
+                OnMessageIssued(MessageTypeEnum.Information, string.Format("Uploading output artifact to OneLake at \"{0}\".", remoteUrl));
+                await OneLakeOutputUploader.UploadFileAsync(artifact.LocalPath, remoteUrl, overwrite, _credential);
             }
         }
 
