@@ -179,6 +179,7 @@ namespace PBIRInspectorClientLibrary
         /// Gets an access token from the credential and configures HTTP client authorization.
         /// Caches token and only refreshes when within 5 minutes of expiry (#1).
         /// </summary>
+        /// TODO: EnsureLogout is called on credential when test run is complete to clear cached token and any associated authentication state.
         private static async Task EnsureAuthenticatedAsync()
         {
             // Fast path: token is valid with 5-minute buffer

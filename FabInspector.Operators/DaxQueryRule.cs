@@ -25,11 +25,15 @@ public class DaxQueryRule : Json.Logic.Rule
 {
     private const string PowerBIApiBaseUrl = "https://api.powerbi.com/v1.0/myorg";
 
-    internal Json.Logic.Rule Input { get; }
+    internal Json.Logic.Rule Query { get; }
+    internal Json.Logic.Rule IncludeNulls { get; }
+    internal Json.Logic.Rule ImpersonatedUserName { get; }
 
-    internal DaxQueryRule(Json.Logic.Rule input)
+    internal DaxQueryRule(Json.Logic.Rule query, Json.Logic.Rule includeNulls, Json.Logic.Rule impersonatedUserName)
     {
-        Input = input;
+        Query = query;
+        IncludeNulls = includeNulls;
+        ImpersonatedUserName = impersonatedUserName;
     }
 
     /// <summary>
@@ -41,11 +45,16 @@ public class DaxQueryRule : Json.Logic.Rule
     /// <returns>The JSON result returned by the Fabric ExecuteQueries API.</returns>
     public override JsonNode? Apply(JsonNode? data, JsonNode? contextData = null)
     {
-        var queryValue = Input.Apply(data, contextData);
-        var query = queryValue?.Stringify();
+        var queryValue = Query.Apply(data, contextData);
+        var includeNullsValue = IncludeNulls?.Apply(data, contextData);
+        var impersonatedUserNameValue = ImpersonatedUserName?.Apply(data, contextData);
 
-        if (string.IsNullOrWhiteSpace(query))
-            throw new JsonLogicException("The daxquery rule requires a non-empty DAX query string.");
+        var strQuery = queryValue?.Stringify();
+        var boolIncludeNulls = includeNullsValue?.GetValue<bool>() ?? false;
+        var strImpersonatedUserName = impersonatedUserNameValue?.Stringify();
+
+        if (string.IsNullOrWhiteSpace(strQuery?.ToString()))
+            throw new JsonLogicException("The daxquery rule requires a non-empty DAX query");
 
         var httpClient = ContextService.HttpClient
             ?? throw new InvalidOperationException("ContextService.HttpClient is not configured. Ensure authentication has been completed before running daxquery rules.");
@@ -61,12 +70,26 @@ public class DaxQueryRule : Json.Logic.Rule
 
         var url = $"{PowerBIApiBaseUrl}/groups/{Uri.EscapeDataString(workspaceId)}/datasets/{Uri.EscapeDataString(semanticModelId)}/executeQueries";
 
-        var requestBody = JsonSerializer.Serialize(new
+
+        string requestBody;
+           
+        if (strImpersonatedUserName != null)
         {
-            queries = new[] { new { query } },
-            //impersonatedUserName = string.Empty, // Optional: specify a user to impersonate for the query execution, or leave empty to use the authenticated user context 
-            serializerSettings = new { includeNulls = false }
-        });
+            requestBody = JsonSerializer.Serialize(new
+            {
+                queries = new[] { new { query = strQuery } },
+                serializerSettings = new { includeNulls = boolIncludeNulls },
+                impersonatedUserName = strImpersonatedUserName, // Optional: specify a user to impersonate for the query execution, or leave empty to use the authenticated user context 
+            });
+        }
+        else
+        {
+            requestBody = JsonSerializer.Serialize(new
+            {
+                queries = new[] { new { query = strQuery } },
+                serializerSettings = new { includeNulls = boolIncludeNulls },
+            });
+        }
 
         var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
         //var response = httpClient.PostAsync(url, content).GetAwaiter().GetResult();
@@ -100,10 +123,10 @@ internal class DaxQueryJsonConverter : WeaklyTypedJsonConverter<DaxQueryRule>
             ? options.ReadArray(ref reader, FabInspectorSerializerContext.Default.Rule)
             : new[] { options.Read(ref reader, FabInspectorSerializerContext.Default.Rule)! };
 
-        if (parameters == null || parameters.Length != 1)
-            throw new JsonException("The daxquery rule requires exactly one parameter: the DAX query expression.");
+        if (parameters == null || parameters.Length < 1)
+            throw new JsonException("The daxquery rule requires at least one parameter: the DAX query expression.");
 
-        return new DaxQueryRule(parameters[0]);
+        return new DaxQueryRule(parameters[0], parameters.Length > 1 ? parameters[1] : null, parameters.Length > 2 ? parameters[2] : null);
     }
 
     public override void Write(Utf8JsonWriter writer, DaxQueryRule value, JsonSerializerOptions options)

@@ -1,0 +1,17 @@
+{
+  "rules": [
+    {
+      "id": "EXECUTE_DAX_QUERY",
+      "name": "Execute Dax query",
+      "description": "",
+      "itemType": "SemanticModel",
+      "disabled": false,
+      "test": [
+        {
+          "daxquery": "EVALUATE VALUES('★ Employee Country')"
+        },
+        [ 5000 ]
+      ]
+    }
+  ]
+}
