@@ -15,6 +15,7 @@ namespace FabInspector.Operators;
 /// <summary>
 /// Handles the `apiget` operation.
 /// Requires <see cref="ContextService.HttpClient"/>
+/// Does not currently support continuation tokens or pagination, so is best suited for API calls that return a single page of results.
 /// </summary>
 [Operator("apiget")]
 [JsonConverter(typeof(ApiGetJsonConverter))]
@@ -73,11 +74,13 @@ public class ApiGetRule : Json.Logic.Rule
             throw new JsonLogicException($"Unsupported API host in URL template: {urlTemplate}. Only Power BI and Fabric API endpoints are supported.");
         }
 
-       var resolvedUrl = urlTemplate.Replace("[context-workspaceid]", workspaceId, StringComparison.InvariantCultureIgnoreCase);
-       resolvedUrl = resolvedUrl.Replace("[context-itemid]", itemId, StringComparison.InvariantCultureIgnoreCase);
+       var resolvedUrl = urlTemplate.Replace("{context-workspaceId}", workspaceId, StringComparison.InvariantCultureIgnoreCase);
+       resolvedUrl = resolvedUrl.Replace("{context-itemId}", itemId, StringComparison.InvariantCultureIgnoreCase);
 
         //ensure parameters.Length does not exceed the number of placeholders in the urlTemplate
-        var placeholderCount = Regex.Matches(resolvedUrl, @"\[param\d+\]").Count;
+        // placeholders are in the format {paramName}
+        var placeholderMatches = Regex.Matches(resolvedUrl, @"\{[a-zA-Z0-9_-]+\}");
+        var placeholderCount = placeholderMatches.Count;
         if ((parameters == null && placeholderCount > 0) || (parameters != null && placeholderCount > parameters.Length))
         {
             throw new JsonLogicException($"The apiget rule has more parameters ({parameters.Length}) than placeholders ({placeholderCount}) in the URL template.");
@@ -87,7 +90,7 @@ public class ApiGetRule : Json.Logic.Rule
         {
             for (int i = 0; i < parameters.Length; i++)
             {
-                var placeholder = $"[param{i + 1}]";
+                var placeholder = placeholderMatches[i].Value;
                 resolvedUrl = resolvedUrl.Replace(placeholder, parameters[i]?.ToString() ?? string.Empty, StringComparison.InvariantCultureIgnoreCase);
             }
         }
