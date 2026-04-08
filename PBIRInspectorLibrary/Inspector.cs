@@ -40,52 +40,68 @@ namespace PBIRInspectorLibrary
             var rules = this._inspectionRules.Rules.Where(_ => !_.Disabled);
             var testResults = new List<TestResult>();
 
-            if (!string.IsNullOrEmpty(fileSystemPath) && _fileSystem.DirectoryExists(fileSystemPath))
+            if (rules != null && rules.Any())
             {
-                //Run rules that apply across types ie. with attribute "itemtype" set to "*"
-                RunRulesByItemType(testResults, rules, "*", fileSystemPath);
-
-                //Run rules that apply to specific itemtypes
-                var fabricItems = _fileSystem.GetFabricItems(fileSystemPath);
-
-                if (fabricItems != null && fabricItems.Any())
+                if (!string.IsNullOrEmpty(fileSystemPath))
                 {
-                    foreach (var fabricItem in fabricItems)
+                    if (_fileSystem.DirectoryExists(fileSystemPath))
                     {
-                        ContextService.FabricItem = string.IsNullOrEmpty(fabricItem.FilePath) ? fabricItem.Id : fabricItem.FilePath; //TODO: improve this logic for setting ContextService.FabricItem
-                        RunRulesByItemType(testResults, rules, fabricItem.Type, fabricItem.DirectoryPath);
-                        RunDeprecatedRulesByItemType(testResults, rules, fabricItem.Type, fabricItem.DirectoryPath);
+                        //Run rules that apply across types ie. with attribute "itemtype" set to "*"
+                        RunRulesByItemType(testResults, rules, "*", fileSystemPath);
+
+                        //Run rules that apply to specific itemtypes
+                        var fabricItems = _fileSystem.GetFabricItems(fileSystemPath);
+
+                        if (fabricItems != null && fabricItems.Any())
+                        {
+                            foreach (var fabricItem in fabricItems)
+                            {
+                                ContextService.FabricItem = string.IsNullOrEmpty(fabricItem.FilePath) ? fabricItem.Id : fabricItem.FilePath; //TODO: improve this logic for setting ContextService.FabricItem
+                                RunRulesByItemType(testResults, rules, fabricItem.Type, fabricItem.DirectoryPath);
+                                RunDeprecatedRulesByItemType(testResults, rules, fabricItem.Type, fabricItem.DirectoryPath);
+                            }
+                        }
+                        else
+                        {
+                            //LEGACY: support for report definition folder paths.
+                            if (fileSystemPath.ToLowerInvariant().EndsWith("definition") || fileSystemPath.ToLowerInvariant().EndsWith(".report"))
+                            {
+                                OnMessageIssued(MessageTypeEnum.Information, string.Format("No platform files found in directory \"{0}\". Running legacy behaviour to support file system path ending in '\\definition' or '.report' and assuming fabric item type is report.", fileSystemPath));
+                                RunRulesByItemType(testResults, rules, "report_deprecated", fileSystemPath);
+                            }
+                            else
+                            {
+                                OnMessageIssued(MessageTypeEnum.Information, string.Format("No legacy PBIP report definition folder nor Fabric .platform files found in directory \"{0}\".", fileSystemPath));
+                            }
+                        }
+                    }
+                    else if (_fileSystem.FileExists(fileSystemPath))
+                    {
+                        var fileExtension = _fileSystem.GetExtension(fileSystemPath).ToLowerInvariant();
+                        switch (fileExtension)
+                        {
+                            case ".pbip":
+                                //LEGACY: if _fabricItemPath is a pbip file, assume we want to test a report's metadata
+                                RunRulesByItemType(testResults, rules, "report_deprecated", fileSystemPath);
+                                break;
+                            case ".json":
+                                RunRulesByItemType(testResults, rules, "json", fileSystemPath);
+                                break;
+                            default:
+                                throw new PBIRInspectorException(string.Format("Unsupported file itemType \"{0}\" for path \"{1}\".", fileExtension, fileSystemPath));
+                        }
+
+                    }
+                    else
+                    {
+                        throw new PBIRInspectorException(string.Format("File or folder with path \"{0}\" not found. Running rules that don't pertain to any item type i.e. rules with itemType property set to \"{1}\".", fileSystemPath, "none"));
                     }
                 }
-                else
-                {
-                    //LEGACY: support for report definition folder paths.
-                    OnMessageIssued(MessageTypeEnum.Information, string.Format("No platform files found in directory \"{0}\". Running legacy behaviour to support file system path ending in '\\definition' and assuming fabric item type is report.", fileSystemPath));
-                    RunRulesByItemType(testResults, rules, "report_deprecated", fileSystemPath);
-                }
+                RunRulesByItemType(testResults, rules, "none", fileSystemPath);
             }
             else
             {
-                //if _fabricItemPath is not a directory, check if it is a file
-                if (!_fileSystem.FileExists(fileSystemPath))
-                {
-                    throw new PBIRInspectorException(string.Format("File or folder with path \"{0}\" not found.", fileSystemPath));
-                }
-
-                var fileExtension = _fileSystem.GetExtension(fileSystemPath).ToLowerInvariant();
-                switch (fileExtension)
-                {
-                    case ".pbip":
-                        //LEGACY: if _fabricItemPath is a pbip file, assume we want to test a report's metadata
-                        RunRulesByItemType(testResults, rules, "report_deprecated", fileSystemPath);
-                        break;
-                    case ".json":
-                        RunRulesByItemType(testResults, rules, "json", fileSystemPath);
-                        break;
-                    default:
-                        throw new PBIRInspectorException(string.Format("Unsupported file itemType \"{0}\" for path \"{1}\".", fileExtension, fileSystemPath));
-                }
-
+                OnMessageIssued(MessageTypeEnum.Information, "No rules found to run.");
             }
 
             return testResults;
@@ -156,7 +172,8 @@ namespace PBIRInspectorLibrary
             RunRules(testResults, rulesFilteredByItemType, partQuery);
         }
 
-        private void RunRules(List<TestResult> testResults, IEnumerable<Rule> rules, IPartQuery partQuery)
+
+        private void RunRules(List<TestResult> testResults, IEnumerable<Rule> rules, IPartQuery? partQuery)
         {
             foreach (var rule in rules)
             {

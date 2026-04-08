@@ -47,7 +47,8 @@ namespace PBIRInspectorTests
                 new FabInspectorSerializerContext(),
                 new IJsonLogicOperator[] {
                     new RectangleOverlapOperator(),
-                    new DaxQueryOperator()
+                    new DaxQueryOperator(),
+                    new ApiGetOperator()
                 });
             fabRegistry.RegisterAll();
 

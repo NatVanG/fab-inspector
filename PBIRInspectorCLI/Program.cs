@@ -75,7 +75,8 @@ internal partial class Program
         new FabInspectorSerializerContext(),
         new IJsonLogicOperator[] {
                 new RectangleOverlapOperator(),
-                new DaxQueryOperator()
+                new DaxQueryOperator(),
+                new ApiGetOperator()
         }));
 
         services.AddTransient<IEnumerable<JsonLogicOperatorRegistry>>(provider => registries);

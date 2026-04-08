@@ -1,0 +1,19 @@
+{
+  "rules": [
+    {
+      "id": "EXECUTE_API_GET",
+      "name": "Execute Api Get",
+      "description": "",
+      "itemType": "none",
+      "disabled": false,
+      "test": [
+        {
+          "apiget": [
+            "https://api.fabric.microsoft.com/v1/workspaces/[context-workspaceid]/onelake/settings"
+          ]
+        },
+        [5000]
+      ]
+    }
+  ]
+}

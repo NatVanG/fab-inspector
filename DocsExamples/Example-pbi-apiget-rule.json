@@ -1,0 +1,17 @@
+{
+  "rules": [
+    {
+      "id": "EXECUTE_API_GET",
+      "name": "Execute Api Get",
+      "description": "",
+      "itemType": "none",
+      "disabled": false,
+      "test": [
+        {
+          "apiget": "https://api.powerbi.com/v1.0/myorg/groups/[context-workspaceid]/reports"
+        },
+        [5000]
+      ]
+    }
+  ]
+}

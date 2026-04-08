@@ -9,7 +9,7 @@
         {
             if (fileSystem == null) throw new ArgumentNullException(nameof(fileSystem));
             _fileSystem = fileSystem;
-            _fileSystem.ScopedItemTypes = inspectionRules.Rules.Select(_ => _.ItemType).Distinct();
+            _fileSystem.ScopedItemTypes = inspectionRules.Rules.SelectMany(_ => _.ItemType.Split("|")).Distinct();
             _registries = registries;
             UseRegistries();
         }

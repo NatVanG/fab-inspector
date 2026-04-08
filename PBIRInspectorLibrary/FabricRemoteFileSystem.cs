@@ -263,7 +263,10 @@ namespace PBIRInspectorLibrary
         private async Task<List<FabricItem>> LoadWorkspaceItemsAsync()
         {
             var items = new List<FabricItem>();
-            if (this.ScopedItemTypes == null) // If no specific item types provided, load all items
+            string[] ignoreItemTypes = [ "none" ];
+
+
+            if (this.ScopedItemTypes == null || this.ScopedItemTypes.Contains("*")) // If no specific item types provided, load all items
             {
                 items = await LoadWorkspaceItemsByTypeAsync();
             }
@@ -271,7 +274,7 @@ namespace PBIRInspectorLibrary
             {
                 foreach (var itemType in this.ScopedItemTypes)
                 {
-                    if (string.IsNullOrWhiteSpace(itemType))
+                    if (string.IsNullOrWhiteSpace(itemType) || ignoreItemTypes.Contains(itemType, StringComparer.OrdinalIgnoreCase))
                         continue;
                     var itemsOfType = await LoadWorkspaceItemsByTypeAsync(itemType);
                     if (itemsOfType != null)
@@ -299,6 +302,7 @@ namespace PBIRInspectorLibrary
 
             var allItems = new List<FabricItem>();
             string? nextUrl = $"{_baseUrl}/workspaces/{_workspaceId}/items";
+
             if (!string.IsNullOrEmpty(itemType))
             {
                 nextUrl += $"?type={Uri.EscapeDataString(itemType)}";
