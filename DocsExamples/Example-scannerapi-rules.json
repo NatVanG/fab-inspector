@@ -1,0 +1,167 @@
+{
+  "rules": [
+    {
+      "id": "SCAN_CURRENT_WORKSPACE",
+      "name": "Scanner API - scan current workspace (basic)",
+      "description": "Initiates a metadata scan for the current workspace (resolved from context) with no optional flags. Returns the raw workspace info scan result.",
+      "itemType": "none",
+      "disabled": true,
+      "test": [
+        {
+          "scannerapi": ""
+        },
+        []
+      ]
+    },
+    {
+      "id": "SCAN_CURRENT_WORKSPACE",
+      "name": "Scanner API - scan current workspace (basic)",
+      "description": "Initiates a metadata scan for the current workspace (resolved from context) with no optional flags. Returns the raw workspace info scan result.",
+      "itemType": "none",
+      "disabled": true,
+      "test": [
+        {
+          "scannerapi": ["ws_guid1", "ws_guid2"]
+        },
+        []
+      ]
+    },
+        {
+      "id": "SCAN_WORKSPACE2",
+      "name": "Scanner API - scan current workspace (basic)",
+      "description": "Initiates a metadata scan for the current workspace (resolved from context) with no optional flags. Returns the raw workspace info scan result.",
+      "itemType": "none",
+      "disabled": true,
+      "test": [
+        {
+          "scannerapi": ["ws_guid1", "ws_guid2"]
+        },
+        []
+      ]
+    },
+    {
+      "id": "SCAN_WORKSPACE_WITH_DATASOURCE_DETAILS",
+      "name": "Scanner API - scan workspace with datasource details",
+      "description": "Scans a specific workspace and requests datasource details and lineage information. POST https://api.powerbi.com/v1.0/myorg/admin/workspaces/getInfo?lineage={lineage}&datasourceDetails={datasourceDetails}&datasetSchema={datasetSchema}&datasetExpressions={datasetExpressions}&getArtifactUsers={getArtifactUsers}",
+      "itemType": "none",
+      "disabled": true,
+      "test": [
+        {
+          "scannerapi": [
+            "",
+            true,
+            true,
+            true,
+            true,
+            true
+          ]
+        },
+        []
+      ]
+    },
+    {
+      "id": "SCAN_WORKSPACE_FOR_LAKEHOUSES",
+      "name": "Scanner API - scan workspace, checks lakehouses",
+      "description": "Scans a specific workspace.",
+      "itemType": "none",
+      "disabled": false,
+      "test": [
+        {
+          "query": [
+            {
+              "scannerapi": "{context-workspaceid}"
+            },
+            {
+              "var": "workspaces.0.Lakehouse"
+            }
+          ]
+        },
+        []
+      ]
+    },
+    {
+      "id": "SCAN_WORKSPACE_FULL",
+      "name": "Scanner API - scan workspace with all metadata",
+      "description": "Scans a specific workspace requesting all available metadata: lineage, datasource details, dataset schema, dataset expressions, and artifact users.",
+      "itemType": "none",
+      "disabled": true,
+      "test": [
+        {
+          "scannerapi": [
+            "97d03602-4873-4760-b37e-1563ef5358e3",
+            true,
+            true,
+            true,
+            true,
+            true
+          ]
+        },
+        [
+          5000
+        ]
+      ]
+    },
+    {
+      "id": "SCAN_MULTIPLE_WORKSPACES",
+      "name": "Scanner API - scan multiple workspaces",
+      "description": "Scans two workspaces in a single call with datasource details enabled. Up to 100 workspace IDs can be supplied.",
+      "itemType": "none",
+      "disabled": true,
+      "test": [
+        {
+          "scannerapi": [
+            [
+              "97d03602-4873-4760-b37e-1563ef5358e3",
+              "67b7e93a-3fb3-493c-9e41-2c5051008f24"
+            ],
+            false,
+            true,
+            false,
+            false,
+            false
+          ]
+        },
+        [
+          5000
+        ]
+      ]
+    },
+    {
+      "id": "SCAN_AND_CHECK_REPORT_COUNT",
+      "name": "Scanner API - assert workspace has at least one report",
+      "description": "Scans the current workspace and verifies that at least one report exists in the scan result.",
+      "itemType": "none",
+      "disabled": true,
+      "test": [
+        {
+          ">": [
+            {
+              "reduce": [
+                {
+                  "var": "workspaces"
+                },
+                {
+                  "+": [
+                    {
+                      "var": "accumulator"
+                    },
+                    {
+                      "size": {
+                        "var": "current.reports"
+                      }
+                    }
+                  ]
+                },
+                0
+              ]
+            },
+            0
+          ]
+        },
+        {
+          "scannerapi": ""
+        }
+      ]
+    }
+  ]
+}

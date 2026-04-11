@@ -9,12 +9,16 @@
       "test": [
         {
           "daxquery": [
-            "EVALUATE VALUES('★ Employee Country')",
-            true,
+            {
+              "daxgen": [
+                "{context-workspaceid}",
+                "Show me the headcount"
+              ]
+            },
             "EIT_Finance_Dev1@MngEnv339194.onmicrosoft.com"
           ]
         },
-        ["Canada"]
+        5000
       ]
     }
   ]

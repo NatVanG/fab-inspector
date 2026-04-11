@@ -10,7 +10,7 @@
         {
           "daxquery": "EVALUATE VALUES('★ Employee Country')"
         },
-        [ 5000 ]
+        [ "Canada" ]
       ]
     }
   ]

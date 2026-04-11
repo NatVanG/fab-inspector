@@ -48,7 +48,8 @@ namespace PBIRInspectorTests
                 new IJsonLogicOperator[] {
                     new RectangleOverlapOperator(),
                     new DaxQueryOperator(),
-                    new ApiGetOperator()
+                    new ApiGetOperator(),
+                    new ScannerApiOperator()
                 });
             fabRegistry.RegisterAll();
 
@@ -92,6 +93,16 @@ namespace PBIRInspectorTests
             
             Assert.That(rule, Is.Not.Null);
             Assert.That(rule, Is.InstanceOf<DaxQueryRule>());
+        }
+
+        [Test]
+        public void ScannerApi_CanBeDeserialized()
+        {
+            var jsonRule = @"{""scannerapi"": [""ws_guid1"", ""ws_guid2""]}";
+            var rule = JsonSerializer.Deserialize<Rule>(jsonRule, _serializerOptions);
+
+            Assert.That(rule, Is.Not.Null);
+            Assert.That(rule, Is.InstanceOf<ScannerApiRule>());
         }
 
         [Test]

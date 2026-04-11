@@ -10,11 +10,11 @@
         {
           "apiget": [
             "https://api.fabric.microsoft.com/v1/workspaces/{context-workspaceId}/items?type={type}&recursive={recursive}",
-            "Report",
+            "Lakehouse",
             "true"
           ]
         },
-        [5000]
+        []
       ]
     }
   ]

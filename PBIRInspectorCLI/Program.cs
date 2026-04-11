@@ -30,7 +30,7 @@ internal partial class Program
             PBIRInspectorClientLibrary.Main.CleanUpRootTempFolder();
             await PBIRInspectorClientLibrary.Main.Run(_parsedArgs, pageRenderer, operatorRegistries);
         }
-        catch (ArgumentException e)
+        catch (Exception e)
         {
             Console.WriteLine(e.Message);
         }
@@ -76,7 +76,8 @@ internal partial class Program
         new IJsonLogicOperator[] {
                 new RectangleOverlapOperator(),
                 new DaxQueryOperator(),
-                new ApiGetOperator()
+                new ApiGetOperator(),
+                new ScannerApiOperator()
         }));
 
         services.AddTransient<IEnumerable<JsonLogicOperatorRegistry>>(provider => registries);
