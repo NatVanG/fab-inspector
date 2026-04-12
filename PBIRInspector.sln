@@ -45,6 +45,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DocsExamples", "DocsExample
 		DocsExamples\Example-CopyJob-Rules.json = DocsExamples\Example-CopyJob-Rules.json
 		DocsExamples\Example-daxquery-rule.json = DocsExamples\Example-daxquery-rule.json
 		DocsExamples\Example-daxquery-rule2.json = DocsExamples\Example-daxquery-rule2.json
+		DocsExamples\Example-daxquery-rule3.json = DocsExamples\Example-daxquery-rule3.json
 		DocsExamples\Example-Environment-Rules.json = DocsExamples\Example-Environment-Rules.json
 		DocsExamples\Example-fabric-apiget-rule.json = DocsExamples\Example-fabric-apiget-rule.json
 		DocsExamples\Example-fabric-apiget-wparams-rule.json = DocsExamples\Example-fabric-apiget-wparams-rule.json

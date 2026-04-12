@@ -10,13 +10,13 @@
         {
           "daxquery": [
             "EVALUATE VALUES('★ Employee Country')",
-            "f45498e6-9f62-4bbb-bdb6-6d8a7e3a2703",
-            "6a496a15-d00c-4cd6-a731-a3fd79e8fb10",
+            "{context-fabricworkspace}",
+            "{context-fabricitem}",
             true,
-            "Dev1@env.onmicrosoft.com"
+            "EIT_Finance_Dev1@MngEnv339194.onmicrosoft.com"
           ]
         },
-        [ "Canada" ]
+        ["Canada"]
       ]
     }
   ]

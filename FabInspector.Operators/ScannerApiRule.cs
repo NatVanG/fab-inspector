@@ -203,7 +203,7 @@ public class ScannerApiRule : Json.Logic.Rule
             return string.IsNullOrWhiteSpace(contextId) ? [] : [contextId];
         }
 
-        str = str.Replace("{context-workspaceId}", ContextService.FabricWorkspaceId ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+        str = str.Replace(Utils.Constants.ContextFabricWorkspace, ContextService.FabricWorkspaceId ?? string.Empty, StringComparison.OrdinalIgnoreCase);
 
         // Support a single ID or a comma-separated list
         return str.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

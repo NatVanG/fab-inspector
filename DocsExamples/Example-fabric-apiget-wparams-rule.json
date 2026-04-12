@@ -9,7 +9,7 @@
       "test": [
         {
           "apiget": [
-            "https://api.fabric.microsoft.com/v1/workspaces/{context-workspaceId}/items?type={type}&recursive={recursive}",
+            "https://api.fabric.microsoft.com/v1/workspaces/{context-fabricworkspace}/items?type={type}&recursive={recursive}",
             "Lakehouse",
             "true"
           ]

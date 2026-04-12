@@ -1,5 +1,6 @@
 ﻿using Json.Logic;
 using Json.More;
+using Microsoft.VisualBasic;
 using PBIRInspectorLibrary;
 using PBIRInspectorLibrary.Part;
 using System.Net;
@@ -74,8 +75,8 @@ public class ApiGetRule : Json.Logic.Rule
             throw new JsonLogicException($"Unsupported API host in URL template: {urlTemplate}. Only Power BI and Fabric API endpoints are supported.");
         }
 
-       var resolvedUrl = urlTemplate.Replace("{context-workspaceId}", workspaceId, StringComparison.InvariantCultureIgnoreCase);
-       resolvedUrl = resolvedUrl.Replace("{context-itemId}", itemId, StringComparison.InvariantCultureIgnoreCase);
+       var resolvedUrl = urlTemplate.Replace(Utils.Constants.ContextFabricWorkspace, workspaceId, StringComparison.InvariantCultureIgnoreCase);
+       resolvedUrl = resolvedUrl.Replace(Utils.Constants.ContextFabricItem, itemId, StringComparison.InvariantCultureIgnoreCase);
 
         //ensure parameters.Length does not exceed the number of placeholders in the urlTemplate
         // placeholders are in the format {paramName}

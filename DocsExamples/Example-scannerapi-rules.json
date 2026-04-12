@@ -69,7 +69,7 @@
         {
           "query": [
             {
-              "scannerapi": "{context-workspaceid}"
+              "scannerapi": "{context-fabricworkspace}"
             },
             {
               "var": "workspaces.0.Lakehouse"

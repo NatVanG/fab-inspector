@@ -8,7 +8,7 @@
       "disabled": false,
       "test": [
         {
-          "apiget": "https://api.powerbi.com/v1.0/myorg/groups/{context-workspaceid}/reports"
+          "apiget": "https://api.powerbi.com/v1.0/myorg/groups/{context-fabricworkspace}/reports"
         },
         [5000]
       ]

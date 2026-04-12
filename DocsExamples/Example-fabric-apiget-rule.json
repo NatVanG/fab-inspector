@@ -9,10 +9,10 @@
       "test": [
         {
           "apiget": [
-            "https://api.fabric.microsoft.com/v1/workspaces/{context-workspaceid}/onelake/settings"
+            "https://api.fabric.microsoft.com/v1/workspaces/{context-fabricworkspace}/onelake/settings"
           ]
         },
-        [5000]
+        []
       ]
     }
   ]

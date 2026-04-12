@@ -26,12 +26,17 @@ public class DaxQueryRule : Json.Logic.Rule
     private const string PowerBIApiBaseUrl = "https://api.powerbi.com/v1.0/myorg";
 
     internal Json.Logic.Rule Query { get; }
+    internal Json.Logic.Rule WorspaceId { get; }
+    internal Json.Logic.Rule SemanticModelId { get; }
     internal Json.Logic.Rule IncludeNulls { get; }
     internal Json.Logic.Rule ImpersonatedUserName { get; }
 
-    internal DaxQueryRule(Json.Logic.Rule query, Json.Logic.Rule includeNulls, Json.Logic.Rule impersonatedUserName)
+
+    internal DaxQueryRule(Json.Logic.Rule query, Json.Logic.Rule workspaceId, Json.Logic.Rule semanticModelId, Json.Logic.Rule includeNulls, Json.Logic.Rule impersonatedUserName)
     {
         Query = query;
+        WorspaceId = workspaceId;
+        SemanticModelId = semanticModelId;
         IncludeNulls = includeNulls;
         ImpersonatedUserName = impersonatedUserName;
     }
@@ -46,10 +51,21 @@ public class DaxQueryRule : Json.Logic.Rule
     public override JsonNode? Apply(JsonNode? data, JsonNode? contextData = null)
     {
         var queryValue = Query.Apply(data, contextData);
+        var strQuery = queryValue?.Stringify();
+
+        var workspaceId = WorspaceId?.Apply(data, contextData)?.Stringify();
+        workspaceId = workspaceId!.Equals(Utils.Constants.ContextFabricWorkspace, StringComparison.OrdinalIgnoreCase) ? ContextService.FabricWorkspaceId : workspaceId;
+        if (string.IsNullOrWhiteSpace(workspaceId) || !Guid.TryParse(workspaceId, out _))
+            throw new InvalidOperationException("WorkspaceId is not configured.");
+
+        var semanticModelId = SemanticModelId?.Apply(data, contextData)?.Stringify();
+        semanticModelId = semanticModelId!.Equals(Utils.Constants.ContextFabricItem, StringComparison.OrdinalIgnoreCase) ? ContextService.FabricItem : semanticModelId;
+        if (string.IsNullOrWhiteSpace(semanticModelId) || !Guid.TryParse(semanticModelId, out _))
+            throw new InvalidOperationException("SemanticModelId is not configured.");
+
         var includeNullsValue = IncludeNulls?.Apply(data, contextData);
         var impersonatedUserNameValue = ImpersonatedUserName?.Apply(data, contextData);
 
-        var strQuery = queryValue?.Stringify();
         var boolIncludeNulls = includeNullsValue?.GetValue<bool>() ?? false;
         var strImpersonatedUserName = impersonatedUserNameValue?.Stringify();
 
@@ -58,12 +74,6 @@ public class DaxQueryRule : Json.Logic.Rule
 
         var httpClient = ContextService.HttpClient
             ?? throw new InvalidOperationException("ContextService.HttpClient is not configured. Ensure authentication has been completed before running daxquery rules.");
-
-        var workspaceId = ContextService.FabricWorkspaceId
-            ?? throw new InvalidOperationException("ContextService.FabricWorkspaceId is not configured.");
-
-        var semanticModelId = ContextService.FabricItem
-            ?? throw new InvalidOperationException("ContextService.FabricItem is not configured.");
 
         var credential = ContextService.Credential
             ?? throw new InvalidOperationException("ContextService.Credential is not configured. Ensure authentication has been completed before running daxquery rules.");
@@ -126,7 +136,13 @@ internal class DaxQueryJsonConverter : WeaklyTypedJsonConverter<DaxQueryRule>
         if (parameters == null || parameters.Length < 1)
             throw new JsonException("The daxquery rule requires at least one parameter: the DAX query expression.");
 
-        return new DaxQueryRule(parameters[0], parameters.Length > 1 ? parameters[1] : null, parameters.Length > 2 ? parameters[2] : null);
+        return new DaxQueryRule(
+            parameters[0],
+            parameters.Length > 1 ? parameters[1] : Utils.Constants.ContextFabricWorkspace,
+            parameters.Length > 2 ? parameters[2] : Utils.Constants.ContextFabricItem,
+            parameters.Length > 3 ? parameters[3] : null,
+            parameters.Length > 4 ? parameters[4] : null
+        );
     }
 
     public override void Write(Utf8JsonWriter writer, DaxQueryRule value, JsonSerializerOptions options)
