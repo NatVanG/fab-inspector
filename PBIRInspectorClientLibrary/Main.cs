@@ -419,7 +419,9 @@ namespace PBIRInspectorClientLibrary
                         throw new ArgumentException("Directory with path \"{0}\" does not exist", localOutputDirPath);
                     }
 
-                    var testRun = new TestRun() { CompletionTime = DateTime.Now, TestedFilePath = Main._args.FabricItem, RulesFilePath = Main._args.RulesFilePath, Verbose = Main._args.Verbose, Results = testResults };
+                    var testedFilePath = BuildTestedFilePath();
+
+                    var testRun = new TestRun() { CompletionTime = DateTime.Now, TestedFilePath = testedFilePath, RulesFilePath = Main._args.RulesFilePath, Verbose = Main._args.Verbose, Results = testResults };
                     jsonTestRun = JsonSerializer.Serialize(testRun);
                     if (Main._args.JSONOutput)
                     {
@@ -543,6 +545,24 @@ namespace PBIRInspectorClientLibrary
                     Directory.Delete(localOutputDirPath, true);
                 }
             }
+        }
+
+        private static string BuildTestedFilePath()
+        {
+            string path;
+            if (!string.IsNullOrWhiteSpace(Main._args.FabricWorkspaceId))
+            {
+                path = string.Concat("Workspace: ", Main._args.FabricWorkspaceId);
+                if (!string.IsNullOrWhiteSpace(Main._args.FabricItem))
+                {
+                    path = string.Concat(path, " | Item: ", Main._args.FabricItem);
+                }
+            }
+            else
+            {
+                path = Main._args.FabricItem;
+            }
+            return path;
         }
 
         private static async Task UploadOutputArtifactsToOneLakeAsync(

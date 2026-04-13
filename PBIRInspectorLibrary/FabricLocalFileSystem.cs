@@ -11,6 +11,7 @@ namespace PBIRInspectorLibrary
 {
     public class FabricLocalFileSystem : LocalFileSystem, IFabricFileSystem
     {
+        string _rootDir;
 
         /// <summary>
         /// Initializes a new instance of PhysicalFileSystem with an empty root path
@@ -25,7 +26,7 @@ namespace PBIRInspectorLibrary
         /// <param name="rootPath">The root path for this file system instance</param>
         public FabricLocalFileSystem(string rootPath) : base(rootPath)
         {
-
+            _rootDir = File.Exists(rootPath) ? System.IO.Path.GetDirectoryName(rootPath) ?? string.Empty : rootPath;
         }
 
         public IEnumerable<FabricItem> GetFabricItems(string path)
@@ -66,8 +67,8 @@ namespace PBIRInspectorLibrary
 
         public string GetRelativePath(string fullPath)
         {
-            if (string.IsNullOrEmpty(fullPath) || string.IsNullOrEmpty(this.RootPath)) return fullPath;
-            return fullPath.Substring(fullPath.IndexOf(this.RootPath) + this.RootPath.Length);
+            if (string.IsNullOrEmpty(fullPath) || string.IsNullOrEmpty(this._rootDir)) return fullPath;
+            return fullPath.Substring(fullPath.IndexOf(this._rootDir) + this._rootDir.Length);
         }
     }
 }

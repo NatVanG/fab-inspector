@@ -257,7 +257,7 @@ namespace PBIRInspectorLibrary
                                 var jruleresult = jrule.Apply(newdata);
                                 result = rule.Test.Expected.IsEquivalentTo(jruleresult);
 
-                                string resultString = string.Format("Rule \"{0}\" {1} with result: {2}, expected: {3}.", rule != null ? rule.Name : string.Empty, result ? "PASSED" : "FAILED", jruleresult != null ? jruleresult.ToString() : string.Empty, rule.Test.Expected != null ? rule.Test.Expected.ToString() : string.Empty);
+                                string resultString = string.Format("Rule \"{0}\" {1} with result: {2}, expected: {3}", rule != null ? rule.Name : string.Empty, result ? "PASSED" : "FAILED", jruleresult != null ? jruleresult.ToString() : string.Empty, rule.Test.Expected != null ? rule.Test.Expected.ToString() : string.Empty);
                                 testResults.Add(new TestResult { RuleId = rule.Id, RuleName = rule.Name, LogType = ruleLogType, RuleDescription = rule.Description, RuleItemType = rule.ItemType, ItemPath = itemPath, ParentName = parentPageName, ParentDisplayName = parentPageDisplayName, Pass = result, Message = resultString, Expected = rule.Test.Expected, Actual = jruleresult });
 
                                 //PATCH
