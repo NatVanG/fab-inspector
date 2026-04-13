@@ -419,11 +419,11 @@ namespace PBIRInspectorClientLibrary
                 if (!(Main._args.ADOOutput || Main._args.GITHUBOutput) && (Main._args.JSONOutput || Main._args.HTMLOutput))
                 {
                     var outputFilePath = string.Empty;
-                    var pbiFileNameWOextension = Path.GetFileNameWithoutExtension(Main._args.FabricItem);
+                    var outputFileIdentifier = !string.IsNullOrWhiteSpace(Main._args.FabricItem) ? Path.GetFileNameWithoutExtension(Main._args.FabricItem) :  Main._args.FabricWorkspaceId;
                     var timestampSuffix = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
                     var jsonFileName = isOneLakeOutput
-                        ? string.Concat("TestRun_", pbiFileNameWOextension, "_", timestampSuffix, ".json")
-                        : string.Concat("TestRun_", pbiFileNameWOextension, ".json");
+                        ? string.Concat("TestRun_", outputFileIdentifier, "_", timestampSuffix, ".json")
+                        : string.Concat("TestRun_", outputFileIdentifier, ".json");
 
                     if (!string.IsNullOrEmpty(localOutputDirPath))
                     {
