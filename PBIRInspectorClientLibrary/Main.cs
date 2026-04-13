@@ -78,7 +78,7 @@ namespace PBIRInspectorClientLibrary
                     if (_credential == null)
                     {
                         throw new InvalidOperationException(
-                            "OneLake rules URL requires authentication. Use -authmethod devicecode, interactive, or clientsecret.");
+                            "OneLake rules URL requires authentication. Use -authmethod interactive, clientsecret, certificate, federatedtoken, or managedidentity.");
                     }
 
                     using var rulesStream = OneLakeRulesFileDownloader
@@ -126,14 +126,6 @@ namespace PBIRInspectorClientLibrary
 
                     switch (args.AuthMethod.ToLower())
                     {
-                        case "devicecode":
-                            _credential = FabricAuthenticationHelper.CreateDeviceCodeCredential(
-                                args.ClientId,
-                                args.TenantId,
-                                message => OnMessageIssued(MessageTypeEnum.Information, message)
-                            );
-                            break;
-
                         case "interactive":
                             _credential = FabricAuthenticationHelper.CreateInteractiveCredential(
                                 args.ClientId,
@@ -146,6 +138,29 @@ namespace PBIRInspectorClientLibrary
                                 args.ClientId,
                                 args.ClientSecret,
                                 args.TenantId
+                            );
+                            break;
+
+                        case "certificate":
+                            _credential = FabricAuthenticationHelper.CreateCertificateCredential(
+                                args.ClientId,
+                                args.TenantId,
+                                args.CertificatePath,
+                                args.CertificatePassword
+                            );
+                            break;
+
+                        case "federatedtoken":
+                            _credential = FabricAuthenticationHelper.CreateFederatedTokenCredential(
+                                args.ClientId,
+                                args.FederatedToken,
+                                args.TenantId
+                            );
+                            break;
+
+                        case "managedidentity":
+                            _credential = FabricAuthenticationHelper.CreateManagedIdentityCredential(
+                                args.ClientId
                             );
                             break;
 

@@ -12,54 +12,18 @@ namespace PBIRInspectorClientLibrary.Utils
 
 
         /// <summary>
-        /// Creates a device code credential with Fabric API scopes
-        /// </summary>
-        /// <param name="clientId">Azure AD app client ID</param>
-        /// <param name="tenantId">Azure AD tenant ID (optional, uses "organizations" if null)</param>
-        /// <param name="onDeviceCodeMessage">Optional callback for device code messages</param>
-        /// <returns>TokenCredential for Fabric API</returns>
-        public static TokenCredential CreateDeviceCodeCredential(string clientId, string? tenantId = null, Action<string>? onDeviceCodeMessage = null)
-        {
-            var options = new DeviceCodeCredentialOptions
-            {
-                ClientId = clientId,
-                TenantId = tenantId ?? "organizations",
-                // AddauthorityHost if needed for specific clouds
-                // AuthorityHost = AzureAuthorityHosts.AzurePublicCloud,
-                DeviceCodeCallback = (deviceCodeInfo, cancellationToken) =>
-                {
-                    try
-                    {
-                        // Allow caller to handle the message instead of direct Console.WriteLine
-                        if (onDeviceCodeMessage != null)
-                        {
-                            onDeviceCodeMessage(deviceCodeInfo.Message);
-                        }
-                        else
-                        {
-                            Console.WriteLine(deviceCodeInfo.Message);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        // Log the exception if callback fails
-                        Console.WriteLine($"Error displaying device code message: {ex.Message}");
-                    }
-                    return Task.CompletedTask;
-                }
-            };
-
-            return new DeviceCodeCredential(options);
-        }
-
-        /// <summary>
         /// Creates an interactive browser credential (suitable for desktop apps)
         /// </summary>
         /// <param name="clientId">Azure AD app client ID</param>
         /// <param name="tenantId">Azure AD tenant ID (optional, uses "organizations" if null)</param>
         /// <returns>TokenCredential for Fabric API</returns>
-        public static TokenCredential CreateInteractiveCredential(string clientId, string? tenantId = null)
+        public static TokenCredential CreateInteractiveCredential(string? clientId = null, string? tenantId = null)
         {
+            if (string.IsNullOrWhiteSpace(clientId))
+            {
+                return new InteractiveBrowserCredential();
+            }
+
             var options = new InteractiveBrowserCredentialOptions
             {
                 ClientId = clientId,
@@ -83,28 +47,55 @@ namespace PBIRInspectorClientLibrary.Utils
         }
 
         /// <summary>
-        /// Creates a certificate credential (suitable for service-to-service authentication)
+        /// Creates a certificate credential for service principal authentication.
+        /// Supports PEM, PFX, and P12 files. If <paramref name="certificatePassword"/> is provided,
+        /// the certificate is loaded with that password; otherwise it is treated as unprotected.
         /// </summary>
         /// <param name="clientId">Azure AD app client ID</param>
-        /// <param name="certificate">X509 certificate for authentication</param>
         /// <param name="tenantId">Azure AD tenant ID</param>
+        /// <param name="certificatePath">Path to the certificate file (.pem, .pfx, or .p12)</param>
+        /// <param name="certificatePassword">Optional certificate password (for password-protected PFX/P12)</param>
         /// <returns>TokenCredential for Fabric API</returns>
-        public static TokenCredential CreateCertificateCredential(string clientId, System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, string tenantId)
+        public static TokenCredential CreateCertificateCredential(string clientId, string tenantId, string certificatePath, string? certificatePassword = null)
         {
-            return new ClientCertificateCredential(tenantId, clientId, certificate);
+            if (string.IsNullOrWhiteSpace(certificatePassword))
+            {
+                return new ClientCertificateCredential(tenantId, clientId, certificatePath);
+            }
+
+            var cert = new System.Security.Cryptography.X509Certificates.X509Certificate2(
+                certificatePath, certificatePassword,
+                System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.EphemeralKeySet);
+            return new ClientCertificateCredential(tenantId, clientId, cert);
         }
 
         /// <summary>
-        /// Gets a Fabric API access token for testing/debugging purposes
+        /// Creates a federated token credential for workload identity / service principal federation.
         /// </summary>
-        /// <param name="credential">TokenCredential to use</param>
-        /// <returns>Access token string</returns>
-        //public static async Task<string> GetAccessTokenAsync(TokenCredential credential)
-        //{
-        //    var tokenRequestContext = new TokenRequestContext(AuthenticationHelper.FabricScopes);
-        //    var token = await credential.GetTokenAsync(tokenRequestContext, CancellationToken.None);
-        //    return token.Token;
-        //}
+        /// <param name="clientId">Azure AD app client ID</param>
+        /// <param name="federatedToken">The federated identity token (e.g. a GitHub Actions OIDC token)</param>
+        /// <param name="tenantId">Azure AD tenant ID</param>
+        /// <returns>TokenCredential for Fabric API</returns>
+        public static TokenCredential CreateFederatedTokenCredential(string clientId, string federatedToken, string tenantId)
+        {
+            return new ClientAssertionCredential(tenantId, clientId, _ => Task.FromResult(federatedToken));
+        }
+
+        /// <summary>
+        /// Creates a managed identity credential.
+        /// Pass <paramref name="clientId"/> for user-assigned managed identity, or leave null for system-assigned.
+        /// </summary>
+        /// <param name="clientId">Client ID for user-assigned managed identity, or null for system-assigned</param>
+        /// <returns>TokenCredential for Fabric API</returns>
+        public static TokenCredential CreateManagedIdentityCredential(string? clientId = null)
+        {
+            if (string.IsNullOrWhiteSpace(clientId))
+            {
+                return new ManagedIdentityCredential();
+            }
+
+            return new ManagedIdentityCredential(ManagedIdentityId.FromUserAssignedClientId(clientId));
+        }
 
     }
 }

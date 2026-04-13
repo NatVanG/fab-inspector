@@ -298,24 +298,26 @@ namespace PBIRInspectorTests
         }
 
         [Test]
-        public void TestCLIArgsUtilsSuccess_AuthMethodDeviceCode()
+        public void TestCLIArgsUtilsThrows_AuthMethodDeviceCodeNowInvalid()
         {
             string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id".Split(" ");
-            var parsedArgs = ArgsUtils.ParseArgs(args);
+            Args? parsedArgs = null;
 
-            Assert.That(parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase) 
-                && parsedArgs.ClientId.Equals("test-client-id", StringComparison.OrdinalIgnoreCase));
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+
+            Assert.That(ex.Message.Contains("Invalid auth method"));
         }
 
         [Test]
-        public void TestCLIArgsUtilsSuccess_AuthMethodDeviceCodeWithTenantId()
+        public void TestCLIArgsUtilsSuccess_AuthMethodCertificate()
         {
-            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id -tenantid test-tenant-id".Split(" ");
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod certificate -clientid test-client-id -tenantid test-tenant-id -certificatepath /path/to/cert.pem".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase) 
+            Assert.That(parsedArgs.AuthMethod.Equals("certificate", StringComparison.OrdinalIgnoreCase)
                 && parsedArgs.ClientId.Equals("test-client-id", StringComparison.OrdinalIgnoreCase)
-                && parsedArgs.TenantId.Equals("test-tenant-id", StringComparison.OrdinalIgnoreCase));
+                && parsedArgs.CertificatePath.Equals("/path/to/cert.pem", StringComparison.OrdinalIgnoreCase));
         }
 
         [Test]
@@ -343,10 +345,10 @@ namespace PBIRInspectorTests
         [Test]
         public void TestCLIArgsUtilsSuccess_AuthMethodCaseInsensitive()
         {
-            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod DeviceCode -clientid test-client-id".Split(" ");
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod Certificate -clientid test-client-id -tenantid test-tenant-id -certificatepath /path/to/cert.pem".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase));
+            Assert.That(parsedArgs.AuthMethod.Equals("certificate", StringComparison.OrdinalIgnoreCase));
         }
 
         [Test]
@@ -362,9 +364,9 @@ namespace PBIRInspectorTests
         }
 
         [Test]
-        public void TestCLIArgsUtilsThrows_DeviceCodeMissingClientId()
+        public void TestCLIArgsUtilsThrows_CertificateMissingClientId()
         {
-            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode".Split(" ");
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod certificate -tenantid test-tenant-id -certificatepath /path/to/cert.pem".Split(" ");
             Args? parsedArgs = null;
 
             ArgumentException ex = Assert.Throws<ArgumentException>(
@@ -374,15 +376,13 @@ namespace PBIRInspectorTests
         }
 
         [Test]
-        public void TestCLIArgsUtilsThrows_InteractiveMissingClientId()
+        public void TestCLIArgsUtilsSuccess_InteractiveWithoutClientId()
         {
             string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive".Split(" ");
-            Args? parsedArgs = null;
+            var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            ArgumentException ex = Assert.Throws<ArgumentException>(
-                () => parsedArgs = ArgsUtils.ParseArgs(args));
-            
-            Assert.That(ex.Message.Contains("Client ID is required"));
+            Assert.That(parsedArgs.AuthMethod.Equals("interactive", StringComparison.OrdinalIgnoreCase)
+                && string.IsNullOrEmpty(parsedArgs.ClientId));
         }
 
         [Test]
@@ -475,9 +475,9 @@ namespace PBIRInspectorTests
 
 
         [Test]
-        public void TestCLIArgsUtilsThrows_DeviceCodeWithADOFormat()
+        public void TestCLIArgsUtilsThrows_InteractiveWithADOFormat_WasDeviceCode()
         {
-            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id -formats ADO".Split(" ");
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -formats ADO".Split(" ");
             Args? parsedArgs = null;
 
             ArgumentException ex = Assert.Throws<ArgumentException>(
@@ -487,9 +487,9 @@ namespace PBIRInspectorTests
         }
 
         [Test]
-        public void TestCLIArgsUtilsThrows_DeviceCodeWithGitHubFormat()
+        public void TestCLIArgsUtilsThrows_InteractiveWithGitHubFormat_WasDeviceCode()
         {
-            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id -formats GitHub".Split(" ");
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -formats GitHub".Split(" ");
             Args? parsedArgs = null;
 
             ArgumentException ex = Assert.Throws<ArgumentException>(
@@ -499,9 +499,9 @@ namespace PBIRInspectorTests
         }
 
         [Test]
-        public void TestCLIArgsUtilsThrows_DeviceCodeWithADOAndGitHubFormats()
+        public void TestCLIArgsUtilsThrows_InteractiveWithADOAndGitHubFormats_WasDeviceCode()
         {
-            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id -formats ADO,GitHub".Split(" ");
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -formats ADO,GitHub".Split(" ");
             Args? parsedArgs = null;
 
             ArgumentException ex = Assert.Throws<ArgumentException>(
@@ -511,9 +511,9 @@ namespace PBIRInspectorTests
         }
 
         [Test]
-        public void TestCLIArgsUtilsThrows_DeviceCodeWithMixedFormatsIncludingADO()
+        public void TestCLIArgsUtilsThrows_InteractiveWithMixedFormatsIncludingADO_WasDeviceCode()
         {
-            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id -formats HTML,ADO,JSON".Split(" ");
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -formats HTML,ADO,JSON".Split(" ");
             Args? parsedArgs = null;
 
             ArgumentException ex = Assert.Throws<ArgumentException>(
@@ -523,16 +523,16 @@ namespace PBIRInspectorTests
         }
 
         [Test]
-        public void TestCLIArgsUtilsSuccess_DeviceCodeWithAllowedFormats()
+        public void TestCLIArgsUtilsSuccess_InteractiveWithAllowedFormats_WasDeviceCode()
         {
-            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id -formats HTML,JSON,PNG,CONSOLE".Split(" ");
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -formats HTML,JSON,PNG,CONSOLE".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase) 
+            Assert.That(parsedArgs.AuthMethod.Equals("interactive", StringComparison.OrdinalIgnoreCase)
                 && parsedArgs.ClientId.Equals("test-client-id", StringComparison.OrdinalIgnoreCase)
-                && parsedArgs.HTMLOutput 
-                && parsedArgs.JSONOutput 
-                && parsedArgs.PNGOutput 
+                && parsedArgs.HTMLOutput
+                && parsedArgs.JSONOutput
+                && parsedArgs.PNGOutput
                 && parsedArgs.CONSOLEOutput);
         }
 
@@ -606,14 +606,14 @@ namespace PBIRInspectorTests
         }
 
         [Test]
-        public void TestCLIArgsUtilsSuccess_FabricWorkspaceScoped_DeviceCode()
+        public void TestCLIArgsUtilsSuccess_FabricWorkspaceScoped_ManagedIdentity()
         {
             string workspaceId = Guid.NewGuid().ToString();
-            string[] args = $"-fabricworkspace {workspaceId} -rules rulesPath -authmethod devicecode -clientid testclientid".Split(" ");
+            string[] args = $"-fabricworkspace {workspaceId} -rules rulesPath -authmethod managedidentity".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
             Assert.That(parsedArgs.FabricWorkspaceId == workspaceId 
-                && parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.AuthMethod.Equals("managedidentity", StringComparison.OrdinalIgnoreCase)
                 && string.IsNullOrEmpty(parsedArgs.FabricItem));
         }
 
@@ -659,7 +659,7 @@ namespace PBIRInspectorTests
         [Test]
         public void TestCLIArgsUtilsError_FabricWorkspace_InvalidGuid()
         {
-            string[] args = "-fabricworkspace not-a-guid -rules rulesPath -authmethod devicecode -clientid testclientid".Split(" ");
+            string[] args = "-fabricworkspace not-a-guid -rules rulesPath -authmethod interactive -clientid testclientid".Split(" ");
 
             var ex = Assert.Throws<ArgumentException>(() => ArgsUtils.ParseArgs(args));
             Assert.That(ex.Message.Contains("Invalid Fabric workspace ID") && ex.Message.Contains("Must be a valid GUID"));
@@ -669,7 +669,7 @@ namespace PBIRInspectorTests
         public void TestCLIArgsUtilsError_FabricWorkspace_ItemNotGuid()
         {
             string workspaceId = Guid.NewGuid().ToString();
-            string[] args = $"-fabricworkspace {workspaceId} -fabricitem C:\\path\\to\\folder -rules rulesPath -authmethod devicecode -clientid testclientid".Split(" ");
+            string[] args = $"-fabricworkspace {workspaceId} -fabricitem C:\\path\\to\\folder -rules rulesPath -authmethod interactive -clientid testclientid".Split(" ");
 
             var ex = Assert.Throws<ArgumentException>(() => ArgsUtils.ParseArgs(args));
             Assert.That(ex.Message.Contains("must be a valid GUID"));
@@ -690,9 +690,9 @@ namespace PBIRInspectorTests
         // Parallel execution with remote auth validation tests (lines 90-94 of ArgsUtils.cs)
 
         [Test]
-        public void TestCLIArgsUtilsThrows_ParallelWithDeviceCodeAuth()
+        public void TestCLIArgsUtilsThrows_ParallelWithCertificateAuth()
         {
-            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id -parallel true".Split(" ");
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod certificate -tenantid test-tenant-id -clientid test-client-id -certificatepath /path/to/cert.pem -parallel true".Split(" ");
             Args? parsedArgs = null;
 
             ArgumentException ex = Assert.Throws<ArgumentException>(
@@ -746,12 +746,12 @@ namespace PBIRInspectorTests
         }
 
         [Test]
-        public void TestCLIArgsUtilsSuccess_NoParallelWithDeviceCodeAuth()
+        public void TestCLIArgsUtilsSuccess_NoParallelWithCertificateAuth()
         {
-            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id".Split(" ");
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod certificate -tenantid test-tenant-id -clientid test-client-id -certificatepath /path/to/cert.pem".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase) 
+            Assert.That(parsedArgs.AuthMethod.Equals("certificate", StringComparison.OrdinalIgnoreCase) 
                 && !parsedArgs.Parallel);
         }
 
@@ -776,12 +776,12 @@ namespace PBIRInspectorTests
         }
 
         [Test]
-        public void TestCLIArgsUtilsSuccess_ParallelFalseWithDeviceCodeAuth()
+        public void TestCLIArgsUtilsSuccess_ParallelFalseWithCertificateAuth()
         {
-            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod devicecode -clientid test-client-id -parallel false".Split(" ");
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod certificate -tenantid test-tenant-id -clientid test-client-id -certificatepath /path/to/cert.pem -parallel false".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            Assert.That(parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase) 
+            Assert.That(parsedArgs.AuthMethod.Equals("certificate", StringComparison.OrdinalIgnoreCase) 
                 && !parsedArgs.Parallel);
         }
 
@@ -816,14 +816,14 @@ namespace PBIRInspectorTests
         }
 
         [Test]
-        public void TestCLIArgsUtilsSuccess_OneLakeRulesUrlWithDeviceCodeAuth()
+        public void TestCLIArgsUtilsSuccess_OneLakeRulesUrlWithManagedIdentityAuth()
         {
             string oneLakeRulesUrl = "https://onelake.dfs.fabric.microsoft.com/MyWorkspace/MyLakehouse.Lakehouse/Files/rules.json";
-            string[] args = $"-fabricitem fabricitempath -rules {oneLakeRulesUrl} -authmethod devicecode -clientid test-client-id".Split(" ");
+            string[] args = $"-fabricitem fabricitempath -rules {oneLakeRulesUrl} -authmethod managedidentity".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
             Assert.That(parsedArgs.RulesFilePath.Equals(oneLakeRulesUrl, StringComparison.OrdinalIgnoreCase)
-                && parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase));
+                && parsedArgs.AuthMethod.Equals("managedidentity", StringComparison.OrdinalIgnoreCase));
         }
 
         [Test]
@@ -848,14 +848,14 @@ namespace PBIRInspectorTests
         }
 
         [Test]
-        public void TestCLIArgsUtilsSuccess_OneLakeOutputUrlWithDeviceCodeAuth()
+        public void TestCLIArgsUtilsSuccess_OneLakeOutputUrlWithManagedIdentityAuth()
         {
             string oneLakeOutputUrl = "https://onelake.dfs.fabric.microsoft.com/MyWorkspace/MyLakehouse.Lakehouse/Files/output";
-            string[] args = $"-fabricitem fabricitempath -rules rulesPath -output {oneLakeOutputUrl} -authmethod devicecode -clientid test-client-id".Split(" ");
+            string[] args = $"-fabricitem fabricitempath -rules rulesPath -output {oneLakeOutputUrl} -authmethod managedidentity".Split(" ");
             var parsedArgs = ArgsUtils.ParseArgs(args);
 
             Assert.That(parsedArgs.OutputDirPath.Equals(oneLakeOutputUrl, StringComparison.OrdinalIgnoreCase)
-                && parsedArgs.AuthMethod.Equals("devicecode", StringComparison.OrdinalIgnoreCase));
+                && parsedArgs.AuthMethod.Equals("managedidentity", StringComparison.OrdinalIgnoreCase));
         }
 
         [Test]
@@ -869,6 +869,168 @@ namespace PBIRInspectorTests
                 && parsedArgs.AuthMethod.Equals("clientsecret", StringComparison.OrdinalIgnoreCase));
         }
 
+        // Certificate auth tests
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_AuthMethodCertificateWithPassword()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod certificate -clientid test-client-id -tenantid test-tenant-id -certificatepath /path/to/cert.p12 -certificatepassword secret123".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("certificate", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.CertificatePath.Equals("/path/to/cert.p12", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.CertificatePassword.Equals("secret123", StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_CertificateMissingTenantId()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod certificate -clientid test-client-id -certificatepath /path/to/cert.pem".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+
+            Assert.That(ex.Message.Contains("Tenant ID is required"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_CertificateMissingPath()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod certificate -clientid test-client-id -tenantid test-tenant-id".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+
+            Assert.That(ex.Message.Contains("Certificate path is required"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_CertificateWithADOFormat()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod certificate -tenantid test-tenant-id -clientid test-client-id -certificatepath /path/to/cert.pem -formats ADO".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("certificate", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.ADOOutput);
+        }
+
+        // Federated token auth tests
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_AuthMethodFederatedToken()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod federatedtoken -clientid test-client-id -tenantid test-tenant-id -federatedtoken mytoken123".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("federatedtoken", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.ClientId.Equals("test-client-id", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.TenantId.Equals("test-tenant-id", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.FederatedToken.Equals("mytoken123", StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_FederatedTokenMissingClientId()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod federatedtoken -tenantid test-tenant-id -federatedtoken mytoken123".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+
+            Assert.That(ex.Message.Contains("Client ID is required"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_FederatedTokenMissingTenantId()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod federatedtoken -clientid test-client-id -federatedtoken mytoken123".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+
+            Assert.That(ex.Message.Contains("Tenant ID is required"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_FederatedTokenMissingToken()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod federatedtoken -clientid test-client-id -tenantid test-tenant-id".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+
+            Assert.That(ex.Message.Contains("Federated token is required"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_FederatedTokenWithGitHubFormat()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod federatedtoken -tenantid test-tenant-id -clientid test-client-id -federatedtoken mytoken -formats GitHub".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("federatedtoken", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.GITHUBOutput);
+        }
+
+        // Managed identity auth tests
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_AuthMethodManagedIdentitySystemAssigned()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod managedidentity".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("managedidentity", StringComparison.OrdinalIgnoreCase)
+                && string.IsNullOrEmpty(parsedArgs.ClientId));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_AuthMethodManagedIdentityUserAssigned()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod managedidentity -clientid test-client-id".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("managedidentity", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.ClientId.Equals("test-client-id", StringComparison.OrdinalIgnoreCase));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_ParallelWithManagedIdentityAuth()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod managedidentity -parallel true".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+
+            Assert.That(ex.Message.Contains("Parallel execution is not supported when using remote authentication methods"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_ParallelWithFederatedTokenAuth()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod federatedtoken -tenantid test-tenant-id -clientid test-client-id -federatedtoken mytoken -parallel true".Split(" ");
+            Args? parsedArgs = null;
+
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => parsedArgs = ArgsUtils.ParseArgs(args));
+
+            Assert.That(ex.Message.Contains("Parallel execution is not supported when using remote authentication methods"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsSuccess_ManagedIdentityWithADOFormat()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod managedidentity -formats ADO".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.AuthMethod.Equals("managedidentity", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.ADOOutput);
+        }
 
     }
 }

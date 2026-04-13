@@ -109,6 +109,12 @@ namespace PBIRInspectorClientLibrary.Utils
         public string? ClientId { get; set; }
         
         public string? ClientSecret { get; set; }
+
+        public string? CertificatePath { get; set; }
+
+        public string? CertificatePassword { get; set; }
+
+        public string? FederatedToken { get; set; }
         
         public string? FabricWorkspaceId { get; set; }
     }

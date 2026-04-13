@@ -5,10 +5,10 @@ namespace PBIRInspectorClientLibrary.Utils
     {
         public static Args ParseArgs(string[] args)
         {
-            const string PBIX = "-pbix", PBIP = "-pbip", PBIPREPORT = "-pbipreport", FABRICITEM = "-fabricitem", FABRICWORKSPACE = "-fabricworkspace", RULES = "-rules", OUTPUT = "-output", FORMATS = "-formats", VERBOSE = "-verbose", PARALLEL = "-parallel", OVERWRITEOUTPUT = "-overwriteoutput", AUTHMETHOD = "-authmethod", TENANTID = "-tenantid", CLIENTID = "-clientid", CLIENTSECRET = "-clientsecret"; 
+            const string PBIX = "-pbix", PBIP = "-pbip", PBIPREPORT = "-pbipreport", FABRICITEM = "-fabricitem", FABRICWORKSPACE = "-fabricworkspace", RULES = "-rules", OUTPUT = "-output", FORMATS = "-formats", VERBOSE = "-verbose", PARALLEL = "-parallel", OVERWRITEOUTPUT = "-overwriteoutput", AUTHMETHOD = "-authmethod", TENANTID = "-tenantid", CLIENTID = "-clientid", CLIENTSECRET = "-clientsecret", CERTIFICATEPATH = "-certificatepath", CERTIFICATEPASSWORD = "-certificatepassword", FEDERATEDTOKEN = "-federatedtoken";
             const string TRUE = "true";
             const string FALSE = "false";
-            string[] validOptions = { PBIX, PBIP, PBIPREPORT, FABRICITEM, FABRICWORKSPACE, RULES, OUTPUT, FORMATS, VERBOSE, PARALLEL, OVERWRITEOUTPUT, AUTHMETHOD, TENANTID, CLIENTID, CLIENTSECRET };
+            string[] validOptions = { PBIX, PBIP, PBIPREPORT, FABRICITEM, FABRICWORKSPACE, RULES, OUTPUT, FORMATS, VERBOSE, PARALLEL, OVERWRITEOUTPUT, AUTHMETHOD, TENANTID, CLIENTID, CLIENTSECRET, CERTIFICATEPATH, CERTIFICATEPASSWORD, FEDERATEDTOKEN };
 
             int index = 0;
             int maxindex = args.Length - 2;
@@ -49,59 +49,86 @@ namespace PBIRInspectorClientLibrary.Utils
             var tenantId = dic.ContainsKey(TENANTID) ? dic[TENANTID] : Environment.GetEnvironmentVariable("FABRIC_TENANT_ID");
             var clientId = dic.ContainsKey(CLIENTID) ? dic[CLIENTID] : Environment.GetEnvironmentVariable("FABRIC_CLIENT_ID");
             var clientSecret = dic.ContainsKey(CLIENTSECRET) ? dic[CLIENTSECRET] : Environment.GetEnvironmentVariable("FABRIC_CLIENT_SECRET");
+            var certificatePath = dic.ContainsKey(CERTIFICATEPATH) ? dic[CERTIFICATEPATH] : null;
+            var certificatePassword = dic.ContainsKey(CERTIFICATEPASSWORD) ? dic[CERTIFICATEPASSWORD] : null;
+            var federatedToken = dic.ContainsKey(FEDERATEDTOKEN) ? dic[FEDERATEDTOKEN] : null;
 
             // Validate auth method
-            string[] validAuthMethods = { "local", "devicecode", "interactive", "clientsecret" };
+            string[] validAuthMethods = { "local", "interactive", "clientsecret", "certificate", "federatedtoken", "managedidentity" };
             if (!validAuthMethods.Contains(authMethod))
             {
-                throw new ArgumentException($"Invalid auth method: '{authMethod}'. Valid options: local, devicecode, interactive, clientsecret");
+                throw new ArgumentException($"Invalid auth method: '{authMethod}'. Valid options: local, interactive, clientsecret, certificate, federatedtoken, managedidentity");
             }
 
             // Validate required parameters based on auth method
-            if (authMethod != "local")
+            if (authMethod == "clientsecret" || authMethod == "certificate" || authMethod == "federatedtoken")
             {
                 if (string.IsNullOrWhiteSpace(clientId))
                 {
-                    throw new ArgumentException("Client ID is required for remote authentication. Provide via -clientid or FABRIC_CLIENT_ID environment variable.");
+                    throw new ArgumentException("Client ID is required for this authentication method. Provide via -clientid or FABRIC_CLIENT_ID environment variable.");
                 }
+            }
 
-                if (authMethod == "clientsecret")
+            if (authMethod == "clientsecret")
+            {
+                if (string.IsNullOrWhiteSpace(tenantId))
                 {
-                    if (string.IsNullOrWhiteSpace(tenantId))
-                    {
-                        throw new ArgumentException("Tenant ID is required for client secret authentication. Provide via -tenantid or FABRIC_TENANT_ID environment variable.");
-                    }
-                    if (string.IsNullOrWhiteSpace(clientSecret))
-                    {
-                        throw new ArgumentException("Client secret is required for client secret authentication. Provide via -clientsecret or FABRIC_CLIENT_SECRET environment variable.");
-                    }
+                    throw new ArgumentException("Tenant ID is required for client secret authentication. Provide via -tenantid or FABRIC_TENANT_ID environment variable.");
+                }
+                if (string.IsNullOrWhiteSpace(clientSecret))
+                {
+                    throw new ArgumentException("Client secret is required for client secret authentication. Provide via -clientsecret or FABRIC_CLIENT_SECRET environment variable.");
+                }
+            }
+
+            if (authMethod == "certificate")
+            {
+                if (string.IsNullOrWhiteSpace(tenantId))
+                {
+                    throw new ArgumentException("Tenant ID is required for certificate authentication. Provide via -tenantid or FABRIC_TENANT_ID environment variable.");
+                }
+                if (string.IsNullOrWhiteSpace(certificatePath))
+                {
+                    throw new ArgumentException("Certificate path is required for certificate authentication. Provide via -certificatepath.");
+                }
+            }
+
+            if (authMethod == "federatedtoken")
+            {
+                if (string.IsNullOrWhiteSpace(tenantId))
+                {
+                    throw new ArgumentException("Tenant ID is required for federated token authentication. Provide via -tenantid or FABRIC_TENANT_ID environment variable.");
+                }
+                if (string.IsNullOrWhiteSpace(federatedToken))
+                {
+                    throw new ArgumentException("Federated token is required for federated token authentication. Provide via -federatedtoken.");
                 }
             }
 
             if (OneLakeRulesFileDownloader.IsOneLakeDfsUrl(rulesPath) && authMethod == "local")
             {
-                throw new ArgumentException("OneLake rules URL requires authentication. Use -authmethod devicecode, interactive, or clientsecret.");
+                throw new ArgumentException("OneLake rules URL requires authentication. Use -authmethod interactive, clientsecret, certificate, federatedtoken, or managedidentity.");
             }
 
             if (OneLakeOutputUploader.IsOneLakeDfsUrl(outputPath) && authMethod == "local")
             {
-                throw new ArgumentException("OneLake output URL requires authentication. Use -authmethod devicecode, interactive, or clientsecret.");
+                throw new ArgumentException("OneLake output URL requires authentication. Use -authmethod interactive, clientsecret, certificate, federatedtoken, or managedidentity.");
             }
 
             // Validate incompatible format and auth method combinations
-            if ((authMethod == "devicecode" || authMethod == "interactive") && !string.IsNullOrWhiteSpace(formatsString))
+            if (authMethod == "interactive" && !string.IsNullOrWhiteSpace(formatsString))
             {
                 var upperFormats = formatsString.ToUpper();
                 if (upperFormats.Contains("ADO") || upperFormats.Contains("GITHUB"))
                 {
-                    throw new ArgumentException($"{authMethod} authentication is not compatible with ADO or GitHub output formats. These formats are designed for CI/CD pipelines which require non-interactive authentication. Use local (default) or clientsecret authentication method instead.");
+                    throw new ArgumentException("interactive authentication is not compatible with ADO or GitHub output formats. These formats are designed for CI/CD pipelines which require non-interactive authentication. Use clientsecret, certificate, federatedtoken, or managedidentity authentication method instead.");
                 }
             }
 
-            // Validate parallel execution is not enabled with remote auth methods due to potential token caching issues
-            if ((authMethod != "local" || string.IsNullOrEmpty(authMethod?.Trim())) && bool.TryParse(parallelString, out bool isParallel) && isParallel)
+            // Validate parallel execution is not enabled with remote auth methods
+            if (authMethod != "local" && bool.TryParse(parallelString, out bool isParallel) && isParallel)
             {
-                throw new ArgumentException("Parallel execution is not supported when using remote authentication methods (devicecode, interactive, clientsecret) due to potential token caching issues. Please set -parallel to false (default) when using remote authentication.");
+                throw new ArgumentException("Parallel execution is not supported when using remote authentication methods (interactive, clientsecret, certificate, federatedtoken, managedidentity). Please set -parallel to false (default) when using remote authentication.");
             }
 
             // Validate Fabric workspace access requirements
@@ -109,7 +136,7 @@ namespace PBIRInspectorClientLibrary.Utils
             {
                 if (authMethod == "local")
                 {
-                    throw new ArgumentException("Fabric workspace access requires authentication. Use -authmethod devicecode, interactive, or clientsecret.");
+                    throw new ArgumentException("Fabric workspace access requires authentication. Use -authmethod interactive, clientsecret, certificate, federatedtoken, or managedidentity.");
                 }
 
                 // Validate workspace ID is a GUID
@@ -138,6 +165,9 @@ namespace PBIRInspectorClientLibrary.Utils
                 TenantId = tenantId,
                 ClientId = clientId,
                 ClientSecret = clientSecret,
+                CertificatePath = certificatePath,
+                CertificatePassword = certificatePassword,
+                FederatedToken = federatedToken,
                 FabricWorkspaceId = fabricWorkspaceId
             };
         }
