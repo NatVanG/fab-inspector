@@ -38,7 +38,7 @@ namespace PBIRInspectorClientLibrary.Utils
         public static string About()
         {
             var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-            var about = string.Format("PBI Inspector v{0}", version);
+            var about = string.Format("Fab Inspector v{0}", version);
             return about;
         }
 

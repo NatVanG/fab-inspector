@@ -107,7 +107,7 @@ namespace PBIRInspectorClientLibrary
             }
             catch (System.Text.Json.JsonException e)
             {
-                throw new PBIRInspectorException(string.Format("Could not deserialise rules file with path \"{0}\". Check that the file is valid json and following the correct schema for PBI Inspector rules.", rulesPath), e);
+                throw new PBIRInspectorException(string.Format("Could not deserialise rules file with path \"{0}\". Check that the file is valid json and following the correct schema for Fab Inspector rules.", rulesPath), e);
             }
             catch (InvalidOperationException e) when (isOneLakeRulesPath)
             {

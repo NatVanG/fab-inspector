@@ -1,6 +1,6 @@
 ﻿{
-  "version": "2.4.7",
-  "name": "VisOps with PBI Inspector",
+  "version": "3.0.0",
+  "name": "VisOps with Fab Inspector",
   "description": "A testing or inspection tool for the visual layer of Microsoft Power BI reports.",
   "path": "%PATH%",
   "arguments": "/server=\"%server%\" /database=\"%database%\"",
