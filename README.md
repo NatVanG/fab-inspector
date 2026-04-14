@@ -43,13 +43,13 @@ Please report issues [here](https://github.com/NatVanG/PBI-InspectorV2/issues).
 
 ## Release notes :scroll:
 
-**PBI Inspector v2.3.0**: PBI Inspector V2 has evolved to support testing any Fabric items' CI/CD metadata, not just Power BI reports! Use either the Windows Forms desktop application or the CLI which now includes the "-fabricitem" command line option and point to a CI/CD folder containing one or more Fabric item definitions. Here's an example rules file that tests a CopyJob Fabric item's metadata: [CopyJob Rules](DocsExamples/Example-CopyJob-Rules.json). Here's another example that tests metadata across Fabric item types: [Cross-Fabric Items Rule](DocsExamples/Example-FabricCrossItem-Rules.json).
+**PBI Inspector v2.3.0**: PBI Inspector V2 has evolved to support testing any Fabric items' CI/CD metadata, not just Power BI reports. Use either the Windows Forms desktop application or the CLI, which includes the `-fabricitem` option for targeting local or Fabric items and the `-help` option to list all supported CLI parameters. Here's an example rules file that tests a CopyJob Fabric item's metadata: [CopyJob Rules](DocsExamples/Example-CopyJob-Rules.json). Here's another example that tests metadata across Fabric item types: [Cross-Fabric Items Rule](DocsExamples/Example-FabricCrossItem-Rules.json).
 
 **PBI Inspector v2.4.2**: The PBI Inspector V2 CLI is now cross-platform and can be run on both Linux and Windows. This is especially useful when run from either an Azure DevOps pipeline or from GitHub Actions. An easy way to run PBI Inspector V2 (aka Fab Inspector) on a GitHub Ubuntu runner is via the published "fab-inspector" Docker image, see an example GitHub action at https://github.com/NatVanG/fab-inspector-cicd-example/blob/main/.github/workflows/fab-inspector.yml.
 
 The Console output as well as the Azure DevOps and GitHub outputs now include the file path of the current Fabric item being tested or failing a test. This is especically useful when pointing PBI Inspector V2 at a parent folder containing many reports and other Fabric items.
 
-The ""-parallel"" option is now available with the CLI only as an experimental feature, see details in the [Run from the Command line (CLI)](#cli) section.
+The `-parallel` option is now available with the CLI only as an experimental feature. See details in the [Run from the Command line (CLI)](#cli) section.
 
 ## <a name="contents"></a>Contents
 
@@ -74,7 +74,7 @@ So we've DevOps, MLOps and DataOps... but why not VisOps? How can we ensure that
 
 With Microsoft Power BI, visuals are placed on a canvas and formatted as desired, images may be included and theme files referenced. Testing the consistency of the visuals output has thus far typically been a manual process. The [Power BI Project file format (.pbip) was introduced](https://powerbi.microsoft.com/en-us/blog/deep-dive-into-power-bi-desktop-developer-mode-preview/) then more recently [enhanced](https://learn.microsoft.com/en-gb/power-bi/developer/projects/projects-report) to enable pro developer application lifecycle management and source control also known as CI/CD. Fab Inspector contributes to CI/CD for Power BI reports by providing the ability to define fully configurable testing rules written in json. Fab Inspector is powered by Greg Dennis's Json Logic .NET implementation, see https://json-everything.net/json-logic. 
 
-**PBI Inspector v2.3**: PBI Inspector V2 has evolved to support testing any Fabric items' CI/CD metadata, not just Power BI reports! Use either the Windows Forms desktop application or the CLI which now includes the "-fabricitem" command line option and point to a CI/CD folder containing one or more Fabric item definitions. Here's an example rules file that tests a CopyJob Fabric item's metadata: [CopyJob Rules](DocsExamples/Example-CopyJob-Rules.json). Here's another example that tests metadata across Fabric item types: [Cross-Fabric Items Rule](DocsExamples/Example-FabricCrossItem-Rules.json).
+**PBI Inspector v2.3**: PBI Inspector V2 has evolved to support testing any Fabric items' CI/CD metadata, not just Power BI reports. Use either the Windows Forms desktop application or the CLI, which includes the `-fabricitem` option for targeting local or Fabric items and the `-help` option to list all supported CLI parameters. Here's an example rules file that tests a CopyJob Fabric item's metadata: [CopyJob Rules](DocsExamples/Example-CopyJob-Rules.json). Here's another example that tests metadata across Fabric item types: [Cross-Fabric Items Rule](DocsExamples/Example-FabricCrossItem-Rules.json).
 
 ## <a id="releases"></a>Releases
 
@@ -118,48 +118,62 @@ Running ```PBIRInspectorWinForm.exe``` presents the user with the following inte
 
 All command line parameters are as follows:
 
-```-fabricitem folderpath|itemid```: The path to the CI/CD folder containing one or more Fabric item(s) definitions (local mode), or a Fabric Item ID GUID when using `-fabricworkspace` (Fabric mode). In local mode, Fab Inspector traverses subfolders so you can specify the root CI/CD folder or a specific subfolder. In Fabric mode with workspace-scoped access, omit this parameter to access all items in the workspace.
+```-fabricitem folderpath|itemid```: Path to a local CI/CD folder containing one or more Fabric item definitions (local mode), or a Fabric Item ID GUID when used with `-fabricworkspace` (Fabric mode). In local mode, Fab Inspector traverses subfolders so you can specify either a root folder or a specific subfolder. In Fabric workspace-scoped mode, omit this parameter to inspect all items in the workspace.
 
-```-fabricworkspace workspaceid```: Optional. Microsoft Fabric Workspace ID (GUID). When specified, enables Fabric mode where the Inspector uses the FabricFileSystem to access items directly from a Fabric workspace. Requires non-local authentication (use `-authmethod devicecode`, `interactive`, or `clientsecret`). 
-- **Workspace-scoped access**: Omit `-fabricitem` to access all items in the workspace.
-- **Item-scoped access**: Provide a Fabric Item ID GUID via `-fabricitem` to access only that specific item.
+```-fabricworkspace workspaceid```: Optional. Microsoft Fabric Workspace ID (GUID). When specified, enables Fabric mode where the Inspector uses the Fabric remote file system to access items directly from a Fabric workspace.
+- **Workspace-scoped access**: Omit `-fabricitem` to inspect all items in the workspace.
+- **Item-scoped access**: Provide a Fabric Item ID GUID via `-fabricitem` to inspect only that item.
+- **Authentication required**: `-authmethod` must be one of `interactive`, `clientsecret`, `certificate`, `federatedtoken`, or `managedidentity`.
 
-```-pbip filepath```: Depreated, use -fabricitem instead. The path to the *.pbip file.
+```-pbip filepath```: Deprecated, use `-fabricitem` instead. The path to the `*.pbip` file still works for local mode.
 
-```-pbipreport filepath```: Deprecated, use -fabricitem instead.
+```-pbipreport filepath```: Deprecated, use `-fabricitem` instead.
 
-```-pbix filepath```: Not currently supported. 
+```-pbix filepath```: Not currently supported.
 
-```-rules filepath```: Required. The filepath to the rules file. Save a local copy of the [Base Rules](Rules/Base-rules.json) file and modify as required.
+```-rules filepath```: Required. Path to the rules file. This can be a local JSON file path or a OneLake DFS URL. OneLake rules URLs require non-local authentication.
 
-```-authmethod local|devicecode|interactive|clientsecret```: Optional, defaults to "local". Authentication method for Fabric workspace access:
-- **local** (default): No authentication, uses local file system (PhysicalFileSystem).
-- **devicecode**: Device code flow for non-interactive CLI authentication.
-- **interactive**: Interactive browser-based authentication.
-- **clientsecret**: Service principal authentication using client secret (for CI/CD pipelines).
+```-authmethod local|interactive|clientsecret|certificate|federatedtoken|managedidentity```: Optional, defaults to `local`.
+- **local** (default): No authentication, uses local file system.
+- **interactive**: Interactive browser authentication.
+- **clientsecret**: Service principal authentication using client secret (recommended for CI/CD pipelines).
+- **certificate**: Service principal authentication using a certificate.
+- **federatedtoken**: Service principal authentication using federated token.
+- **managedidentity**: Managed identity authentication.
 
-```-clientid clientid```: Optional. Azure AD application (client) ID for authentication. Required when using non-local authentication methods. Can also be provided via `FABRIC_CLIENT_ID` environment variable.
+```-clientid clientid```: Optional. Azure AD application (client) ID. Required for `clientsecret`, `certificate`, and `federatedtoken`. Optional for `interactive` and `managedidentity`. Can also be provided via `FABRIC_CLIENT_ID`.
 
-```-tenantid tenantid```: Optional. Azure AD tenant ID. Required when using `clientsecret` authentication. Can also be provided via `FABRIC_TENANT_ID` environment variable.
+```-tenantid tenantid```: Optional. Azure AD tenant ID/name. Required for `clientsecret`, `certificate`, and `federatedtoken`. Can also be provided via `FABRIC_TENANT_ID`.
 
-```-clientsecret secret```: Optional. Client secret for service principal authentication. Required when using `clientsecret` authentication method. Can also be provided via `FABRIC_CLIENT_SECRET` environment variable.
+```-clientsecret secret```: Optional. Required for `clientsecret`. Can also be provided via `FABRIC_CLIENT_SECRET`.
 
-```-verbose true|false```: Optional, false by default. If false then only rule violations will be shown otherwise all results will be listed.
+```-certificatepath path```: Optional. Required for `certificate`. Path to certificate file (`.pem`, `.p12`, etc.).
 
-```-parallel true|false```: Currently experimental (i.e. very much in Preview) and optional, false by default. If set to true, the rules will be split into the number of processors available and run in parallel, then the final test results will be combined. If set to false, the rules will be iterated over on a single processor thread.
+```-certificatepassword password```: Optional. Certificate password (used with `certificate` when needed).
 
-```-output directorypath```: Optional. If -formats is set to either JSON, HTML or PNG, writes results to the specified directory, any existing files will be overwritten. If not supplied then a temporary directory will be created in the user's temporary files folder. 
+```-federatedtoken token```: Optional. Required for `federatedtoken`.
 
-```-formats CONSOLE,JSON,HTML,PNG,ADO,GitHub```: Optional. Comma-separated list of output formats. 
-- **CONSOLE** (default) writes results to the console output. If "-formats" is not specified then "CONSOLE" will be used by default.
-- **JSON** writes results to a Json file.
-- **HTML** writes results to a formatted Html page. If no output directory is specified and the HTML format is specified, then a browser page will be opened to display the HTML results. When specifying "HTML" format, report page wireframe images will be created so there is no need to also include the "PNG" format. 
-- **PNG** draws report pages wireframes clearly showing any failing visuals. 
-- **ADO** outputs Azure DevOps compatible task commands for use in a deployment pipeline. Task commands issued are "task.logissue" and "task.complete", see https://learn.microsoft.com/en-us/azure/devops/pipelines/scripts/logging-commands?view=azure-devops&tabs=bash#task-commands. Fab Inspector rules definition can be given a "logType" attribute of either "warning" or "error" which will be passed to the Azure DevOps task command as follows: ```##vso[task.logissue type=warning|error]```. When specifying "ADO" all other output format types will be ignored.
-- **GitHub** similar to ADO but for use in GitHub Actions workflows.
+```-verbose true|false```: Optional, false by default. If false then only rule violations are shown; if true then all results are listed.
+
+```-parallel true|false```: Optional, false by default. If true, rules are split across available processors and run in parallel before results are merged. If false, rules are executed on a single thread.
+- **Note**: Parallel execution is not supported with remote authentication methods (`interactive`, `clientsecret`, `certificate`, `federatedtoken`, `managedidentity`).
+
+```-output directorypath|onelakeurl```: Optional. Output local directory path or OneLake folder URL. If omitted, a temporary local directory is created. OneLake output requires non-local authentication.
+
+```-overwriteoutput true|false```: Optional, false by default. If true, existing output artifacts can be overwritten.
+
+```-formats CONSOLE,JSON,HTML,PNG,ADO,GitHub```: Optional. Comma-separated list of output formats.
+- **CONSOLE** (default): Writes results to standard console output. Used when `-formats` is not specified.
+- **JSON**: Writes results to a JSON file.
+- **HTML**: Writes results to a formatted HTML page. If no output directory is specified and HTML is enabled, the page can be opened automatically. HTML output includes report page wireframe images so `PNG` is usually not needed in addition.
+- **PNG**: Writes report page wireframe images highlighting failing visuals.
+- **ADO**: Emits Azure DevOps task commands (`task.logissue`, `task.complete`) for pipeline integration. When `ADO` is specified, other output formats are ignored.
+- **GitHub**: Emits GitHub Actions-compatible logging/annotations.
+
+```-help``` (or ```--help``` or ```/?```): Displays all CLI options and short descriptions.
 
 
-**Commmand line examples:**
+**Command line examples:**
 
 - Run "Base-rules.json" rule definitions against PBI report file at "Sales.Report and return results in Json and HTML formats:
 
@@ -177,11 +191,15 @@ All command line parameters are as follows:
 
 ``` PBIRInspectorCLI.exe -fabricitem "C:\Files\copyjob1.CopyJob" -rules "C:\Files\Sample-CopyJob-Rules.json" -formats GitHub```
 
+- Show all CLI options and descriptions:
+
+``` PBIRInspectorCLI.exe -help```
+
 **Fabric Workspace mode examples:**
 
-- Run rules against all items in a Fabric workspace (workspace-scoped access) using device code authentication:
+- Run rules against all items in a Fabric workspace (workspace-scoped access) using interactive authentication:
 
-``` PBIRInspectorCLI.exe -fabricworkspace "12345678-1234-1234-1234-123456789abc" -rules ".\Files\Base-rules.json" -authmethod devicecode -formats "JSON,HTML"```
+``` PBIRInspectorCLI.exe -fabricworkspace "12345678-1234-1234-1234-123456789abc" -rules ".\Files\Base-rules.json" -authmethod interactive -formats "JSON,HTML"```
 
 - Run rules against a specific item in a Fabric workspace (item-scoped access) using interactive authentication:
 
