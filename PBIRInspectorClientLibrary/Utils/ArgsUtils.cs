@@ -3,12 +3,101 @@ namespace PBIRInspectorClientLibrary.Utils
 {
     public class ArgsUtils
     {
+        /// <summary>
+        /// Displays help information for all available CLI options.
+        /// </summary>
+        public static void DisplayHelp()
+        {
+            var helpText = @"
+PBIRInspector CLI - Power BI / Fabric Inspector Command Line Tool
+
+USAGE:
+  PBIRInspectorCLI.exe -fabricitem <path> -rules <path> [options]
+
+REQUIRED PARAMETERS:
+  -fabricitem <path>|<guid>       Path to local folder containing one or more Fabric item definition or, if supplied with -fabricworkspace, Fabric item ID (guid).
+                                  Legacy behaviour: path to local Power BI report's .pbip file path or .Report folder path also works but is deprecated.
+  
+  -rules <path>                   Path to rules file (JSON) or OneLake URL to rules file (latter requires authentication)
+  
+ALTERNATIVE INPUT OPTIONS (use one of these):
+  -pbipreport <path>              Deprecated: Path to Power BI file
+  -pbip <path>                    Path to Power BI Project file
+  -fabricworkspace <guid>         Fabric workspace ID (must be a GUID) - requires authentication
+
+OPTIONAL PARAMETERS:
+  -output <path>                  Output local directory path or OneLake folder URL (default: local temporary folder)
+  -formats <list>                 Output formats separated by comma/semicolon/pipe
+                                  Valid: CONSOLE, HTML, JSON, PNG, ADO, GITHUB
+                                  (default: CONSOLE)
+  -verbose <true|false>           Display all results including passes (default: false)
+  -parallel <true|false>          Enable parallel rule processing (default: false)
+                                  Note: Not supported with remote authentication
+  -overwriteoutput <true|false>   Overwrite existing output (default: false)
+
+AUTHENTICATION PARAMETERS (use -authmethod):
+  -authmethod <method>            Authentication method (default: local)
+                                  Valid: local, interactive, clientsecret, certificate, 
+                                         federatedtoken, managedidentity
+  
+  LOCAL (default - no authentication):
+    No additional parameters needed
+  
+  INTERACTIVE:
+    -clientid <id>                Azure AD application ID (optional)
+  
+  CLIENTSECRET:
+    -tenantid <id>                Azure tenant ID or name
+    -clientid <id>                Azure AD application ID
+    -clientsecret <secret>        Azure AD client secret
+    (Can also use environment variables: FABRIC_TENANT_ID, FABRIC_CLIENT_ID, FABRIC_CLIENT_SECRET)
+  
+  CERTIFICATE:
+    -tenantid <id>                Azure tenant ID or name
+    -clientid <id>                Azure AD application ID
+    -certificatepath <path>       Path to certificate file (.pem, .p12)
+    -certificatepassword <pwd>    Certificate password (optional)
+  
+  FEDERATEDTOKEN:
+    -tenantid <id>                Azure tenant ID or name
+    -clientid <id>                Azure AD application ID
+    -federatedtoken <token>       Federated token for authentication
+  
+  MANAGEDIDENTITY:
+    -clientid <id>                Client ID (optional, for user-assigned identity)
+
+EXAMPLES:
+  # Local analysis with console output
+  PBIRInspectorCLI.exe -pbip report.pbip -rules rules.json -formats CONSOLE
+  
+  # Generate HTML output
+  PBIRInspectorCLI.exe -fabricitem report.pbip -rules rules.json -output results -formats HTML
+  
+  # Analyze Fabric workspace with client secret authentication, output to OneLake in JSON format
+  PBIRInspectorCLI.exe -fabricworkspace a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6 -rules rules.json ^
+    -authmethod clientsecret -tenantid tenant-id -clientid app-id -clientsecret app-secret ^
+    -output https://myorg.dfs.core.windows.net/results/ -formats JSON
+
+  # Analyze Fabric workspace with client secret authentication, output to Azure DevOps logging commands (as part of a CI/CD pipeline)
+  PBIRInspectorCLI.exe -fabricworkspace a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6 -rules rules.json ^
+    -authmethod clientsecret -tenantid tenant-id -clientid app-id -clientsecret app-secret ^
+    -formats ADO
+  
+  # Analyze specific Fabric item in workspace
+  PBIRInspectorCLI.exe -fabricworkspace workspace-guid -fabricitem item-guid -rules rules.json ^
+    -authmethod interactive
+
+For more information, visit: https://github.com/NatVanG/PBI-InspectorV2
+";
+            Console.WriteLine(helpText);
+        }
+
         public static Args ParseArgs(string[] args)
         {
-            const string PBIX = "-pbix", PBIP = "-pbip", PBIPREPORT = "-pbipreport", FABRICITEM = "-fabricitem", FABRICWORKSPACE = "-fabricworkspace", RULES = "-rules", OUTPUT = "-output", FORMATS = "-formats", VERBOSE = "-verbose", PARALLEL = "-parallel", OVERWRITEOUTPUT = "-overwriteoutput", AUTHMETHOD = "-authmethod", TENANTID = "-tenantid", CLIENTID = "-clientid", CLIENTSECRET = "-clientsecret", CERTIFICATEPATH = "-certificatepath", CERTIFICATEPASSWORD = "-certificatepassword", FEDERATEDTOKEN = "-federatedtoken";
+            const string PBIX = "-pbix", PBIP = "-pbip", PBIPREPORT = "-pbipreport", FABRICITEM = "-fabricitem", FABRICWORKSPACE = "-fabricworkspace", RULES = "-rules", OUTPUT = "-output", FORMATS = "-formats", VERBOSE = "-verbose", PARALLEL = "-parallel", OVERWRITEOUTPUT = "-overwriteoutput", AUTHMETHOD = "-authmethod", TENANTID = "-tenantid", CLIENTID = "-clientid", CLIENTSECRET = "-clientsecret", CERTIFICATEPATH = "-certificatepath", CERTIFICATEPASSWORD = "-certificatepassword", FEDERATEDTOKEN = "-federatedtoken", HELP = "-help";
             const string TRUE = "true";
             const string FALSE = "false";
-            string[] validOptions = { PBIX, PBIP, PBIPREPORT, FABRICITEM, FABRICWORKSPACE, RULES, OUTPUT, FORMATS, VERBOSE, PARALLEL, OVERWRITEOUTPUT, AUTHMETHOD, TENANTID, CLIENTID, CLIENTSECRET, CERTIFICATEPATH, CERTIFICATEPASSWORD, FEDERATEDTOKEN };
+            string[] validOptions = { PBIX, PBIP, PBIPREPORT, FABRICITEM, FABRICWORKSPACE, RULES, OUTPUT, FORMATS, VERBOSE, PARALLEL, OVERWRITEOUTPUT, AUTHMETHOD, TENANTID, CLIENTID, CLIENTSECRET, CERTIFICATEPATH, CERTIFICATEPASSWORD, FEDERATEDTOKEN, HELP };
 
             int index = 0;
             int maxindex = args.Length - 2;

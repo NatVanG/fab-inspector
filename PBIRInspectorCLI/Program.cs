@@ -12,6 +12,15 @@ internal partial class Program
 
     private static async Task Main(string[] args)
     {
+        // Check for help flag before processing anything else
+        if (args.Length > 0 && (args[0].Equals("-help", StringComparison.OrdinalIgnoreCase) || 
+            args[0].Equals("--help", StringComparison.OrdinalIgnoreCase) ||
+            args[0].Equals("/?", StringComparison.OrdinalIgnoreCase)))
+        {
+            ArgsUtils.DisplayHelp();
+            return;
+        }
+
 #if DEBUG
         Console.WriteLine("Attach debugger to process? Press any key to continue.");
         Console.ReadLine();
