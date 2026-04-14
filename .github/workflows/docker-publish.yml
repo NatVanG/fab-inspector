@@ -29,7 +29,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -f PBIRInspectorCLI/Dockerfile -t ghcr.io/natvang/fab-inspector:latest .
+          docker build -f FabInspector.CLI/Dockerfile -t ghcr.io/natvang/fab-inspector:latest .
 
       - name: Push Docker image
         run: |

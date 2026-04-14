@@ -2,12 +2,12 @@
 [![PBIRInspector Tests](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/tests.yml/badge.svg)](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/tests.yml)
 [![Build and Publish Docker Image](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/docker-publish.yml)
 # Fab Inspector (previously PBI Inspector V2) 
-## Declarative rules-based testing for the Microsoft Power BI visual layer and other Microsoft Fabric items
+## Declarative rules-based testing for Microsoft Fabric
 
 Meet Ric, the Fab Inspector!
 
-<img src="DocsImages/Ric_480x480_speech.png" alt="Fab Inspector logo" height="350"/>
-<img src="DocsImages/FabInsp_500x500.png" alt="Fab Inspector logo" height="270"/>
+<img src="DocsImages/Ric_480x480_speech.png" alt="Hi! I'm Ric, the Fab Inspector." height="300"/>
+<img src="DocsImages/FabInsp_500x500.png" alt="Fab Inspector logo" height="220"/>
 
 ## NOTE :pencil:
 
@@ -180,37 +180,37 @@ All command line parameters are as follows:
 
 - Run "Base-rules.json" rule definitions against PBI report file at "Sales.Report and return results in Json and HTML formats:
 
-``` PBIRInspectorCLI.exe -fabricitem "C:\Files\Sales.Report" -rules ".\Files\Base-rules.json" -output "C:\Files\TestRun" -formats "JSON,HTML"```
+``` fab-inspector -fabricitem "C:\Files\Sales.Report" -rules ".\Files\Base-rules.json" -output "C:\Files\TestRun" -formats "JSON,HTML"```
 
 - Run "Base-rules.json" rule definitions against PBI report file at "Sales.Report and return results to the console only:
 
-``` PBIRInspectorCLI.exe -fabricitem "C:\Files\Sales.Report" -rules ".\Files\Base-rules.json" -output "C:\Files\TestRun" -formats "Console"```
+``` fab-inspector -fabricitem "C:\Files\Sales.Report" -rules ".\Files\Base-rules.json" -output "C:\Files\TestRun" -formats "Console"```
 
 - Run "Base-rules.json" rule definitions against PBI report file at "Sales.Report and return results as Azure DevOps compatible log and tasks commands (see https://learn.microsoft.com/en-us/azure/devops/pipelines/scripts/logging-commands?view=azure-devops&tabs=bash#task-commands):
 
-``` PBIRInspectorCLI.exe -fabricitem "C:\Files\Sales.Report" -rules ".\Files\Base-rules.json"  -formats "ADO"```
+``` fab-inspector -fabricitem "C:\Files\Sales.Report" -rules ".\Files\Base-rules.json"  -formats "ADO"```
 
 - Run custom rules against CopyJob Fabric items, output as GitHub logging:
 
-``` PBIRInspectorCLI.exe -fabricitem "C:\Files\copyjob1.CopyJob" -rules "C:\Files\Sample-CopyJob-Rules.json" -formats GitHub```
+``` fab-inspector -fabricitem "C:\Files\copyjob1.CopyJob" -rules "C:\Files\Sample-CopyJob-Rules.json" -formats GitHub```
 
 - Show all CLI options and descriptions:
 
-``` PBIRInspectorCLI.exe -help```
+``` fab-inspector -help```
 
 **Fabric Workspace mode examples:**
 
 - Run rules against all items in a Fabric workspace (workspace-scoped access) using interactive authentication:
 
-``` PBIRInspectorCLI.exe -fabricworkspace "12345678-1234-1234-1234-123456789abc" -rules ".\Files\Base-rules.json" -authmethod interactive -formats "JSON,HTML"```
+``` fab-inspector -fabricworkspace "12345678-1234-1234-1234-123456789abc" -rules ".\Files\Base-rules.json" -authmethod interactive -formats "JSON,HTML"```
 
 - Run rules against a specific item in a Fabric workspace (item-scoped access) using interactive authentication:
 
-``` PBIRInspectorCLI.exe -fabricworkspace "12345678-1234-1234-1234-123456789abc" -fabricitem "87654321-4321-4321-4321-cba987654321" -rules ".\Files\Base-rules.json" -authmethod interactive -formats Console```
+``` fab-inspector -fabricworkspace "12345678-1234-1234-1234-123456789abc" -fabricitem "87654321-4321-4321-4321-cba987654321" -rules ".\Files\Base-rules.json" -authmethod interactive -formats Console```
 
 - Run rules in CI/CD pipeline using client secret authentication:
 
-``` PBIRInspectorCLI.exe -fabricworkspace "12345678-1234-1234-1234-123456789abc" -fabricitem "87654321-4321-4321-4321-cba987654321" -rules ".\Files\Base-rules.json" -authmethod clientsecret -clientid "your-client-id" -tenantid "your-tenant-id" -clientsecret "your-secret" -formats ADO```
+``` fab-inspector -fabricworkspace "12345678-1234-1234-1234-123456789abc" -fabricitem "87654321-4321-4321-4321-cba987654321" -rules ".\Files\Base-rules.json" -authmethod clientsecret -clientid "your-client-id" -tenantid "your-tenant-id" -clientsecret "your-secret" -formats ADO```
 
 ## <a id="results"></a>Interpreting results
 

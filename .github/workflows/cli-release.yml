@@ -23,7 +23,7 @@ jobs:
         
     - name: Build Windows x64 CLI
       run: |
-        dotnet publish PBIRInspectorCLI/PBIRInspectorCLI.csproj \
+        dotnet publish FabInspector.CLI/FabInspector.CLI.csproj \
           -c Release \
           -r win-x64 \
           --self-contained false \
@@ -36,7 +36,7 @@ jobs:
           
     - name: Build Linux x64 CLI
       run: |
-        dotnet publish PBIRInspectorCLI/PBIRInspectorCLI.csproj \
+        dotnet publish FabInspector.CLI/FabInspector.CLI.csproj \
           -c Release \
           -r linux-x64 \
           --self-contained false \
@@ -49,36 +49,65 @@ jobs:
           
     - name: Prepare Windows package
       run: |
-        mkdir -p ./package/win-x64/CLI
-        cp -r ./build/win-x64/* ./package/win-x64/CLI/
-        rm -f ./package/win-x64/CLI/*.pdb ./package/win-x64/CLI/*.config
+        mkdir -p ./package-legacy/win-x64/CLI
+        cp -r ./build/win-x64/* ./package-legacy/win-x64/CLI/
+        if [ -f ./package-legacy/win-x64/CLI/fab-inspector.exe ]; then
+          mv ./package-legacy/win-x64/CLI/fab-inspector.exe ./package-legacy/win-x64/CLI/PBIRInspectorCLI.exe
+        fi
+        rm -f ./package-legacy/win-x64/CLI/*.pdb ./package-legacy/win-x64/CLI/*.config
+
+        mkdir -p ./package-fab/win-x64/FabInspCLI
+        cp -r ./build/win-x64/* ./package-fab/win-x64/FabInspCLI/
+        rm -f ./package-fab/win-x64/FabInspCLI/*.pdb ./package-fab/win-x64/FabInspCLI/*.config
         
     - name: Prepare Linux package
       run: |
-        mkdir -p ./package/linux-x64/CLI
-        cp -r ./build/linux-x64/* ./package/linux-x64/CLI/
-        rm -f ./package/linux-x64/CLI/*.pdb ./package/linux-x64/CLI/*.config
+        mkdir -p ./package-legacy/linux-x64/CLI
+        cp -r ./build/linux-x64/* ./package-legacy/linux-x64/CLI/
+        if [ -f ./package-legacy/linux-x64/CLI/fab-inspector ]; then
+          mv ./package-legacy/linux-x64/CLI/fab-inspector ./package-legacy/linux-x64/CLI/PBIRInspectorCLI
+          chmod +x ./package-legacy/linux-x64/CLI/PBIRInspectorCLI
+        fi
+        rm -f ./package-legacy/linux-x64/CLI/*.pdb ./package-legacy/linux-x64/CLI/*.config
+
+        mkdir -p ./package-fab/linux-x64/FabInspCLI
+        cp -r ./build/linux-x64/* ./package-fab/linux-x64/FabInspCLI/
+        chmod +x ./package-fab/linux-x64/FabInspCLI/fab-inspector || true
+        rm -f ./package-fab/linux-x64/FabInspCLI/*.pdb ./package-fab/linux-x64/FabInspCLI/*.config
         
     - name: Create Windows zip
       run: |
-        cd ./package
+        cd ./package-legacy
         zip -r ../win-x64-CLI.zip win-x64/
+
+    - name: Create Windows FabInspCLI zip
+      run: |
+        cd ./package-fab
+        zip -r ../win-x64-FabInspCLI.zip win-x64/
         
     - name: Create Linux zip
       run: |
-        cd ./package
+        cd ./package-legacy
         zip -r ../linux-x64-CLI.zip linux-x64/
+
+    - name: Create Linux FabInspCLI zip
+      run: |
+        cd ./package-fab
+        zip -r ../linux-x64-FabInspCLI.zip linux-x64/
         
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
         name: "CLI"
         body: |
-          win-x64 and linux-x64. Command Line Interface.
+          Legacy artifacts (PBIRInspectorCLI): win-x64-CLI.zip, linux-x64-CLI.zip.
+          New artifacts (fab-inspector): win-x64-FabInspCLI.zip, linux-x64-FabInspCLI.zip.
           .NET 8.0 dependency not included.
         files: |
           win-x64-CLI.zip
           linux-x64-CLI.zip
+          win-x64-FabInspCLI.zip
+          linux-x64-FabInspCLI.zip
         prerelease: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

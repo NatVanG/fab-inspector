@@ -3,7 +3,7 @@
         {
             "id": "VARLIBRARY_MISSINGREFERENCES",
             "name": "Check that all Pipeline variable library references exist in a Variable Library.",
-            "itemtype": "*",
+            "itemtype": "DataPipeline|VariableLibrary",
             "test": [
                 {
                     "diff": [

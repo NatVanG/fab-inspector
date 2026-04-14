@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33110.190
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PBIRInspectorCLI", "PBIRInspectorCLI\PBIRInspectorCLI.csproj", "{979A67A2-A68A-472D-B1CF-C28068844D85}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FabInspector.CLI", "FabInspector.CLI\FabInspector.CLI.csproj", "{979A67A2-A68A-472D-B1CF-C28068844D85}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PBIRInspectorLibrary", "PBIRInspectorLibrary\PBIRInspectorLibrary.csproj", "{E5113296-3D06-48BA-8113-0AAB4F790CAB}"
 EndProject

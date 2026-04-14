@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "PBIRInspectorCLI": {
+    "FabInspector.CLI": {
       "commandName": "Project"
     },
     "Docker": {

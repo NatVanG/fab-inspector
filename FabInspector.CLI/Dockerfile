@@ -10,22 +10,22 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["PBIRInspectorCLI/PBIRInspectorCLI.csproj", "PBIRInspectorCLI/"]
+COPY ["FabInspector.CLI/FabInspector.CLI.csproj", "FabInspector.CLI/"]
 COPY ["PBIRInspectorImageLibrary/PBIRInspectorImageLibrary.csproj", "PBIRInspectorImageLibrary/"]
 COPY ["PBIRInspectorLibrary/PBIRInspectorLibrary.csproj", "PBIRInspectorLibrary/"]
 COPY ["PBIRInspectorClientLibrary/PBIRInspectorClientLibrary.csproj", "PBIRInspectorClientLibrary/"]
 COPY ["FabInspector.Operators/FabInspector.Operators.csproj", "FabInspector.Operators/"]
 COPY ["Ric.Operators/Ric.Operators.csproj", "Ric.Operators/"]
 
-RUN dotnet restore "./PBIRInspectorCLI/PBIRInspectorCLI.csproj"
+RUN dotnet restore "./FabInspector.CLI/FabInspector.CLI.csproj"
 COPY . .
-WORKDIR "/src/PBIRInspectorCLI"
-RUN dotnet build "./PBIRInspectorCLI.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/FabInspector.CLI"
+RUN dotnet build "./FabInspector.CLI.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./PBIRInspectorCLI.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./FabInspector.CLI.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
@@ -40,4 +40,4 @@ USER $APP_UID
 
 COPY --from=publish /app/publish .
 COPY PBIRInspectorClientLibrary/Files ./Files
-ENTRYPOINT ["dotnet", "PBIRInspectorCLI.dll"]
+ENTRYPOINT ["dotnet", "fab-inspector.dll"]

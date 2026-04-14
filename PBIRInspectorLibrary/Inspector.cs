@@ -148,7 +148,16 @@ namespace PBIRInspectorLibrary
 
         private void RunRulesByItemType(List<TestResult> testResults, IEnumerable<Rule> rules, string type, string fileSystemPath)
         {
-            var rulesFilteredByItemType = rules.Where(_ => _.ItemType.Equals(type, StringComparison.InvariantCultureIgnoreCase));
+            IEnumerable<Rule> rulesFilteredByItemType;
+
+            if (type.Equals("*"))
+            {
+                rulesFilteredByItemType = rules.Where(_ => _.ItemType.Contains('|') || _.ItemType.Equals("*"));
+            }
+            else
+            {
+                rulesFilteredByItemType = rules.Where(_ => _.ItemType.Equals(type, StringComparison.InvariantCultureIgnoreCase));
+            }
 
             if (rulesFilteredByItemType == null || !rulesFilteredByItemType.Any())
             {

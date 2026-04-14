@@ -62,7 +62,10 @@ namespace PBIRInspectorLibrary
                     fabricItems.Add(fabricItem);
                 }
             }
-            return fabricItems.Where(_ => this.ScopedItemTypes == null || this.ScopedItemTypes.Contains("*", StringComparer.OrdinalIgnoreCase) || this.ScopedItemTypes.Contains(_.Type, StringComparer.OrdinalIgnoreCase));
+            return fabricItems.Where(_ => this.ScopedItemTypes == null
+            || this.ScopedItemTypes.Contains("*", StringComparer.OrdinalIgnoreCase)
+            || this.ScopedItemTypes.Contains(_.Type, StringComparer.OrdinalIgnoreCase)
+            || (_.Type.Equals("Report", StringComparison.InvariantCultureIgnoreCase) && this.ScopedItemTypes.Contains("report_deprecated", StringComparer.OrdinalIgnoreCase)));
         }
 
         public string GetRelativePath(string fullPath)
