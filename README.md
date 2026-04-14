@@ -1,10 +1,13 @@
 [![CodeQL](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/github-code-scanning/codeql)
 [![PBIRInspector Tests](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/tests.yml/badge.svg)](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/tests.yml)
 [![Build and Publish Docker Image](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/docker-publish.yml)
-# Fab Inspector (aka PBI Inspector V2) 
-## Declarative rules-based CI/CD metadata testing for the Microsoft Power BI visual layer and other Microsoft Fabric items
+# Fab Inspector (previously PBI Inspector V2) 
+## Declarative rules-based testing for the Microsoft Power BI visual layer and other Microsoft Fabric items
 
-<img src="DocsImages/pbiinspectoricons.png" alt="Fab Inspector logo" height="250"/>
+Meet Ric, the Fab Inspector!
+
+<img src="DocsImages/Ric_480x480_speech.png" alt="Fab Inspector logo" height="350"/>
+<img src="DocsImages/FabInsp_500x500.png" alt="Fab Inspector logo" height="270"/>
 
 ## NOTE :pencil:
 
@@ -74,7 +77,7 @@ So we've DevOps, MLOps and DataOps... but why not VisOps? How can we ensure that
 
 With Microsoft Power BI, visuals are placed on a canvas and formatted as desired, images may be included and theme files referenced. Testing the consistency of the visuals output has thus far typically been a manual process. The [Power BI Project file format (.pbip) was introduced](https://powerbi.microsoft.com/en-us/blog/deep-dive-into-power-bi-desktop-developer-mode-preview/) then more recently [enhanced](https://learn.microsoft.com/en-gb/power-bi/developer/projects/projects-report) to enable pro developer application lifecycle management and source control also known as CI/CD. Fab Inspector contributes to CI/CD for Power BI reports by providing the ability to define fully configurable testing rules written in json. Fab Inspector is powered by Greg Dennis's Json Logic .NET implementation, see https://json-everything.net/json-logic. 
 
-**PBI Inspector v2.3**: PBI Inspector V2 has evolved to support testing any Fabric items' CI/CD metadata, not just Power BI reports. Use either the Windows Forms desktop application or the CLI, which includes the `-fabricitem` option for targeting local or Fabric items and the `-help` option to list all supported CLI parameters. Here's an example rules file that tests a CopyJob Fabric item's metadata: [CopyJob Rules](DocsExamples/Example-CopyJob-Rules.json). Here's another example that tests metadata across Fabric item types: [Cross-Fabric Items Rule](DocsExamples/Example-FabricCrossItem-Rules.json).
+**PBI Inspector v2.3**: Fab Inspector (previously PBI Inspector V2) has evolved to support testing any Fabric items' CI/CD metadata, not just Power BI reports. Use either the Windows Forms desktop application or the CLI, which includes the `-fabricitem` option for targeting local or Fabric items and the `-help` option to list all supported CLI parameters. Here's an example rules file that tests a CopyJob Fabric item's metadata: [CopyJob Rules](DocsExamples/Example-CopyJob-Rules.json). Here's another example that tests metadata across Fabric item types: [Cross-Fabric Items Rule](DocsExamples/Example-FabricCrossItem-Rules.json).
 
 ## <a id="releases"></a>Releases
 

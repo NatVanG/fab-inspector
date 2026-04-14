@@ -22,6 +22,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DocsImages", "DocsImages", 
 		DocsImages\pbiinspector.png = DocsImages\pbiinspector.png
 		DocsImages\pbiinspectoricons.png = DocsImages\pbiinspectoricons.png
 		DocsImages\ReidSession.png = DocsImages\ReidSession.png
+		..\..\..\..\OneDrive\Pictures\VisOps\RIC.png = ..\..\..\..\OneDrive\Pictures\VisOps\RIC.png
 		DocsImages\RunReportFromWinForm.png = DocsImages\RunReportFromWinForm.png
 		DocsImages\SampleReportOverReport.png = DocsImages\SampleReportOverReport.png
 		DocsImages\symdiff.svg = DocsImages\symdiff.svg
