@@ -38,7 +38,7 @@ namespace Ric.Operators;
 
             var partInfo = PartUtils.TryGetPartInfo(node, setAdvancedProperties: true);
 
-            if (partInfo == null || !partInfo.Exists || partInfo.PartFileSystemType != PartFileSystemTypeEnum.File) { throw new JsonLogicException($"FileSizeRule - file not found. Try using in conjunction with partinfo rule, instead of the part rule."); }
+            if (partInfo == null || !partInfo.Exists) { throw new JsonLogicException($"FileSizeRule - file or folder not found. Try using in conjunction with partinfo rule, instead of the part rule."); }
 
             return partInfo.FileSize;
         }
