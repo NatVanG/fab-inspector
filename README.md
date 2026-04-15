@@ -2,12 +2,14 @@
 [![PBIRInspector Tests](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/tests.yml/badge.svg)](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/tests.yml)
 [![Build and Publish Docker Image](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/docker-publish.yml)
 # Fab Inspector (previously PBI Inspector V2) 
-## Declarative rules-based testing for Microsoft Fabric
+## Deterministic rules-based testing for Microsoft Fabric in the age of AI
 
 Meet Ric, the Fab Inspector!
 
-<img src="DocsImages/Ric_480x480_speech.png" alt="Hi! I'm Ric, the Fab Inspector." height="300"/>
-<img src="DocsImages/FabInsp_500x500.png" alt="Fab Inspector logo" height="220"/>
+<div style="display: flex; gap: 20px; align-items: center;">
+  <img src="DocsImages/Ric_480x480_speech.png" alt="Hi! I'm Ric, the Fab Inspector." height="240"/>
+  <img src="DocsImages/FabInsp_500x500.png" alt="Fab Inspector logo" height="180"/>
+</div>
 
 ## NOTE :pencil:
 
