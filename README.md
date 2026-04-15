@@ -7,15 +7,125 @@
 Meet Ric, the Fab Inspector!
 
 <div style="display: flex; gap: 20px; align-items: center;">
-  <img src="DocsImages/Ric_480x480_speech.png" alt="Hi! I'm Ric, the Fab Inspector." height="240"/>
-  <img src="DocsImages/FabInsp_500x500.png" alt="Fab Inspector logo" height="180"/>
+  <img src="DocsImages/Ric_480x480_speech.png" alt="Hi! I'm Ric, the Fab Inspector." height="260"/>
+  <img src="DocsImages/FabInsp_500x500.png" alt="Fab Inspector logo" height="200"/>
 </div>
+
+## Usage scenarios
+
+Fab Inspector supports local, workspace, and OneLake-based validation workflows. The scenarios below show common usage patterns and how inputs/outputs can be mixed.
+
+| Scenario | Fabric items source | Rules source | Output targets | Typical auth method |
+|---|---|---|---|---|
+| 1. Local-only | Local folder | Local JSON | Local HTML/JSON | `local` |
+| 2. CI/CD checkout | Git checkout on build agent | Local JSON in repo or pipeline workspace | ADO/GitHub logs, artifacts | `local` |
+| 3. Workspace + OneLake | Published Fabric workspace items | OneLake JSON | OneLake JSON | `interactive`, `clientsecret`, `certificate`, `federatedtoken`, or `managedidentity` |
+| 4. Hybrid | Local and/or workspace items | Local and/or OneLake JSON | Any combination of console, local files, logs, and OneLake JSON | Depends on selected remote resources |
+
+### 1. Local Fabric item definitions + local rules + local HTML/JSON output
+
+Use this when developing rules or validating item definitions on your machine before committing code.
+
+```mermaid
+flowchart LR
+    A[Local Fabric item definitions\nfrom file system] --> C[Fab Inspector CLI or GUI]
+    B[Local rules JSON file] --> C
+    C --> D[Local JSON output]
+    C --> E[Local HTML output]
+```
+
+Typical command:
+
+```bash
+fab-inspector -fabricitem "C:\FabricProject" -rules "C:\Rules\MyRules.json" -output "C:\FabResults" -formats "JSON,HTML"
+```
+
+### 2. Fabric item definitions in source control + local rules in CI/CD
+
+Use this when a pipeline checks out a repository and runs quality gates as part of pull request or deployment validation.
+
+```mermaid
+flowchart LR
+    A[Git repo checkout in CI agent\nFabric item definitions] --> C[Fab Inspector in pipeline]
+    B[Rules file in repo\nor pipeline workspace] --> C
+    C --> D[Pipeline logs\nADO or GitHub format]
+    C --> E[Pipeline artifacts\nJSON and/or HTML]
+```
+
+Typical command (example for CI logs):
+
+```bash
+fab-inspector -fabricitem "./FabricProject" -rules "./Rules/ci-rules.json" -formats "ADO"
+```
+
+### 3. Published Fabric items + OneLake-hosted rules + JSON results to OneLake
+
+Use this when validating deployed items directly from a Fabric workspace and centralizing rules/results in OneLake.
+
+```mermaid
+flowchart LR
+    A[Published Fabric items\nFabric workspace] --> C[Fab Inspector in Fabric mode]
+    B[Rules JSON hosted in OneLake] --> C
+    C --> D[JSON results written to OneLake]
+```
+
+Typical command (authenticating with Service Principal in this example):
+
+```bash
+fab-inspector -fabricworkspace "<workspace-guid>" -rules "https://onelake.dfs.fabric.microsoft.com/<workspace>/<lakehouse>/Files/rules/rules.json" -authmethod clientsecret -clientid "<client-id>" -tenantid "<tenant-id>" -clientsecret "<secret>" -output "https://onelake.dfs.fabric.microsoft.com/<workspace>/<lakehouse>/Files/results" -formats "JSON"
+```
+
+Or scoped to a published Fabric item:
+
+```bash
+fab-inspector -fabricworkspace "<workspace-guid>" -fabricitem "<item-guid>" -rules "https://onelake.dfs.fabric.microsoft.com/<workspace>/<lakehouse>/Files/rules/rules.json" -authmethod clientsecret -clientid "<client-id>" -tenantid "<tenant-id>" -clientsecret "<secret>" -output "https://onelake.dfs.fabric.microsoft.com/<workspace>/<lakehouse>/Files/results" -formats "JSON"
+```
+
+### 4. Hybrid pattern (any combination)
+
+Inputs and outputs are independent, so you can mix local and remote sources as needed.
+
+```mermaid
+flowchart TB
+    subgraph Inputs
+      A1[Fabric items: Local folder]
+      A2[Fabric items: Workspace item(s)]
+      B1[Rules: Local JSON]
+      B2[Rules: OneLake JSON]
+    end
+
+    C[Fab Inspector]
+
+    subgraph Outputs
+      D1[Console]
+      D2[Local JSON/HTML/PNG]
+      D3[OneLake JSON]
+      D4[ADO or GitHub logs]
+    end
+
+    A1 --> C
+    A2 --> C
+    B1 --> C
+    B2 --> C
+    C --> D1
+    C --> D2
+    C --> D3
+    C --> D4
+```
+
+Example combinations:
+
+1. Local item definitions + OneLake rules + local HTML output.
+2. Workspace items + local rules + GitHub annotations.
+3. Workspace items + OneLake rules + OneLake JSON output.
+
+This flexibility lets teams start local, then move to CI/CD and workspace-scoped validation without changing the core rule model.
 
 ## NOTE :pencil:
 
 This is a community project that is not supported by Microsoft. 
 
-:exclamation: Aside from Fabric items other than Power BI reports, this V2 version of PBI Inspector is intended to support the new enhanced metadata file format (PBIR), see https://learn.microsoft.com/en-gb/power-bi/developer/projects/projects-report?tabs=desktop#pbir-format. For the older PBIR-legacy file format (see https://learn.microsoft.com/en-gb/power-bi/developer/projects/projects-report?tabs=desktop#report-files), please use the previous version of PBI Inspector available at https://github.com/NatVanG/PBI-Inspector :exclamation:
+:exclamation: Aside from Fabric items other than Power BI reports, Fab Inspector only supports the new enhanced metadata file format (PBIR), see https://learn.microsoft.com/en-gb/power-bi/developer/projects/projects-report?tabs=desktop#pbir-format. For the older PBIR-legacy file format (see https://learn.microsoft.com/en-gb/power-bi/developer/projects/projects-report?tabs=desktop#report-files), please check out the PBI Inspector repository available at https://github.com/NatVanG/PBI-Inspector :exclamation:
 
 ## Breaking changes :boom:
 **PBI Inspector v2.0.0**: To support the new enhanced report format (PBIR), a new "part" custom command has been introduced which helps to navigate to or iterate over the new metadata file format's parts such as "Pages", "Visuals", "Bookmarks" etc. Rules defined against the new format are not backward compatible with the older PBIR-legacy format and vice versa.
