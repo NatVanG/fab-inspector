@@ -47,10 +47,8 @@ namespace Ric.Operators;
             var stream = new YamlStream();
             try
             {
-                //stream.Load(new StringReader(File.ReadAllText(partInfo.FileSystemPath)));
-               
-                using var fileStream = new FileStream(partInfo.FileSystemPath, FileMode.Open, FileAccess.Read);
-                using var yamlReader = new StreamReader(fileStream);
+                var yamlContent = partInfo.FileSystem.ReadAllText(partInfo.FileSystemPath);
+                using var yamlReader = new StringReader(yamlContent);
                 stream.Load(yamlReader);
             }
             catch (YamlDotNet.Core.YamlException ex)

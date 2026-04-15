@@ -10,6 +10,8 @@ namespace PBIRInspectorLibrary.Part
     { 
         private readonly IFabricFileSystem _fileSystem;
 
+        public IFabricFileSystem FileSystem => _fileSystem;
+
         public string FileSystemName { get; set; }
         public string FileSystemPath { get; set; }
         public PartFileSystemTypeEnum PartFileSystemType { get; private set; } = PartFileSystemTypeEnum.None;

@@ -10,7 +10,7 @@
         {
           "query": [
             {
-              "fromyaml": [
+              "fromyamlfile": [
                 {
                   "partinfo": ""
                 }
@@ -36,7 +36,7 @@
             {
               "query": [
                 {
-                  "fromyaml": [
+                  "fromyamlfile": [
                     {
                       "partinfo": ""
                     }
