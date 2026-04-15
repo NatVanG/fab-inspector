@@ -52,7 +52,7 @@ namespace PBIRInspectorClientLibrary
             Interlocked.Increment(ref _warningCount);
         }
 
-        public static void Run(string pbiFilePath, string rulesFilePath, string outputPath, bool verbose, bool parallel, bool jsonOutput, bool htmlOutput, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
+        public static async Task Run(string fabricWorkspaceId, string fabricItem, string rulesFilePath, string outputPath, bool verbose, bool parallel, bool jsonOutput, bool htmlOutput, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
             var formatsString = string.Concat(jsonOutput ? "JSON" : string.Empty, ",", htmlOutput ? "HTML" : string.Empty);
             var verboseString = verbose.ToString();
@@ -60,9 +60,11 @@ namespace PBIRInspectorClientLibrary
 
             string resolvedPbiFilePath = string.Empty;
 
-            var args = new Args { FabricItem = pbiFilePath, RulesFilePath = rulesFilePath, OutputPath = outputPath, FormatsString = formatsString, VerboseString = verboseString, ParallelString = parallelString };
+            string authmethod = "interactive";
 
-            Run(args, pageRenderer, registries);
+            var args = new Args { FabricWorkspaceId = fabricWorkspaceId, FabricItem = fabricItem, RulesFilePath = rulesFilePath, OutputPath = outputPath, FormatsString = formatsString, VerboseString = verboseString, ParallelString = parallelString, AuthMethod = authmethod };
+
+            await Run(args, pageRenderer, registries);
         }
 
         public static InspectionRules DeserialiseRulesFromPath(string rulesPath)
@@ -120,73 +122,60 @@ namespace PBIRInspectorClientLibrary
             // Authenticate based on auth method
             if (args.AuthMethod != "local")
             {
-                try
+                switch (args.AuthMethod.ToLower())
                 {
-                    OnMessageIssued(MessageTypeEnum.Information, $"Starting {args.AuthMethod} authentication...");
+                    case "interactive":
+                        _credential = FabricAuthenticationHelper.CreateInteractiveCredential(
+                            args.ClientId,
+                            args.TenantId
+                        );
+                        break;
 
-                    switch (args.AuthMethod.ToLower())
-                    {
-                        case "interactive":
-                            _credential = FabricAuthenticationHelper.CreateInteractiveCredential(
-                                args.ClientId,
-                                args.TenantId
-                            );
-                            break;
+                    case "clientsecret":
+                        _credential = FabricAuthenticationHelper.CreateClientSecretCredential(
+                            args.ClientId,
+                            args.ClientSecret,
+                            args.TenantId
+                        );
+                        break;
 
-                        case "clientsecret":
-                            _credential = FabricAuthenticationHelper.CreateClientSecretCredential(
-                                args.ClientId,
-                                args.ClientSecret,
-                                args.TenantId
-                            );
-                            break;
+                    case "certificate":
+                        _credential = FabricAuthenticationHelper.CreateCertificateCredential(
+                            args.ClientId,
+                            args.TenantId,
+                            args.CertificatePath,
+                            args.CertificatePassword
+                        );
+                        break;
 
-                        case "certificate":
-                            _credential = FabricAuthenticationHelper.CreateCertificateCredential(
-                                args.ClientId,
-                                args.TenantId,
-                                args.CertificatePath,
-                                args.CertificatePassword
-                            );
-                            break;
+                    case "federatedtoken":
+                        _credential = FabricAuthenticationHelper.CreateFederatedTokenCredential(
+                            args.ClientId,
+                            args.FederatedToken,
+                            args.TenantId
+                        );
+                        break;
 
-                        case "federatedtoken":
-                            _credential = FabricAuthenticationHelper.CreateFederatedTokenCredential(
-                                args.ClientId,
-                                args.FederatedToken,
-                                args.TenantId
-                            );
-                            break;
+                    case "managedidentity":
+                        _credential = FabricAuthenticationHelper.CreateManagedIdentityCredential(
+                            args.ClientId
+                        );
+                        break;
 
-                        case "managedidentity":
-                            _credential = FabricAuthenticationHelper.CreateManagedIdentityCredential(
-                                args.ClientId
-                            );
-                            break;
-
-                        default:
-                            throw new ArgumentException($"Unsupported authentication method: {args.AuthMethod}");
-                    }
-
-                    //authenticate here
-                    await Main.EnsureAuthenticatedAsync();
-                    OnMessageIssued(MessageTypeEnum.Information, "Authentication successful.");
-
+                    default:
+                        throw new ArgumentException($"Unsupported authentication method: {args.AuthMethod}");
                 }
-                catch (Exception ex)
-                {
-                    OnMessageIssued(MessageTypeEnum.Error, $"Authentication failed: {ex.Message}");
-                    throw;
-                }
+
+                await Main.EnsureAuthenticatedAsync();
             }
 
             if (!args.Parallel)
             {
-                RunSingleThreaded(args, pageRenderer, registries);
+                await RunSingleThreadedAsync(args, pageRenderer, registries).ConfigureAwait(false);
             }
             else
             {
-                RunParallel(args, pageRenderer, registries);
+                await RunParallelAsync(args, pageRenderer, registries).ConfigureAwait(false);
             }
         }
 
@@ -203,7 +192,7 @@ namespace PBIRInspectorClientLibrary
                 return;
             }
 
-            await _tokenSemaphore.WaitAsync();
+            await _tokenSemaphore.WaitAsync().ConfigureAwait(false);
             try
             {
                 // Double-check after acquiring lock
@@ -213,7 +202,7 @@ namespace PBIRInspectorClientLibrary
                 }
 
                 var tokenRequestContext = new TokenRequestContext(AuthenticationHelper.FabricScopes);
-                _cachedToken = await _credential.GetTokenAsync(tokenRequestContext, default);
+                _cachedToken = await _credential.GetTokenAsync(tokenRequestContext, default).ConfigureAwait(false);
                 _tokenInitialized = true;
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _cachedToken.Token);
                 if (!_httpClient.DefaultRequestHeaders.Accept.Contains(new MediaTypeWithQualityHeaderValue("application/json")))
@@ -232,7 +221,7 @@ namespace PBIRInspectorClientLibrary
             }
         }
 
-        public static void RunSingleThreaded(Args args, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
+        public static async Task RunSingleThreadedAsync(Args args, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
             _args = args;
             IEnumerable<TestResult> testResults = null;
@@ -241,12 +230,12 @@ namespace PBIRInspectorClientLibrary
 
             SetPartContext();
 
-            var rules = DeserialiseRulesFromPath(Main._args.RulesFilePath);
-            testResults = RunSingleThreaded(rules, registries);
+            var rules = await Task.Run(() => DeserialiseRulesFromPath(Main._args.RulesFilePath)).ConfigureAwait(false);
+            testResults = await RunSingleThreadedAsync(rules, registries).ConfigureAwait(false);
 
             if (testResults != null && testResults.Any())
             {
-                OutputResults(testResults, pageRenderer, registries);
+                await OutputResultsAsync(testResults, pageRenderer, registries).ConfigureAwait(false);
             }
             else
             {
@@ -255,29 +244,30 @@ namespace PBIRInspectorClientLibrary
             OnMessageIssued(MessageTypeEnum.Complete, string.Concat("Test run completed at (UTC): ", DateTime.Now.ToUniversalTime()));
         }
 
-        public static void RunParallel(Args args, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
+        public static async Task RunParallelAsync(Args args, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
             _args = args;
 
             SetPartContext();
 
-            var rules = DeserialiseRulesFromPath(Main._args.RulesFilePath);
+            var rules = await Task.Run(() => DeserialiseRulesFromPath(Main._args.RulesFilePath)).ConfigureAwait(false);
             var ruleBuckets = ChunkInspectionRules(rules);
             var globalResults = new ConcurrentBag<TestResult>();
 
             OnMessageIssued(MessageTypeEnum.Information, string.Concat("Parallel test run started at (UTC): ", DateTime.Now.ToUniversalTime()));
 
-            Parallel.ForEach(ruleBuckets, _ =>
-            {
-                var localResults = RunSingleThreaded(_, registries);
+            var tasks = ruleBuckets.Select(async bucket => await RunSingleThreadedAsync(bucket, registries).ConfigureAwait(false));
+            var allResults = await Task.WhenAll(tasks).ConfigureAwait(false);
 
+            foreach (var localResults in allResults)
+            {
                 foreach (var result in localResults ?? Enumerable.Empty<TestResult>())
                 {
                     globalResults.Add(result);
                 }
-            });
+            }
 
-            OutputResults(globalResults.ToList().OrderBy(_ => _.RuleId), pageRenderer, registries);
+            await OutputResultsAsync(globalResults.ToList().OrderBy(_ => _.RuleId), pageRenderer, registries).ConfigureAwait(false);
             OnMessageIssued(MessageTypeEnum.Complete, string.Concat("Test run completed at (UTC): ", DateTime.Now.ToUniversalTime()));
         }
 
@@ -306,7 +296,7 @@ namespace PBIRInspectorClientLibrary
             return ruleBuckets;
         }
 
-        private static IEnumerable<TestResult>? RunSingleThreaded(InspectionRules rules, IEnumerable<JsonLogicOperatorRegistry> registries)
+        private static async Task<IEnumerable<TestResult>?> RunSingleThreadedAsync(InspectionRules rules, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
             Inspector? insp = null;
 
@@ -324,7 +314,7 @@ namespace PBIRInspectorClientLibrary
                     // Item-scoped vs workspace-scoped mode
                     fileSystem = string.IsNullOrWhiteSpace(Main._args.FabricItem)
                         ? new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._credential, Main._httpClient)
-                        : new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._args.FabricItem, Main._credential, Main._httpClient);
+                        : await FabricRemoteFileSystem.CreateItemScopedAsync(Main._args.FabricWorkspaceId, Main._args.FabricItem, Main._credential, Main._httpClient).ConfigureAwait(false);
                 }
                 else
                 {
@@ -335,8 +325,8 @@ namespace PBIRInspectorClientLibrary
                 insp = new Inspector(rules, registries, fileSystem);
 
                 insp.MessageIssued += Insp_MessageIssued;
-                var testResults = insp.Inspect().Where(_ => (!Main._args.Verbose && !_.Pass) || (Main._args.Verbose));
-                return testResults;
+                var testResults = await Task.Run(() => insp.Inspect()).ConfigureAwait(false);
+                return testResults.Where(_ => (!Main._args.Verbose && !_.Pass) || (Main._args.Verbose));
             }
             catch (PBIRInspectorException e)
             {
@@ -363,7 +353,7 @@ namespace PBIRInspectorClientLibrary
             return Enumerable.Empty<TestResult>();
         }
 
-        private static void OutputResults(IEnumerable<TestResult> testResults, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
+        private static async Task OutputResultsAsync(IEnumerable<TestResult> testResults, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
             string jsonTestRun = string.Empty;
             Inspector? fieldMapInsp = null;
@@ -464,7 +454,7 @@ namespace PBIRInspectorClientLibrary
                         // Item-scoped vs workspace-scoped mode
                         fieldMapFileSystem = string.IsNullOrWhiteSpace(Main._args.FabricItem)
                             ? new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._credential, Main._httpClient)
-                            : new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._args.FabricItem, Main._credential, Main._httpClient);
+                            : await FabricRemoteFileSystem.CreateItemScopedAsync(Main._args.FabricWorkspaceId, Main._args.FabricItem, Main._credential, Main._httpClient).ConfigureAwait(false);
                     }
                     else
                     {
@@ -476,7 +466,7 @@ namespace PBIRInspectorClientLibrary
                     var fieldMapPathRules = DeserialiseRulesFromPath(Constants.ReportPageFieldMapFilePath);
                     fieldMapInsp = new Inspector(fieldMapPathRules, registries, fieldMapFileSystem);
 
-                    fieldMapResults = fieldMapInsp.Inspect();
+                    fieldMapResults = await Task.Run(() => fieldMapInsp.Inspect()).ConfigureAwait(false);
 
                     var outputPNGDirPath = Path.Combine(localOutputDirPath, Constants.PNGOutputDir);
 
@@ -548,9 +538,7 @@ namespace PBIRInspectorClientLibrary
 
                 if (isOneLakeOutput && outputArtifacts.Any())
                 {
-                    UploadOutputArtifactsToOneLakeAsync(outputRootPath, outputArtifacts, Main._args.OverwriteOutput)
-                        .GetAwaiter()
-                        .GetResult();
+                    await UploadOutputArtifactsToOneLakeAsync(outputRootPath, outputArtifacts, Main._args.OverwriteOutput).ConfigureAwait(false);
                 }
             }
             finally
@@ -595,7 +583,7 @@ namespace PBIRInspectorClientLibrary
                 var remoteUrl = OneLakeOutputUploader.CombineUrl(outputRootUrl, artifact.RelativePath);
                 if (!overwrite)
                 {
-                    var exists = await OneLakeOutputUploader.FileExistsAsync(remoteUrl, _credential);
+                    var exists = await OneLakeOutputUploader.FileExistsAsync(remoteUrl, _credential).ConfigureAwait(false);
                     if (exists)
                     {
                         throw new PBIRInspectorException(
@@ -608,7 +596,7 @@ namespace PBIRInspectorClientLibrary
             {
                 var remoteUrl = OneLakeOutputUploader.CombineUrl(outputRootUrl, artifact.RelativePath);
                 OnMessageIssued(MessageTypeEnum.Information, string.Format("Uploading output artifact to OneLake at \"{0}\".", remoteUrl));
-                await OneLakeOutputUploader.UploadFileAsync(artifact.LocalPath, remoteUrl, overwrite, _credential);
+                await OneLakeOutputUploader.UploadFileAsync(artifact.LocalPath, remoteUrl, overwrite, _credential).ConfigureAwait(false);
             }
         }
 

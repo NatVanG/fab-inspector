@@ -104,23 +104,23 @@ public class DaxQueryRule : Json.Logic.Rule
         var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
         //var response = httpClient.PostAsync(url, content).GetAwaiter().GetResult();
 
-        // Power BI API call — same HttpClient, different token for Power BI scopes instead of Fabric scopes
+        // Power BI API call ï¿½ same HttpClient, different token for Power BI scopes instead of Fabric scopes
         var pbiRequest = AuthenticationHelper.CreateAuthenticatedRequestAsync(
             HttpMethod.Post,
             url,
             credential,
             AuthenticationHelper.PowerBIScopes,
-            content).GetAwaiter().GetResult();
+            content).ConfigureAwait(false).GetAwaiter().GetResult();
 
-        var response = ContextService.HttpClient.SendAsync(pbiRequest).GetAwaiter().GetResult();
+        var response = ContextService.HttpClient.SendAsync(pbiRequest).ConfigureAwait(false).GetAwaiter().GetResult();
 
         if (!response.IsSuccessStatusCode)
         {
-            var errorContent = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            var errorContent = response.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
             throw new HttpRequestException($"DAX query execution failed ({response.StatusCode}): {errorContent}");
         }
 
-        var resultJson = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+        var resultJson = response.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
         return JsonNode.Parse(resultJson);
     }
 }

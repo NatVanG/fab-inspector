@@ -30,6 +30,8 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             groupBox1 = new GroupBox();
+            txtFabricWorkspaceId = new TextBox();
+            label5 = new Label();
             btnBrowseRulesFile = new Button();
             btnBrowsePBIDesktopFile = new Button();
             label2 = new Label();
@@ -37,7 +39,7 @@
             chkUseBaseRules = new CheckBox();
             chckUseSamplePBIFile = new CheckBox();
             txtRulesFilePath = new TextBox();
-            txtPBIDesktopFile = new TextBox();
+            txtFabricItem = new TextBox();
             btnBrowseOutputDir = new Button();
             label3 = new Label();
             chckUseTempFiles = new CheckBox();
@@ -64,6 +66,8 @@
             // 
             // groupBox1
             // 
+            groupBox1.Controls.Add(txtFabricWorkspaceId);
+            groupBox1.Controls.Add(label5);
             groupBox1.Controls.Add(btnBrowseRulesFile);
             groupBox1.Controls.Add(btnBrowsePBIDesktopFile);
             groupBox1.Controls.Add(label2);
@@ -71,18 +75,35 @@
             groupBox1.Controls.Add(chkUseBaseRules);
             groupBox1.Controls.Add(chckUseSamplePBIFile);
             groupBox1.Controls.Add(txtRulesFilePath);
-            groupBox1.Controls.Add(txtPBIDesktopFile);
+            groupBox1.Controls.Add(txtFabricItem);
             groupBox1.Location = new Point(31, 63);
             groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(933, 201);
+            groupBox1.Size = new Size(933, 243);
             groupBox1.TabIndex = 0;
             groupBox1.TabStop = false;
             groupBox1.Text = "Inputs";
             groupBox1.Enter += groupBox1_Enter;
             // 
+            // txtFabricWorkspaceId
+            // 
+            txtFabricWorkspaceId.Location = new Point(312, 54);
+            txtFabricWorkspaceId.Name = "txtFabricWorkspaceId";
+            txtFabricWorkspaceId.Size = new Size(322, 31);
+            txtFabricWorkspaceId.TabIndex = 12;
+            // 
+            // label5
+            // 
+            label5.AutoSize = true;
+            label5.Location = new Point(49, 52);
+            label5.Name = "label5";
+            label5.Size = new Size(254, 25);
+            label5.TabIndex = 11;
+            label5.Text = "Fabric Workspace ID (optional)";
+            label5.Click += label5_Click;
+            // 
             // btnBrowseRulesFile
             // 
-            btnBrowseRulesFile.Location = new Point(640, 111);
+            btnBrowseRulesFile.Location = new Point(640, 159);
             btnBrowseRulesFile.Name = "btnBrowseRulesFile";
             btnBrowseRulesFile.Size = new Size(112, 34);
             btnBrowseRulesFile.TabIndex = 10;
@@ -92,7 +113,7 @@
             // 
             // btnBrowsePBIDesktopFile
             // 
-            btnBrowsePBIDesktopFile.Location = new Point(640, 58);
+            btnBrowsePBIDesktopFile.Location = new Point(640, 106);
             btnBrowsePBIDesktopFile.Name = "btnBrowsePBIDesktopFile";
             btnBrowsePBIDesktopFile.Size = new Size(112, 34);
             btnBrowsePBIDesktopFile.TabIndex = 9;
@@ -103,7 +124,7 @@
             // label2
             // 
             label2.AutoSize = true;
-            label2.Location = new Point(49, 111);
+            label2.Location = new Point(49, 159);
             label2.Name = "label2";
             label2.Size = new Size(82, 25);
             label2.TabIndex = 7;
@@ -112,18 +133,18 @@
             // label1
             // 
             label1.AutoSize = true;
-            label1.Location = new Point(49, 60);
+            label1.Location = new Point(49, 108);
             label1.Name = "label1";
-            label1.Size = new Size(117, 25);
+            label1.Size = new Size(99, 25);
             label1.TabIndex = 6;
-            label1.Text = "Fabric Item(s)";
+            label1.Text = "Fabric Item";
             // 
             // chkUseBaseRules
             // 
             chkUseBaseRules.AutoSize = true;
             chkUseBaseRules.Checked = true;
             chkUseBaseRules.CheckState = CheckState.Checked;
-            chkUseBaseRules.Location = new Point(768, 116);
+            chkUseBaseRules.Location = new Point(768, 164);
             chkUseBaseRules.Name = "chkUseBaseRules";
             chkUseBaseRules.Size = new Size(151, 29);
             chkUseBaseRules.TabIndex = 4;
@@ -134,7 +155,7 @@
             // chckUseSamplePBIFile
             // 
             chckUseSamplePBIFile.AutoSize = true;
-            chckUseSamplePBIFile.Location = new Point(768, 63);
+            chckUseSamplePBIFile.Location = new Point(768, 111);
             chckUseSamplePBIFile.Name = "chckUseSamplePBIFile";
             chckUseSamplePBIFile.Size = new Size(129, 29);
             chckUseSamplePBIFile.TabIndex = 3;
@@ -144,17 +165,18 @@
             // 
             // txtRulesFilePath
             // 
-            txtRulesFilePath.Location = new Point(204, 110);
+            txtRulesFilePath.Location = new Point(204, 158);
             txtRulesFilePath.Name = "txtRulesFilePath";
             txtRulesFilePath.Size = new Size(430, 31);
             txtRulesFilePath.TabIndex = 1;
             // 
-            // txtPBIDesktopFile
+            // txtFabricItem
             // 
-            txtPBIDesktopFile.Location = new Point(204, 60);
-            txtPBIDesktopFile.Name = "txtPBIDesktopFile";
-            txtPBIDesktopFile.Size = new Size(430, 31);
-            txtPBIDesktopFile.TabIndex = 0;
+            txtFabricItem.Location = new Point(204, 108);
+            txtFabricItem.Name = "txtFabricItem";
+            txtFabricItem.Size = new Size(430, 31);
+            txtFabricItem.TabIndex = 0;
+            txtFabricItem.TextChanged += txtPBIDesktopFile_TextChanged;
             // 
             // btnBrowseOutputDir
             // 
@@ -192,7 +214,6 @@
             txtOutputDirPath.BorderStyle = BorderStyle.FixedSingle;
             txtOutputDirPath.Location = new Point(204, 37);
             txtOutputDirPath.Name = "txtOutputDirPath";
-            txtOutputDirPath.ReadOnly = true;
             txtOutputDirPath.Size = new Size(430, 31);
             txtOutputDirPath.TabIndex = 2;
             txtOutputDirPath.TextChanged += txtOutputDirPath_TextChanged;
@@ -207,7 +228,7 @@
             groupBox2.Controls.Add(txtOutputDirPath);
             groupBox2.Controls.Add(label3);
             groupBox2.Controls.Add(chckUseTempFiles);
-            groupBox2.Location = new Point(31, 285);
+            groupBox2.Location = new Point(31, 325);
             groupBox2.Name = "groupBox2";
             groupBox2.Size = new Size(933, 183);
             groupBox2.TabIndex = 1;
@@ -258,17 +279,17 @@
             // 
             // txtConsoleOutput
             // 
-            txtConsoleOutput.Location = new Point(31, 535);
+            txtConsoleOutput.Location = new Point(31, 575);
             txtConsoleOutput.Multiline = true;
             txtConsoleOutput.Name = "txtConsoleOutput";
             txtConsoleOutput.ReadOnly = true;
             txtConsoleOutput.ScrollBars = ScrollBars.Vertical;
-            txtConsoleOutput.Size = new Size(933, 152);
+            txtConsoleOutput.Size = new Size(933, 112);
             txtConsoleOutput.TabIndex = 2;
             // 
             // btnRun
             // 
-            btnRun.Location = new Point(852, 482);
+            btnRun.Location = new Point(852, 522);
             btnRun.Name = "btnRun";
             btnRun.Size = new Size(112, 34);
             btnRun.TabIndex = 3;
@@ -293,7 +314,7 @@
             // lblMessage
             // 
             lblMessage.AutoSize = true;
-            lblMessage.Location = new Point(747, 487);
+            lblMessage.Location = new Point(747, 527);
             lblMessage.Name = "lblMessage";
             lblMessage.Size = new Size(82, 25);
             lblMessage.TabIndex = 4;
@@ -400,7 +421,7 @@
         private CheckBox chckUseSamplePBIFile;
         private TextBox txtOutputDirPath;
         private TextBox txtRulesFilePath;
-        private TextBox txtPBIDesktopFile;
+        private TextBox txtFabricItem;
         private Button btnBrowseOutputDir;
         private Button btnBrowseRulesFile;
         private Button btnBrowsePBIDesktopFile;
@@ -415,5 +436,7 @@
         private LinkLabel lnkAbout;
         private LinkLabel lnkLatestRelease;
         private LinkLabel lnkReportIssue;
+        private Label label5;
+        private TextBox txtFabricWorkspaceId;
     }
 }

@@ -55,7 +55,10 @@ namespace PBIRInspectorWinForm
             registries.Add(new JsonLogicOperatorRegistry(
             new FabInspectorSerializerContext(),
             new IJsonLogicOperator[] {
-                new RectangleOverlapOperator()}));
+                new RectangleOverlapOperator(),
+                new DaxQueryOperator(),
+                new ApiGetOperator(),
+                new ScannerApiOperator()}));
 
             services.AddTransient<IEnumerable<JsonLogicOperatorRegistry>>(provider => registries);
 
@@ -101,7 +104,7 @@ namespace PBIRInspectorWinForm
             UseSamplePBIFileStateCheck();
             UseBaseRulesCheck();
             UseTempFilesStateCheck();
-            txtPBIDesktopFile.Focus();
+            txtFabricItem.Focus();
         }
 
         private void MainForm_FormClosing(object? sender, FormClosingEventArgs e)
@@ -113,10 +116,26 @@ namespace PBIRInspectorWinForm
         {
             if (e.MessageType == PBIRInspectorLibrary.MessageTypeEnum.Dialog)
             {
-                var dr = MessageBox.Show(e.Message, "Delete directory?", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-                if (dr == DialogResult.Yes)
+                // Must show dialog on the UI thread for proper modality.
+                // The event may fire from a thread pool thread after Task.Run offloading.
+                if (this.InvokeRequired)
                 {
-                    e.DialogOKResponse = true;
+                    this.Invoke(() =>
+                    {
+                        var dr = MessageBox.Show(this, e.Message, "Delete directory?", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                        if (dr == DialogResult.Yes)
+                        {
+                            e.DialogOKResponse = true;
+                        }
+                    });
+                }
+                else
+                {
+                    var dr = MessageBox.Show(this, e.Message, "Delete directory?", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    if (dr == DialogResult.Yes)
+                    {
+                        e.DialogOKResponse = true;
+                    }
                 }
             }
             else
@@ -165,8 +184,9 @@ namespace PBIRInspectorWinForm
         private void UseSamplePBIFileStateCheck()
         {
             var enabled = !this.chckUseSamplePBIFile.Checked;
-            if (!enabled) { this.txtPBIDesktopFile.Text = Constants.SamplePBIPReportFolderPath; } else { this.txtPBIDesktopFile.Clear(); };
-            this.txtPBIDesktopFile.Enabled = enabled;
+            if (!enabled) { this.txtFabricItem.Text = Constants.SamplePBIPReportFolderPath; } else { this.txtFabricItem.Clear(); }
+            ;
+            this.txtFabricItem.Enabled = enabled;
             this.btnBrowsePBIDesktopFile.Enabled = enabled;
             //this.chckVerbose.Checked = !enabled;
         }
@@ -203,13 +223,14 @@ namespace PBIRInspectorWinForm
             UseTempFilesStateCheck();
         }
 
-        private void btnRun_Click(object sender, EventArgs e)
+        private async void btnRun_Click(object sender, EventArgs e)
         {
             Clear();
 
             btnRun.Enabled = false;
 
-            var pbiFilePath = this.txtPBIDesktopFile.Text;
+            var fabricWorskpaceId = this.txtFabricWorkspaceId.Text;
+            var fabricItem = this.txtFabricItem.Text;
             var rulesFilePath = this.txtRulesFilePath.Text;
             var outputPath = this.txtOutputDirPath.Text;
             var verbose = this.chckVerbose.Checked;
@@ -217,9 +238,14 @@ namespace PBIRInspectorWinForm
             var jsonOutput = this.chckJsonOutput.Checked;
             var htmlOutput = this.chckHTMLOutput.Checked;
 
-            Main.Run(pbiFilePath, rulesFilePath, outputPath, verbose, parallel, jsonOutput, htmlOutput, _pageRenderer, _registries);
-
-            btnRun.Enabled = true;
+            try
+            {
+                await Main.Run(fabricWorskpaceId, fabricItem, rulesFilePath, outputPath, verbose, parallel, jsonOutput, htmlOutput, _pageRenderer, _registries);
+            }
+            finally
+            {
+                btnRun.Enabled = true;
+            }
         }
 
         internal void Clear()
@@ -230,7 +256,7 @@ namespace PBIRInspectorWinForm
 
         private void openPBIDesktopFileDialog_FileOk(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            this.txtPBIDesktopFile.Text = this.openPBIDesktopFileDialog.FileName;
+            this.txtFabricItem.Text = this.openPBIDesktopFileDialog.FileName;
         }
 
         private void openRulesFileDialog_FileOk(object sender, System.ComponentModel.CancelEventArgs e)
@@ -308,6 +334,16 @@ namespace PBIRInspectorWinForm
             {
                 MessageBox.Show("Unable to open link that was clicked.");
             }
+        }
+
+        private void txtPBIDesktopFile_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label5_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

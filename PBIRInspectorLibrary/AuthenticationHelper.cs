@@ -37,7 +37,7 @@ namespace PBIRInspectorLibrary
             CancellationToken cancellationToken = default)
         {
             var tokenRequestContext = new TokenRequestContext(scopes);
-            var token = await credential.GetTokenAsync(tokenRequestContext, cancellationToken);
+            var token = await credential.GetTokenAsync(tokenRequestContext, cancellationToken).ConfigureAwait(false);
 
             var request = new HttpRequestMessage(method, requestUri);
             request.Content = stringContent;

@@ -150,12 +150,47 @@ namespace PBIRInspectorLibrary
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             // Eagerly load item metadata to validate itemId and cache item name
-            _scopedItem = LoadItemMetadataAsync(itemId).GetAwaiter().GetResult();
-            _scopedItem.DirectoryPath = BuildItemDirectoryPath(_scopedItem); // Set directory path to root for item-scoped access
-            _scopedItemName = BuildItemName(_scopedItem); // Cache built name to avoid repeated string concat (#6)
+            var item = LoadItemMetadataAsync(itemId).GetAwaiter().GetResult();
+            SetScopedItem(item);
+        }
+
+        /// <summary>
+        /// Creates an item-scoped file system instance without blocking the caller thread.
+        /// </summary>
+        public static async Task<FabricRemoteFileSystem> CreateItemScopedAsync(
+            string workspaceId,
+            string itemId,
+            TokenCredential credential,
+            HttpClient? httpClient = null,
+            int maxLroAttempts = 30,
+            int initialRetryDelayMs = 1000,
+            int maxRetryDelayMs = 10000)
+        {
+            if (string.IsNullOrWhiteSpace(itemId))
+                throw new ArgumentNullException(nameof(itemId));
+
+            var fileSystem = new FabricRemoteFileSystem(
+                workspaceId,
+                credential,
+                httpClient,
+                maxLroAttempts,
+                initialRetryDelayMs,
+                maxRetryDelayMs);
+
+            var item = await fileSystem.LoadItemMetadataAsync(itemId).ConfigureAwait(false);
+            fileSystem.SetScopedItem(item);
+
+            return fileSystem;
         }
 
         #region Private Helper Methods
+
+        private void SetScopedItem(FabricItem item)
+        {
+            _scopedItem = item;
+            _scopedItem.DirectoryPath = BuildItemDirectoryPath(_scopedItem); // Set directory path to root for item-scoped access
+            _scopedItemName = BuildItemName(_scopedItem); // Cache built name to avoid repeated string concat (#6)
+        }
 
         /// <summary>
         /// Gets an access token from the credential and configures HTTP client authorization.
@@ -169,7 +204,7 @@ namespace PBIRInspectorLibrary
                 return;
             }
 
-            await _tokenSemaphore.WaitAsync();
+            await _tokenSemaphore.WaitAsync().ConfigureAwait(false);
             try
             {
                 // Double-check after acquiring lock
@@ -179,7 +214,7 @@ namespace PBIRInspectorLibrary
                 }
 
                 var tokenRequestContext = new TokenRequestContext(new[] { "https://api.fabric.microsoft.com/.default" });
-                _cachedToken = await _credential.GetTokenAsync(tokenRequestContext, default);
+                _cachedToken = await _credential.GetTokenAsync(tokenRequestContext, default).ConfigureAwait(false);
                 _tokenInitialized = true;
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _cachedToken.Token);
             }
@@ -234,17 +269,17 @@ namespace PBIRInspectorLibrary
         /// </summary>
         private async Task<FabricItem> LoadItemMetadataAsync(string itemId)
         {
-            await EnsureAuthenticatedAsync();
+            await EnsureAuthenticatedAsync().ConfigureAwait(false);
             
             var url = $"{_baseUrl}/workspaces/{_workspaceId}/items/{itemId}";
-            var response = await _httpClient.GetAsync(url);
+            var response = await _httpClient.GetAsync(url).ConfigureAwait(false);
             
             if (!response.IsSuccessStatusCode)
             {
-                throw new HttpRequestException($"Failed to load item metadata for {itemId}: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
+                throw new HttpRequestException($"Failed to load item metadata for {itemId}: {response.StatusCode} - {await response.Content.ReadAsStringAsync().ConfigureAwait(false)}");
             }
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             var result = JsonSerializer.Deserialize<FabricItem>(json, new JsonSerializerOptions 
             { 
                 PropertyNameCaseInsensitive = true 
@@ -268,7 +303,7 @@ namespace PBIRInspectorLibrary
 
             if (this.ScopedItemTypes == null || this.ScopedItemTypes.Contains("*")) // If no specific item types provided, load all items
             {
-                items = await LoadWorkspaceItemsByTypeAsync();
+                items = await LoadWorkspaceItemsByTypeAsync().ConfigureAwait(false);
             }
             else
             {
@@ -276,7 +311,7 @@ namespace PBIRInspectorLibrary
                 {
                     if (string.IsNullOrWhiteSpace(itemType) || ignoreItemTypes.Contains(itemType, StringComparer.OrdinalIgnoreCase))
                         continue;
-                    var itemsOfType = await LoadWorkspaceItemsByTypeAsync(itemType);
+                    var itemsOfType = await LoadWorkspaceItemsByTypeAsync(itemType).ConfigureAwait(false);
                     if (itemsOfType != null)
                     {
                         itemsOfType.ForEach(item => item.DirectoryPath = BuildItemDirectoryPath(item));
@@ -293,7 +328,7 @@ namespace PBIRInspectorLibrary
         /// </summary>
         private async Task<List<FabricItem>> LoadWorkspaceItemsByTypeAsync(string? itemType = null)
         {
-            await EnsureAuthenticatedAsync();
+            await EnsureAuthenticatedAsync().ConfigureAwait(false);
 
             if (!string.IsNullOrEmpty(itemType) && itemType.Equals("report_deprecated", StringComparison.OrdinalIgnoreCase))
             {
@@ -310,14 +345,14 @@ namespace PBIRInspectorLibrary
 
             while (nextUrl != null)
             {
-                var response = await _httpClient.GetAsync(nextUrl);
+                var response = await _httpClient.GetAsync(nextUrl).ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new HttpRequestException($"Failed to load workspace items: {response.StatusCode} - {await response.Content.ReadAsStringAsync()}");
+                    throw new HttpRequestException($"Failed to load workspace items: {response.StatusCode} - {await response.Content.ReadAsStringAsync().ConfigureAwait(false)}");
                 }
 
-                var json = await response.Content.ReadAsStringAsync();
+                var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 var result = JsonSerializer.Deserialize<FabricItemsResponse>(json, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
@@ -395,14 +430,14 @@ namespace PBIRInspectorLibrary
         /// </summary>
         private async Task<Dictionary<string, string>> LoadWorkspaceFolderPathsAsync()
         {
-            await EnsureAuthenticatedAsync();
+            await EnsureAuthenticatedAsync().ConfigureAwait(false);
 
             var allFolders = new List<FabricFolder>();
             string? nextUrl = $"{_baseUrl}/workspaces/{_workspaceId}/folders";
 
             while (nextUrl != null)
             {
-                var response = await _httpClient.GetAsync(nextUrl);
+                var response = await _httpClient.GetAsync(nextUrl).ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -411,7 +446,7 @@ namespace PBIRInspectorLibrary
                     return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 }
 
-                var json = await response.Content.ReadAsStringAsync();
+                var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 var result = JsonSerializer.Deserialize<FabricFoldersResponse>(json, new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
@@ -499,15 +534,15 @@ namespace PBIRInspectorLibrary
         /// <param name="cancellationToken">Cancellation token to stop polling</param>
         private async Task<FabricItemDefinition> LoadItemDefinitionAsync(string itemId, CancellationToken cancellationToken = default)
         {
-            await EnsureAuthenticatedAsync();
+            await EnsureAuthenticatedAsync().ConfigureAwait(false);
             
             var url = $"{_baseUrl}/workspaces/{_workspaceId}/items/{itemId}/getDefinition";
-            var initialResponse = await _httpClient.PostAsync(url, null, cancellationToken);
+            var initialResponse = await _httpClient.PostAsync(url, null, cancellationToken).ConfigureAwait(false);
 
             // Handle BadRequest "errorCode":"OperationNotSupportedForItem"
             if (initialResponse.StatusCode == System.Net.HttpStatusCode.BadRequest)
             {
-                var errorContent = await initialResponse.Content.ReadAsStringAsync();
+                var errorContent = await initialResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 if (errorContent.Contains("OperationNotSupportedForItem", StringComparison.OrdinalIgnoreCase))
                 {
                     if (_scopedItem != null)
@@ -554,13 +589,13 @@ namespace PBIRInspectorLibrary
                 
                 for (int attempt = 0; attempt < _maxLroAttempts; attempt++)
                 {
-                    await Task.Delay(currentDelayMs, cancellationToken);
+                    await Task.Delay(currentDelayMs, cancellationToken).ConfigureAwait(false);
                     
-                    var pollResponse = await _httpClient.GetAsync(pollingUri, cancellationToken);
+                    var pollResponse = await _httpClient.GetAsync(pollingUri, cancellationToken).ConfigureAwait(false);
 
                     if (pollResponse.IsSuccessStatusCode)
                     {
-                        var pollContent = await pollResponse.Content.ReadAsStringAsync();
+                        var pollContent = await pollResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                         // Try to deserialize as operation status
                         FabricOperationResult? operationResult;
@@ -586,7 +621,7 @@ namespace PBIRInspectorLibrary
                             {
                                 // Operation succeeded - get the actual result
                                 var resultUri = new Uri(pollingUri.ToString() + "/result");
-                                resultResponse = await _httpClient.GetAsync(resultUri, cancellationToken);
+                                resultResponse = await _httpClient.GetAsync(resultUri, cancellationToken).ConfigureAwait(false);
                                 operationComplete = true;
                                 break;
                             }
@@ -631,7 +666,7 @@ namespace PBIRInspectorLibrary
                     else
                     {
                         // Error occurred during polling
-                        var errorContent = await pollResponse.Content.ReadAsStringAsync();
+                        var errorContent = await pollResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                         throw new HttpRequestException(
                             $"Failed while polling item definition for {itemId}: {pollResponse.StatusCode} - {errorContent}");
                     }
@@ -649,7 +684,7 @@ namespace PBIRInspectorLibrary
                 if (resultResponse == null || !resultResponse.IsSuccessStatusCode)
                 {
                     var errorContent = resultResponse != null 
-                        ? await resultResponse.Content.ReadAsStringAsync() 
+                        ? await resultResponse.Content.ReadAsStringAsync().ConfigureAwait(false) 
                         : "No response";
                     throw new HttpRequestException(
                         $"Failed to get operation result for item {itemId}: {resultResponse?.StatusCode} - {errorContent}");
@@ -661,12 +696,12 @@ namespace PBIRInspectorLibrary
             // Handle synchronous success (200 OK) or final result from LRO
             if (!initialResponse.IsSuccessStatusCode)
             {
-                var errorContent = await initialResponse.Content.ReadAsStringAsync();
+                var errorContent = await initialResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
                 throw new HttpRequestException(
                     $"Failed to load item definition for {itemId}: {initialResponse.StatusCode} - {errorContent}");
             }
 
-            var json = await initialResponse.Content.ReadAsStringAsync();
+            var json = await initialResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
             var result = JsonSerializer.Deserialize<FabricItemDefinitionResponse>(json, new JsonSerializerOptions 
             { 
                 PropertyNameCaseInsensitive = true 

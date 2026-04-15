@@ -106,17 +106,17 @@ public class ScannerApiRule : Json.Logic.Rule
             postUrl,
             credential,
             AuthenticationHelper.PowerBIScopes,
-            content).GetAwaiter().GetResult();
+            content).ConfigureAwait(false).GetAwaiter().GetResult();
 
-        var postResponse = httpClient.SendAsync(postRequest).GetAwaiter().GetResult();
+        var postResponse = httpClient.SendAsync(postRequest).ConfigureAwait(false).GetAwaiter().GetResult();
 
         if (!postResponse.IsSuccessStatusCode)
         {
-            var errorContent = postResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            var errorContent = postResponse.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
             throw new HttpRequestException($"Scanner API POST failed ({postResponse.StatusCode}): {errorContent}");
         }
 
-        var scanResponseJson = postResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+        var scanResponseJson = postResponse.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
         var scanResponse = JsonNode.Parse(scanResponseJson);
         var scanId = scanResponse?["id"]?.GetValue<string>()
             ?? throw new HttpRequestException("Scanner API did not return a scan ID in the response.");
@@ -134,17 +134,17 @@ public class ScannerApiRule : Json.Logic.Rule
                 HttpMethod.Get,
                 statusUrl,
                 credential,
-                AuthenticationHelper.PowerBIScopes).GetAwaiter().GetResult();
+                AuthenticationHelper.PowerBIScopes).ConfigureAwait(false).GetAwaiter().GetResult();
 
-            var statusResponse = httpClient.SendAsync(statusRequest).GetAwaiter().GetResult();
+            var statusResponse = httpClient.SendAsync(statusRequest).ConfigureAwait(false).GetAwaiter().GetResult();
 
             if (!statusResponse.IsSuccessStatusCode)
             {
-                var errorContent = statusResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                var errorContent = statusResponse.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
                 throw new HttpRequestException($"Scanner API scan-status check failed ({statusResponse.StatusCode}): {errorContent}");
             }
 
-            var statusJson = statusResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            var statusJson = statusResponse.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
             var statusNode = JsonNode.Parse(statusJson);
             var status = statusNode?["status"]?.GetValue<string>();
 
@@ -171,17 +171,17 @@ public class ScannerApiRule : Json.Logic.Rule
             HttpMethod.Get,
             resultUrl,
             credential,
-            AuthenticationHelper.PowerBIScopes).GetAwaiter().GetResult();
+            AuthenticationHelper.PowerBIScopes).ConfigureAwait(false).GetAwaiter().GetResult();
 
-        var resultResponse = httpClient.SendAsync(resultRequest).GetAwaiter().GetResult();
+        var resultResponse = httpClient.SendAsync(resultRequest).ConfigureAwait(false).GetAwaiter().GetResult();
 
         if (!resultResponse.IsSuccessStatusCode)
         {
-            var errorContent = resultResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            var errorContent = resultResponse.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
             throw new HttpRequestException($"Scanner API scan-result retrieval failed ({resultResponse.StatusCode}): {errorContent}");
         }
 
-        var resultJson = resultResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+        var resultJson = resultResponse.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
         return JsonNode.Parse(resultJson);
     }
 

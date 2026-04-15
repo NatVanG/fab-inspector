@@ -100,17 +100,17 @@ public class ApiGetRule : Json.Logic.Rule
             HttpMethod.Get,
             resolvedUrl,
             credential,
-            hostService.Equals("PBI", StringComparison.InvariantCultureIgnoreCase) ? AuthenticationHelper.PowerBIScopes : AuthenticationHelper.FabricScopes).GetAwaiter().GetResult();
+            hostService.Equals("PBI", StringComparison.InvariantCultureIgnoreCase) ? AuthenticationHelper.PowerBIScopes : AuthenticationHelper.FabricScopes).ConfigureAwait(false).GetAwaiter().GetResult();
 
-        var response = ContextService.HttpClient.SendAsync(pbiRequest).GetAwaiter().GetResult();
+        var response = ContextService.HttpClient.SendAsync(pbiRequest).ConfigureAwait(false).GetAwaiter().GetResult();
 
         if (!response.IsSuccessStatusCode)
         {
-            var errorContent = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+            var errorContent = response.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
             throw new HttpRequestException($"API Get request failed ({response.StatusCode}): {errorContent}");
         }
 
-        var resultJson = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+        var resultJson = response.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
         return JsonNode.Parse(resultJson);
     }
 }
