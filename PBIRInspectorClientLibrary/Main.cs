@@ -442,70 +442,77 @@ namespace PBIRInspectorClientLibrary
 
                 if (!(Main._args.ADOOutput || Main._args.GITHUBOutput) && (Main._args.PNGOutput || Main._args.HTMLOutput))
                 {
-                    // Determine which file system to use based on Fabric workspace configuration
-                    IFabricFileSystem fieldMapFileSystem;
-                    if (!string.IsNullOrWhiteSpace(Main._args.FabricWorkspaceId))
+                    //optimisation - run only for report-related rules
+                    if (testResults.Any(_ => _.RuleItemType.Contains("Report", StringComparison.InvariantCultureIgnoreCase) ||
+                    _.RuleItemType.Contains("report_deprecated", StringComparison.InvariantCultureIgnoreCase)))
                     {
-                        if (Main._credential == null)
+                        // Determine which file system to use based on Fabric workspace configuration
+                        IFabricFileSystem fieldMapFileSystem;
+                        if (!string.IsNullOrWhiteSpace(Main._args.FabricWorkspaceId))
                         {
-                            throw new InvalidOperationException("Authentication credential is required for Fabric workspace access.");
-                        }
+                            if (Main._credential == null)
+                            {
+                                throw new InvalidOperationException("Authentication credential is required for Fabric workspace access.");
+                            }
 
-                        // Item-scoped vs workspace-scoped mode
-                        fieldMapFileSystem = string.IsNullOrWhiteSpace(Main._args.FabricItem)
-                            ? new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._credential, Main._httpClient)
-                            : await FabricRemoteFileSystem.CreateItemScopedAsync(Main._args.FabricWorkspaceId, Main._args.FabricItem, Main._credential, Main._httpClient).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        // Use PhysicalFileSystem with the specified path
-                        fieldMapFileSystem = new FabricLocalFileSystem(Main._args.FabricItem ?? string.Empty);
-                    }
-                    // Create file system for field map inspection
-                    //IFabricFileSystem fieldMapFileSystem = new FabricLocalFileSystem(Main._args.FabricItem ?? string.Empty);
-                    var fieldMapPathRules = DeserialiseRulesFromPath(Constants.ReportPageFieldMapFilePath);
-                    fieldMapInsp = new Inspector(fieldMapPathRules, registries, fieldMapFileSystem);
-
-                    fieldMapResults = await Task.Run(() => fieldMapInsp.Inspect()).ConfigureAwait(false);
-
-                    var outputPNGDirPath = Path.Combine(localOutputDirPath, Constants.PNGOutputDir);
-
-                    if (Directory.Exists(outputPNGDirPath))
-                    {
-                        if (Main._args.OverwriteOutput)
-                        {
-                            Directory.Delete(outputPNGDirPath, true);
+                            // Item-scoped vs workspace-scoped mode
+                            //TODO: reuse filesystem object from test run
+                            fieldMapFileSystem = string.IsNullOrWhiteSpace(Main._args.FabricItem)
+                                ? new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._credential, Main._httpClient)
+                                : await FabricRemoteFileSystem.CreateItemScopedAsync(Main._args.FabricWorkspaceId, Main._args.FabricItem, Main._credential, Main._httpClient).ConfigureAwait(false);
                         }
                         else
                         {
-                            if (isOneLakeOutput)
-                            {
-                                throw new PBIRInspectorException(string.Format("Output directory already exists at \"{0}\" and overwriteoutput is false.", outputPNGDirPath));
-                            }
+                            // Use PhysicalFileSystem with the specified path
+                            fieldMapFileSystem = new FabricLocalFileSystem(Main._args.FabricItem ?? string.Empty);
+                        }
+                        // Create file system for field map inspection
+                        //IFabricFileSystem fieldMapFileSystem = new FabricLocalFileSystem(Main._args.FabricItem ?? string.Empty);
+                        var fieldMapPathRules = DeserialiseRulesFromPath(Constants.ReportPageFieldMapFilePath);
+                        fieldMapInsp = new Inspector(fieldMapPathRules, registries, fieldMapFileSystem);
 
-                            //If the directory already exists and overwrite is not set, ask user if they want to delete existing content.
-                            var eventArgs = RaiseWinMessage(MessageTypeEnum.Dialog, string.Format("Directory already exists at \"{0}\". Do you want to overwrite existing content?", outputPNGDirPath));
-                            if (eventArgs.DialogOKResponse)
+                        fieldMapResults = await Task.Run(() => fieldMapInsp.Inspect()).ConfigureAwait(false);
+
+                        var outputPNGDirPath = Path.Combine(localOutputDirPath, Constants.PNGOutputDir);
+
+                        if (Directory.Exists(outputPNGDirPath))
+                        {
+                            if (Main._args.OverwriteOutput)
                             {
                                 Directory.Delete(outputPNGDirPath, true);
                             }
                             else
                             {
-                                OnMessageIssued(MessageTypeEnum.Information, "Skipping PNG output as directory already exists and overwrite not set.");
-                                return;
+                                if (isOneLakeOutput)
+                                {
+                                    throw new PBIRInspectorException(string.Format("Output directory already exists at \"{0}\" and overwriteoutput is false.", outputPNGDirPath));
+                                }
+
+                                //If the directory already exists and overwrite is not set, ask user if they want to delete existing content.
+                                var eventArgs = RaiseWinMessage(MessageTypeEnum.Dialog, string.Format("Directory already exists at \"{0}\". Do you want to overwrite existing content?", outputPNGDirPath));
+                                if (eventArgs.DialogOKResponse)
+                                {
+                                    Directory.Delete(outputPNGDirPath, true);
+                                }
+                                else
+                                {
+                                    OnMessageIssued(MessageTypeEnum.Information, "Skipping PNG output as directory already exists and overwrite not set.");
+                                    return;
+                                }
                             }
                         }
-                    }
-                    Directory.CreateDirectory(outputPNGDirPath);
-                    OnMessageIssued(MessageTypeEnum.Information, string.Format("Writing report page wireframe images to files at \"{0}\".", outputPNGDirPath));
-                    pageRenderer.DrawReportPages(fieldMapResults, testResults, outputPNGDirPath);
 
-                    if (isOneLakeOutput)
-                    {
-                        foreach (var pngPath in Directory.GetFiles(outputPNGDirPath, "*.png", SearchOption.TopDirectoryOnly))
+                        Directory.CreateDirectory(outputPNGDirPath);
+                        OnMessageIssued(MessageTypeEnum.Information, string.Format("Writing report page wireframe images to files at \"{0}\".", outputPNGDirPath));
+                        pageRenderer.DrawReportPages(fieldMapResults, testResults, outputPNGDirPath);
+
+                        if (isOneLakeOutput)
                         {
-                            var relativePngPath = Path.Combine(Constants.PNGOutputDir, Path.GetFileName(pngPath));
-                            outputArtifacts.Add((pngPath, relativePngPath));
+                            foreach (var pngPath in Directory.GetFiles(outputPNGDirPath, "*.png", SearchOption.TopDirectoryOnly))
+                            {
+                                var relativePngPath = Path.Combine(Constants.PNGOutputDir, Path.GetFileName(pngPath));
+                                outputArtifacts.Add((pngPath, relativePngPath));
+                            }
                         }
                     }
                 }
