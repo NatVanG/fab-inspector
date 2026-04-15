@@ -1,26 +1,27 @@
 [![CodeQL](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/github-code-scanning/codeql)
 [![PBIRInspector Tests](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/tests.yml/badge.svg)](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/tests.yml)
 [![Build and Publish Docker Image](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/docker-publish.yml)
-# Fab Inspector (previously PBI Inspector V2) 
+# Fab Inspector
+
 ## Deterministic rules-based testing for Microsoft Fabric in the age of AI
 
 Meet Ric, the Fab Inspector!
 
 <div style="display: flex; gap: 20px; align-items: center;">
-  <img src="DocsImages/Ric_480x480_speech.png" alt="Hi! I'm Ric, the Fab Inspector." height="260"/>
-  <img src="DocsImages/FabInsp_500x500.png" alt="Fab Inspector logo" height="200"/>
+  <img src="DocsImages/Ric_480x480_speech.png" alt="Hi! I'm Ric, the Fab Inspector." height="300"/>
+  <img src="DocsImages/FabInsp_500x500.png" alt="Fab Inspector logo" height="240"/>
 </div>
 
 ## Usage scenarios
 
 Fab Inspector supports local, workspace, and OneLake-based validation workflows. The scenarios below show common usage patterns and how inputs/outputs can be mixed.
 
-| Scenario | Fabric items source | Rules source | Output targets | Typical auth method |
+| Scenario | Fabric items source | Rules source | Test results output targets | Typical auth method |
 |---|---|---|---|---|
-| 1. Local-only | Local folder | Local JSON | Local HTML/JSON | `local` |
-| 2. CI/CD checkout | Git checkout on build agent | Local JSON in repo or pipeline workspace | ADO/GitHub logs, artifacts | `local` |
+| 1. Local-only | Local folder | Local JSON | Local HTML/JSON or Console | `local` |
+| 2. CI/CD checkout | Git checkout on build agent | Local JSON in repo or pipeline workspace | ADO/GitHub logs | `local` |
 | 3. Workspace + OneLake | Published Fabric workspace items | OneLake JSON | OneLake JSON | `interactive`, `clientsecret`, `certificate`, `federatedtoken`, or `managedidentity` |
-| 4. Hybrid | Local and/or workspace items | Local and/or OneLake JSON | Any combination of console, local files, logs, and OneLake JSON | Depends on selected remote resources |
+| 4. Hybrid | Local and/or workspace items and/or Power BI/Fabric REST API | Local and/or OneLake JSON | Any combination of console, local files, logs, and OneLake JSON | Depends on selected remote resources |
 
 ### 1. Local Fabric item definitions + local rules + local HTML/JSON output
 
@@ -46,7 +47,7 @@ Use this when a pipeline checks out a repository and runs quality gates as part 
 
 ```mermaid
 flowchart LR
-    A[Git repo checkout in CI agent\nFabric item definitions] --> C[Fab Inspector in pipeline]
+    A[Git repo checkout in CI agent\nFabric item definitions] --> C[Fab Inspector CLI in pipeline]
     B[Rules file in repo\nor pipeline workspace] --> C
     C --> D[Pipeline logs\nADO or GitHub format]
     C --> E[Pipeline artifacts\nJSON and/or HTML]
@@ -64,7 +65,7 @@ Use this when validating deployed items directly from a Fabric workspace and cen
 
 ```mermaid
 flowchart LR
-    A[Published Fabric items\nFabric workspace] --> C[Fab Inspector in Fabric mode]
+    A[Published Fabric items\nFabric workspace] --> C[Fab Inspector CLI]
     B[Rules JSON hosted in OneLake] --> C
     C --> D[JSON results written to OneLake]
 ```
@@ -89,7 +90,9 @@ Inputs and outputs are independent, so you can mix local and remote sources as n
 flowchart TB
     subgraph Inputs
       A1[Fabric items: Local folder]
-      A2[Fabric items: Workspace item(s)]
+      A2[Fabric items: Workspace items]
+      A3[Fabric REST API]
+      A4[Power BI REST API]
       B1[Rules: Local JSON]
       B2[Rules: OneLake JSON]
     end
@@ -105,6 +108,8 @@ flowchart TB
 
     A1 --> C
     A2 --> C
+    A3 --> C
+    A4 --> C
     B1 --> C
     B2 --> C
     C --> D1
@@ -118,6 +123,7 @@ Example combinations:
 1. Local item definitions + OneLake rules + local HTML output.
 2. Workspace items + local rules + GitHub annotations.
 3. Workspace items + OneLake rules + OneLake JSON output.
+4. Workspace items + OneLake rules (including REST API calls) + OneLake JSON output.
 
 This flexibility lets teams start local, then move to CI/CD and workspace-scoped validation without changing the core rule model.
 
