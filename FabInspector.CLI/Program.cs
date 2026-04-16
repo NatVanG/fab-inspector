@@ -86,6 +86,7 @@ internal partial class Program
                 new RectangleOverlapOperator(),
                 new DaxQueryOperator(),
                 new ApiGetOperator(),
+                new DfsGetOperator(),
                 new ScannerApiOperator()
         }));
 

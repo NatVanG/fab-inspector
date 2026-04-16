@@ -58,6 +58,7 @@ namespace PBIRInspectorWinForm
                 new RectangleOverlapOperator(),
                 new DaxQueryOperator(),
                 new ApiGetOperator(),
+                new DfsGetOperator(),
                 new ScannerApiOperator()}));
 
             services.AddTransient<IEnumerable<JsonLogicOperatorRegistry>>(provider => registries);

@@ -18,6 +18,11 @@ namespace PBIRInspectorLibrary
             "https://analysis.windows.net/powerbi/api/.default"
         };
 
+        public static readonly string[] OneLakeDfsScopes = new[]
+        {
+            "https://storage.azure.com/.default"
+        };
+
         /// <summary>
         /// Creates an HttpRequestMessage with the correct Bearer token for the target API.
         /// Use this instead of setting DefaultRequestHeaders so a single HttpClient

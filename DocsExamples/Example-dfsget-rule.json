@@ -1,0 +1,21 @@
+{
+  "rules": [
+    {
+      "id": "EXECUTE_DFS_GET",
+      "name": "Execute Dfs Get",
+      "description": "",
+      "itemType": "none",
+      "disabled": false,
+      "test": [
+        {
+          "dfsget": [
+            "https://onelake.dfs.fabric.microsoft.com/{context-fabricworkspace}/{context-fabricitem}/Files/{folder}/{fileName}",
+            "Config",
+            "settings.json"
+          ]
+        },
+        []
+      ]
+    }
+  ]
+}

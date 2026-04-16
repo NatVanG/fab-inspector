@@ -49,6 +49,7 @@ namespace PBIRInspectorTests
                     new RectangleOverlapOperator(),
                     new DaxQueryOperator(),
                     new ApiGetOperator(),
+                    new DfsGetOperator(),
                     new ScannerApiOperator()
                 });
             fabRegistry.RegisterAll();
@@ -103,6 +104,26 @@ namespace PBIRInspectorTests
 
             Assert.That(rule, Is.Not.Null);
             Assert.That(rule, Is.InstanceOf<ScannerApiRule>());
+        }
+
+        [Test]
+        public void DfsGet_CanBeDeserialized()
+        {
+            var jsonRule = @"{""dfsget"": [""https://onelake.dfs.fabric.microsoft.com/{context-fabricworkspace}/{context-fabricitem}/Files/test.json""]}";
+            var rule = JsonSerializer.Deserialize<Rule>(jsonRule, _serializerOptions);
+
+            Assert.That(rule, Is.Not.Null);
+            Assert.That(rule, Is.InstanceOf<DfsGetRule>());
+        }
+
+        [Test]
+        public void DfsGet_WithParams_CanBeDeserialized()
+        {
+            var jsonRule = @"{""dfsget"": [""https://onelake.dfs.fabric.microsoft.com/{context-fabricworkspace}/{context-fabricitem}/Files/{folder}/{fileName}"", ""Config"", ""settings.json""]}";
+            var rule = JsonSerializer.Deserialize<Rule>(jsonRule, _serializerOptions);
+
+            Assert.That(rule, Is.Not.Null);
+            Assert.That(rule, Is.InstanceOf<DfsGetRule>());
         }
 
         [Test]
