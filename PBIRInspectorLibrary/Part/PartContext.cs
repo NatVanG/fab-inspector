@@ -8,8 +8,8 @@ namespace PBIRInspectorLibrary.Part
 {
     public class PartContext
     {
-        public IPartQuery PartQuery { get; set; }
-        public Part Part { get; set; }
+           public required IPartQuery PartQuery { get; set; }
+           public required Part Part { get; set; }
         public string? RuleName { get; set; }
         public string? ItemPath { get; set; }
         public IInspectionMessageReporter? MessageReporter { get; set; }

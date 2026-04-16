@@ -8,7 +8,7 @@ namespace PBIRInspectorLibrary.Output
 
         public string? RuleId { get; set; }
 
-        public string RuleName { get; set; }
+        public required string RuleName { get; set; }
 
         public string? RuleDescription { get; set; }
 
@@ -28,7 +28,7 @@ namespace PBIRInspectorLibrary.Output
 
         public JsonNode? Actual { get; set; }
 
-        public string Message { get; set; }
+        public required string Message { get; set; }
 
         public TestResult()
         {

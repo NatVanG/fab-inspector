@@ -12,17 +12,17 @@ namespace PBIRInspectorLibrary.Part
         const string PROP_FILESIZE = "filesize";
         const string PROP_FILECOUNT = "filecount";
 
-        public static JsonNode ToJsonNode(object? value)
+        public static JsonNode? ToJsonNode(object? value)
         {
             if (value == null) return null;
 
-            if (value is List<Part>)
+            if (value is List<Part> parts)
             {
-                return ToJsonArray(value as List<Part>);
+                return ToJsonArray(parts);
             }
-            else if (value is Part)
+            else if (value is Part part)
             {
-                return ToJsonNode((Part)value);
+                return ToJsonNode(part);
             }
             else
             {
@@ -31,7 +31,7 @@ namespace PBIRInspectorLibrary.Part
             }
         }
 
-        public static JsonArray ToJsonArray(List<Part> parts)
+        public static JsonArray ToJsonArray(List<Part>? parts)
         {
             if (parts == null || parts.Count == 0) return new JsonArray();
             return new JsonArray(parts.Select(_ => ToJsonNode(_)?.DeepClone()).ToArray());
@@ -173,8 +173,10 @@ namespace PBIRInspectorLibrary.Part
             return TryGetJsonNodeStringValue(node, jsonPointerStr);
         }
 
-        public static string? TryGetJsonNodeStringValue(JsonNode node, string query)
+        public static string? TryGetJsonNodeStringValue(JsonNode? node, string query)
         {
+            if (node == null) return null;
+
             JsonPointer pt = JsonPointer.Parse(query);
 
             if (pt.TryEvaluate(node, out var result))
@@ -189,29 +191,29 @@ namespace PBIRInspectorLibrary.Part
         }
 
         #region partInfo
-        public static JsonNode PartInfoToJsonNode(object? value)
+        public static JsonNode? PartInfoToJsonNode(object? value)
         {
             if (value == null) return null;
 
-            if (value is List<Part>)
+            if (value is List<Part> parts)
             {
-                return PartInfoToJsonNode(value as List<Part>);
+                return PartInfoToJsonNode(parts);
             }
-            else if (value is Part)
+            else if (value is Part part)
             {
-                return PartInfoToJsonNode(value as Part);
+                return PartInfoToJsonNode(part);
             }
 
             return null;
         }
 
-        private static JsonNode PartInfoToJsonNode(List<Part> parts)
+        private static JsonNode? PartInfoToJsonNode(List<Part>? parts)
         {
             if (parts == null || parts.Count == 0) return new JsonArray();
             return new JsonArray(parts.Select(PartInfoToJsonNode).ToArray());
         }
 
-        private static JsonNode PartInfoToJsonNode(Part part)
+        private static JsonNode? PartInfoToJsonNode(Part? part)
         {
             if (part == null) return null;
 
@@ -220,7 +222,7 @@ namespace PBIRInspectorLibrary.Part
 
         }
 
-        private static JsonNode PartInfoToJsonNode(PartInfo partInfo)
+        private static JsonNode? PartInfoToJsonNode(PartInfo? partInfo)
         {
             if (partInfo == null) return null;
             var jsonObject = new JsonObject

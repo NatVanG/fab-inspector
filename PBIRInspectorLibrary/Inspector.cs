@@ -18,8 +18,7 @@ namespace PBIRInspectorLibrary
         private const string CONTEXTNODE = ".";
         internal const char DRILLCHAR = '>';
 
-        private string? _rulesPath;
-        private InspectionRules? _inspectionRules;
+        private readonly InspectionRules _inspectionRules;
 
         public event EventHandler<MessageIssuedEventArgs>? MessageIssued;
 
@@ -31,13 +30,13 @@ namespace PBIRInspectorLibrary
         /// <param name="fileSystem"></param>
         public Inspector(InspectionRules inspectionRules, IEnumerable<JsonLogicOperatorRegistry> registries, IFabricFileSystem fileSystem) : base(inspectionRules, registries, fileSystem)
         {
-            this._inspectionRules = inspectionRules;
+            _inspectionRules = inspectionRules;
         }
 
         public List<TestResult> Inspect()
         {
             var fileSystemPath = _fileSystem.RootPath;
-            var rules = this._inspectionRules.Rules.Where(_ => !_.Disabled);
+            var rules = _inspectionRules.Rules.Where(_ => !_.Disabled);
             var testResults = new List<TestResult>();
 
             if (rules != null && rules.Any())
@@ -124,7 +123,7 @@ namespace PBIRInspectorLibrary
 
         #region private methods
 
-        private MessageTypeEnum ConvertRuleLogType(string ruleLogType)
+        private MessageTypeEnum ConvertRuleLogType(string? ruleLogType)
                 {
                     if (string.IsNullOrEmpty(ruleLogType)) return MessageTypeEnum.Warning;
 
@@ -182,7 +181,7 @@ namespace PBIRInspectorLibrary
         }
 
 
-        private void RunRules(List<TestResult> testResults, IEnumerable<Rule> rules, IPartQuery? partQuery)
+        private void RunRules(List<TestResult> testResults, IEnumerable<Rule> rules, IPartQuery partQuery)
         {
             foreach (var rule in rules)
             {
@@ -202,9 +201,15 @@ namespace PBIRInspectorLibrary
                 {
                     jrule = System.Text.Json.JsonSerializer.Deserialize<Json.Logic.Rule>(rule.Test.Logic);
                 }
-                catch (System.Text.Json.JsonException e)
+                catch (System.Text.Json.JsonException)
                 {
                     OnMessageIssued(MessageTypeEnum.Error, string.Format("Parsing of logic for rule \"{0}\" failed, resuming to next rule.", rule.Name));
+                    continue;
+                }
+
+                if (jrule == null)
+                {
+                    OnMessageIssued(MessageTypeEnum.Error, string.Format("Parsing of logic for rule \"{0}\" returned no rule, resuming to next rule.", rule.Name));
                     continue;
                 }
 
@@ -216,7 +221,7 @@ namespace PBIRInspectorLibrary
 
                     if (!string.IsNullOrEmpty(rule.Part))
                     {
-                        var part = partQuery.Invoke(rule.Part, ContextService.Current.Part);
+                        var part = partQuery.Invoke(rule.Part, ContextService.Current!.Part);
 
                         if (part != null && part
                             is List<Part.Part>)
@@ -257,31 +262,40 @@ namespace PBIRInspectorLibrary
                         }
                         else
                         {
-                            ContextService.Current.Part = part;
+                            ContextService.Current!.Part = part;
                             var node = PartUtils.ToJsonNode(part);
                             var newdata = MapRuleDataPointersToValues(node, rule);
 
                             var itemPath = this._fileSystem.GetRelativePath(part.FileSystemPath);
                             //var itemPath = part.FileSystemPath.Substring(part.FileSystemPath.IndexOf(this._fileSystem.RootPath) + this._fileSystem.RootPath.Length);
                             itemPath = string.IsNullOrEmpty(itemPath) ? "root" : itemPath;
-                            ContextService.Current.ItemPath = itemPath;
+                            ContextService.Current!.ItemPath = itemPath;
                             var parentPageName = part.FileSystemName.ToLowerInvariant().EndsWith("page.json") ? partQuery.PartName(part) : null;
                             var parentPageDisplayName = part.FileSystemName.ToLowerInvariant().EndsWith("page.json") ? partQuery.PartDisplayName(part) ?? partQuery.PartName(part) : "N/A";
 
                             try
                             {
                                 var jruleresult = jrule.Apply(newdata);
-                                result = rule.Test.Expected.IsEquivalentTo(jruleresult);
+                                var expectedResult = rule.Test.Expected;
+                                var actualResultString = jruleresult?.ToString() ?? string.Empty;
+                                var expectedResultString = expectedResult?.ToString() ?? string.Empty;
 
-                                string resultString = string.Format("Rule \"{0}\" {1} with result: {2}, expected: {3}", rule != null ? rule.Name : string.Empty, result ? "PASSED" : "FAILED", jruleresult != null ? jruleresult.ToString() : string.Empty, rule.Test.Expected != null ? rule.Test.Expected.ToString() : string.Empty);
-                                testResults.Add(new TestResult { RuleId = rule.Id, RuleName = rule.Name, LogType = ruleLogType, RuleDescription = rule.Description, RuleItemType = rule.ItemType, ItemPath = itemPath, ParentName = parentPageName, ParentDisplayName = parentPageDisplayName, Pass = result, Message = resultString, Expected = rule.Test.Expected, Actual = jruleresult });
+                                result = expectedResult?.IsEquivalentTo(jruleresult) ?? jruleresult is null;
+
+                                string resultString = string.Format("Rule \"{0}\" {1} with result: {2}, expected: {3}", rule.Name, result ? "PASSED" : "FAILED", actualResultString, expectedResultString);
+                                testResults.Add(new TestResult { RuleId = rule.Id, RuleName = rule.Name, LogType = ruleLogType, RuleDescription = rule.Description, RuleItemType = rule.ItemType, ItemPath = itemPath, ParentName = parentPageName, ParentDisplayName = parentPageDisplayName, Pass = result, Message = resultString, Expected = expectedResult, Actual = jruleresult });
 
                                 //PATCH
                                 if (!result && rule.ApplyPatch && rule.Patch != null && rule.Patch.Ops != null)
                                 {
                                     if (jruleresult != null && jruleresult is JsonArray arr && arr.Count() > 0)
                                     {
-                                        var allPatchParts = (List<Part.Part>)partQuery.Invoke(rule.Patch.PartName, part);
+                                        var allPatchParts = partQuery.Invoke(rule.Patch.PartName, part) as List<Part.Part>;
+                                        if (allPatchParts == null)
+                                        {
+                                            OnMessageIssued(MessageTypeEnum.Error, string.Format("Rule \"{0}\" - Patch part query \"{1}\" did not return a part list.", rule.Name, rule.Patch.PartName));
+                                            continue;
+                                        }
 
                                         //TODO: use another method to filter parts i.e. other than ToJSonString
                                         var filteredPatchParts = allPatchParts.Where(_ => arr.ToJsonString().Contains(partQuery.PartName(_)));
@@ -292,7 +306,13 @@ namespace PBIRInspectorLibrary
                                     }
                                     else
                                     {
-                                        var patchPart = (Part.Part)partQuery.Invoke(rule.Patch.PartName, part);
+                                        var patchPart = partQuery.Invoke(rule.Patch.PartName, part) as Part.Part;
+                                        if (patchPart == null)
+                                        {
+                                            OnMessageIssued(MessageTypeEnum.Error, string.Format("Rule \"{0}\" - Patch part query \"{1}\" did not return a part.", rule.Name, rule.Patch.PartName));
+                                            continue;
+                                        }
+
                                         ApplyPatch(partQuery, rule, patchPart);
                                     }
                                 }
@@ -314,9 +334,15 @@ namespace PBIRInspectorLibrary
             }
         }
 
-        private void ApplyPatch(IPartQuery partQuery, Rule? rule, Part.Part? partToPatch)
+        private void ApplyPatch(IPartQuery partQuery, Rule rule, Part.Part partToPatch)
         {
             var node = PartUtils.ToJsonNode(partToPatch);
+            if (rule.Patch?.Ops == null)
+            {
+                OnMessageIssued(MessageTypeEnum.Error, string.Format("Rule \"{0}\" - Patch operations are not defined.", rule.Id));
+                return;
+            }
+
             var patchResult = rule.Patch.Ops.Apply(node);
             if (patchResult.IsSuccess)
             {
@@ -349,7 +375,7 @@ namespace PBIRInspectorLibrary
                 {
                     if (item.Value is JsonValue)
                     {
-                        var value = item.Value.AsValue().Stringify();
+                        var value = item.Value.AsValue().Stringify() ?? string.Empty;
                         if (value.StartsWith(JSONPOINTERSTART)) //check for JsonPointer syntax
                         {
                             try

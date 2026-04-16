@@ -65,7 +65,7 @@ namespace PBIRInspectorLibrary
         private readonly SemaphoreSlim _tokenSemaphore = new SemaphoreSlim(1, 1);
         
         // Scope tracking fields (null for workspace-scoped, set for item-scoped)
-        private FabricItem _scopedItem;
+        private FabricItem? _scopedItem;
         private string? _scopedItemName; // Cached built name (#6)
 
         // Cache for workspace items (lazy loaded once)
@@ -1001,7 +1001,7 @@ namespace PBIRInspectorLibrary
                     continue;
 
                 var normalizedCurrentPath = NormalizePath(part.Path);
-                var partDirectory = NormalizePath(Path.GetDirectoryName(normalizedCurrentPath)) ?? string.Empty;
+                var partDirectory = NormalizePath(Path.GetDirectoryName(normalizedCurrentPath) ?? string.Empty);
 
                 bool isMatch = false;
                 if (searchOption == SearchOption.AllDirectories)
@@ -1071,7 +1071,7 @@ namespace PBIRInspectorLibrary
                     continue;
 
                 var normalizedCurrentPath = NormalizePath(part.Path);
-                var partDirectory = NormalizePath(Path.GetDirectoryName(normalizedCurrentPath)) ?? string.Empty;
+                var partDirectory = NormalizePath(Path.GetDirectoryName(normalizedCurrentPath) ?? string.Empty);
 
                 // Check if this part is in a subdirectory of the current path
                 if (string.IsNullOrEmpty(normalizedPartPath))

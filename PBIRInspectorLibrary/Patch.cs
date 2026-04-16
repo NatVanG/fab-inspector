@@ -23,7 +23,9 @@ public class PatchConverter : JsonConverter<Patch?>
         if (node is not JsonArray arr) return null;
         if (arr.Count < 2) throw new InvalidOperationException("ERROR: Patch should be defined as a two member array for part name and ops array");
 
-        var part = arr[0].ToString();//JsonSerializer.Serialize(arr[0], new JsonSerializerOptions { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+        var part = arr[0]?.ToString();
+        if (string.IsNullOrWhiteSpace(part)) throw new InvalidOperationException("ERROR: Patch part name cannot be null or empty.");
+
         var ops = JsonSerializer.Deserialize<JsonPatch>(arr[1]); //TODO: handle serialization exception.
 
         return new Patch

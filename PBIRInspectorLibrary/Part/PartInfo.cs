@@ -31,7 +31,7 @@ namespace PBIRInspectorLibrary.Part
             if (setAdvancedProps) this.setAdvancedProps();
         }
 
-        public PartInfo(string fileSystemPath, bool setAdvancedProps = false, IFabricFileSystem fileSystem = null)
+        public PartInfo(string fileSystemPath, bool setAdvancedProps = false, IFabricFileSystem? fileSystem = null)
         {
             _fileSystem = fileSystem ?? new FabricLocalFileSystem();
             FileSystemName = _fileSystem.GetFileNameWithoutExtension(fileSystemPath);

@@ -11,7 +11,7 @@ namespace PBIRInspectorLibrary
 {
     public class FabricLocalFileSystem : LocalFileSystem, IFabricFileSystem
     {
-        string _rootDir;
+           string _rootDir = string.Empty;
 
         /// <summary>
         /// Initializes a new instance of PhysicalFileSystem with an empty root path

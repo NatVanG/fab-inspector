@@ -7,7 +7,7 @@ namespace PBIRInspectorLibrary.Part
     {
         private readonly IFabricFileSystem _fileSystem;
 
-        public Part Parent { get; private set; }
+            public Part? Parent { get; private set; }
 
         // The name of the file or folder
         public string FileSystemName { get; private set; }
@@ -20,7 +20,7 @@ namespace PBIRInspectorLibrary.Part
 
         public JsonNode? JsonContent { get; set; }
 
-        public Part(string fileSystemName, string fileSystemPath, Part parent = null, PartFileSystemTypeEnum partType = default, IFabricFileSystem fileSystem = null)
+    public Part(string fileSystemName, string fileSystemPath, Part? parent = null, PartFileSystemTypeEnum partType = default, IFabricFileSystem? fileSystem = null)
         {
             Parent = parent;
             FileSystemName = fileSystemName;
@@ -29,7 +29,7 @@ namespace PBIRInspectorLibrary.Part
             _fileSystem = fileSystem ?? parent?._fileSystem ?? new FabricLocalFileSystem();
         }
 
-        public List<Part> Parts { get; set; }
+        public List<Part>? Parts { get; set; }
 
         public IFabricFileSystem GetFileSystem()
         {

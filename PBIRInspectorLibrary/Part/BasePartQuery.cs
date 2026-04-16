@@ -27,7 +27,7 @@ namespace PBIRInspectorLibrary.Part
             _fileSystem = fileSystem ?? new FabricLocalFileSystem();
         }
 
-        public Part RootPart { get; set; }
+        public Part RootPart { get; set; } = null!;
 
         public virtual object? Invoke(string query, Part context)
         {
@@ -96,7 +96,7 @@ namespace PBIRInspectorLibrary.Part
 
 
         #region Methods invokeable from rules 
-        public Part Parent(Part context)
+        public Part? Parent(Part context)
         {
             return context.Parent;
         }
@@ -124,7 +124,7 @@ namespace PBIRInspectorLibrary.Part
             if (context.PartFileSystemType == PartFileSystemTypeEnum.File && context.FileSystemName.EndsWith(".json"))
             {
                 var node = PartUtils.ToJsonNode(context);
-                val = PartUtils.TryGetJsonNodeStringValue(node, NAMEPOINTER);
+                    val = node != null ? PartUtils.TryGetJsonNodeStringValue(node, NAMEPOINTER) : null;
             }
 
             return val ?? context.FileSystemName;
@@ -138,7 +138,7 @@ namespace PBIRInspectorLibrary.Part
             if (context.PartFileSystemType == PartFileSystemTypeEnum.File && context.FileSystemName.EndsWith(".json"))
             {
                 var node = PartUtils.ToJsonNode(context);
-                val = PartUtils.TryGetJsonNodeStringValue(node, DISPLAYNAMEPOINTER);
+                    val = node != null ? PartUtils.TryGetJsonNodeStringValue(node, DISPLAYNAMEPOINTER) : null;
             }
 
             return val ?? context.FileSystemName;
@@ -154,7 +154,7 @@ namespace PBIRInspectorLibrary.Part
             return context.FileSystemPath;
         }
 
-        public string PartFileExtension(Part context)
+        public string? PartFileExtension(Part context)
         {
             if (context.PartFileSystemType != PartFileSystemTypeEnum.File)
             {
@@ -170,7 +170,7 @@ namespace PBIRInspectorLibrary.Part
 
         public List<Part> Files(Part context)
         {
-            IEnumerable<Part> q = from p in Part.Flatten(context.PartFileSystemType == PartFileSystemTypeEnum.File ? context.Parent : context)
+              IEnumerable<Part> q = from p in Part.Flatten(context.PartFileSystemType == PartFileSystemTypeEnum.File ? context.Parent ?? context : context)
                                   where p.PartFileSystemType == PartFileSystemTypeEnum.File
                                   select p;
 
