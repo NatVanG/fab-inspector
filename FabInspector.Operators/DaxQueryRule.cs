@@ -2,6 +2,7 @@ using Json.Logic;
 using Json.More;
 using PBIRInspectorLibrary;
 using PBIRInspectorLibrary.Part;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -50,6 +51,7 @@ public class DaxQueryRule : Json.Logic.Rule
     /// <returns>The JSON result returned by the Fabric ExecuteQueries API.</returns>
     public override JsonNode? Apply(JsonNode? data, JsonNode? contextData = null)
     {
+        var stopwatch = Stopwatch.StartNew();
         var queryValue = Query.Apply(data, contextData);
         var strQuery = queryValue?.Stringify();
 
@@ -79,6 +81,8 @@ public class DaxQueryRule : Json.Logic.Rule
             ?? throw new InvalidOperationException("ContextService.Credential is not configured. Ensure authentication has been completed before running daxquery rules.");
 
         var url = $"{PowerBIApiBaseUrl}/groups/{Uri.EscapeDataString(workspaceId)}/datasets/{Uri.EscapeDataString(semanticModelId)}/executeQueries";
+
+        ContextService.ReportOperatorProgress("daxquery", $"Starting DAX query execution for workspace '{workspaceId}' and semantic model '{semanticModelId}'.");
 
 
         string requestBody;
@@ -117,10 +121,12 @@ public class DaxQueryRule : Json.Logic.Rule
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = response.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            ContextService.ReportOperatorProgress("daxquery", $"DAX query execution failed with status {(int)response.StatusCode} {response.StatusCode} after {stopwatch.ElapsedMilliseconds} ms.");
             throw new HttpRequestException($"DAX query execution failed ({response.StatusCode}): {errorContent}");
         }
 
         var resultJson = response.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+        ContextService.ReportOperatorProgress("daxquery", $"Completed DAX query execution in {stopwatch.ElapsedMilliseconds} ms.");
         return JsonNode.Parse(resultJson);
     }
 }

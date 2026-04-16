@@ -187,7 +187,13 @@ namespace PBIRInspectorLibrary
             foreach (var rule in rules)
             {
                 var ruleLogType = ConvertRuleLogType(rule.LogType);
-                ContextService.Current = new PartContext { PartQuery = partQuery, Part = partQuery.RootPart };
+                ContextService.Current = new PartContext
+                {
+                    PartQuery = partQuery,
+                    Part = partQuery.RootPart,
+                    RuleName = rule.Name,
+                    MessageReporter = new DelegateInspectionMessageReporter(OnMessageIssued)
+                };
 
                 OnMessageIssued(MessageTypeEnum.Information, string.Format("Running Rule \"{0}\".", rule.Name));
                 Json.Logic.Rule? jrule = null;
@@ -258,6 +264,7 @@ namespace PBIRInspectorLibrary
                             var itemPath = this._fileSystem.GetRelativePath(part.FileSystemPath);
                             //var itemPath = part.FileSystemPath.Substring(part.FileSystemPath.IndexOf(this._fileSystem.RootPath) + this._fileSystem.RootPath.Length);
                             itemPath = string.IsNullOrEmpty(itemPath) ? "root" : itemPath;
+                            ContextService.Current.ItemPath = itemPath;
                             var parentPageName = part.FileSystemName.ToLowerInvariant().EndsWith("page.json") ? partQuery.PartName(part) : null;
                             var parentPageDisplayName = part.FileSystemName.ToLowerInvariant().EndsWith("page.json") ? partQuery.PartDisplayName(part) ?? partQuery.PartName(part) : "N/A";
 

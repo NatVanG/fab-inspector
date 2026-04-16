@@ -3,6 +3,7 @@ using Json.More;
 using Microsoft.VisualBasic;
 using PBIRInspectorLibrary;
 using PBIRInspectorLibrary.Part;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -43,6 +44,7 @@ public class ApiGetRule : Json.Logic.Rule
     /// <returns>The JSON result returned by the Fabric ExecuteQueries API.</returns>
     public override JsonNode? Apply(JsonNode? data, JsonNode? contextData = null)
     {
+        var stopwatch = Stopwatch.StartNew();
         var urlTemplate = UrlTemplate.Apply(data, contextData)?.Stringify();
         
         var parameters = UrlParameters?.Select(p => p.Apply(data, contextData)).ToArray();
@@ -96,6 +98,9 @@ public class ApiGetRule : Json.Logic.Rule
             }
         }
 
+        var progressTarget = GetProgressTarget(resolvedUrl);
+        ContextService.ReportOperatorProgress("apiget", $"Starting GET request to {hostService} endpoint '{progressTarget}'.");
+
         var pbiRequest = AuthenticationHelper.CreateAuthenticatedRequestAsync(
             HttpMethod.Get,
             resolvedUrl,
@@ -107,11 +112,20 @@ public class ApiGetRule : Json.Logic.Rule
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = response.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            ContextService.ReportOperatorProgress("apiget", $"GET request to '{progressTarget}' failed with status {(int)response.StatusCode} {response.StatusCode} after {stopwatch.ElapsedMilliseconds} ms.");
             throw new HttpRequestException($"API Get request failed ({response.StatusCode}): {errorContent}");
         }
 
         var resultJson = response.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+        ContextService.ReportOperatorProgress("apiget", $"Completed GET request to '{progressTarget}' in {stopwatch.ElapsedMilliseconds} ms.");
         return JsonNode.Parse(resultJson);
+    }
+
+    private static string GetProgressTarget(string resolvedUrl)
+    {
+        return Uri.TryCreate(resolvedUrl, UriKind.Absolute, out var uri)
+            ? uri.GetLeftPart(UriPartial.Path)
+            : resolvedUrl;
     }
 }
 

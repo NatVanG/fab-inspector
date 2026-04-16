@@ -35,5 +35,50 @@ namespace PBIRInspectorLibrary.Part
         /// The Fabric item file path (local) or ID (remote)
         /// </summary>
         public static string? FabricItem { get; set; }
+
+        public static void ReportOperatorProgress(string operatorName, string message)
+        {
+            if (string.IsNullOrWhiteSpace(message))
+            {
+                return;
+            }
+
+            var current = _current.Value;
+            var reporter = current?.MessageReporter;
+            if (reporter == null)
+            {
+                return;
+            }
+
+            var formattedMessage = FormatProgressMessage(current, operatorName, message);
+            var args = string.IsNullOrWhiteSpace(current?.ItemPath)
+                ? new MessageIssuedEventArgs(formattedMessage, MessageTypeEnum.Information)
+                : new MessageIssuedEventArgs(current.ItemPath!, formattedMessage, MessageTypeEnum.Information);
+
+            reporter.Report(args);
+        }
+
+        private static string FormatProgressMessage(PartContext? current, string operatorName, string message)
+        {
+            var segments = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(current?.RuleName))
+            {
+                segments.Add($"Rule \"{current.RuleName}\"");
+            }
+
+            if (!string.IsNullOrWhiteSpace(current?.Part?.FileSystemName))
+            {
+                segments.Add($"Part \"{current.Part.FileSystemName}\"");
+            }
+
+            if (!string.IsNullOrWhiteSpace(operatorName))
+            {
+                segments.Add($"Operator \"{operatorName}\"");
+            }
+
+            segments.Add(message);
+            return string.Join(" - ", segments);
+        }
     }
 }

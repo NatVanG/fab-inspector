@@ -10,5 +10,8 @@ namespace PBIRInspectorLibrary.Part
     {
         public IPartQuery PartQuery { get; set; }
         public Part Part { get; set; }
+        public string? RuleName { get; set; }
+        public string? ItemPath { get; set; }
+        public IInspectionMessageReporter? MessageReporter { get; set; }
     }
 }
