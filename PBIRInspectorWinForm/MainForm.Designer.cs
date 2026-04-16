@@ -60,12 +60,14 @@
             lnkAbout = new LinkLabel();
             lnkLatestRelease = new LinkLabel();
             lnkReportIssue = new LinkLabel();
+            chkBlank = new CheckBox();
             groupBox1.SuspendLayout();
             groupBox2.SuspendLayout();
             SuspendLayout();
             // 
             // groupBox1
             // 
+            groupBox1.Controls.Add(chkBlank);
             groupBox1.Controls.Add(txtFabricWorkspaceId);
             groupBox1.Controls.Add(label5);
             groupBox1.Controls.Add(btnBrowseRulesFile);
@@ -88,7 +90,7 @@
             // 
             txtFabricWorkspaceId.Location = new Point(312, 54);
             txtFabricWorkspaceId.Name = "txtFabricWorkspaceId";
-            txtFabricWorkspaceId.Size = new Size(322, 31);
+            txtFabricWorkspaceId.Size = new Size(440, 31);
             txtFabricWorkspaceId.TabIndex = 12;
             // 
             // label5
@@ -376,6 +378,17 @@
             lnkReportIssue.Text = "Report an issue";
             lnkReportIssue.LinkClicked += lnkReportIssue_LinkClicked;
             // 
+            // chkBlank
+            // 
+            chkBlank.AutoSize = true;
+            chkBlank.Location = new Point(768, 56);
+            chkBlank.Name = "chkBlank";
+            chkBlank.Size = new Size(80, 29);
+            chkBlank.TabIndex = 13;
+            chkBlank.Text = "Blank";
+            chkBlank.UseVisualStyleBackColor = true;
+            chkBlank.CheckedChanged += chkBlank_CheckedChanged;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
@@ -438,5 +451,6 @@
         private LinkLabel lnkReportIssue;
         private Label label5;
         private TextBox txtFabricWorkspaceId;
+        private CheckBox chkBlank;
     }
 }

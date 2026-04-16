@@ -345,5 +345,19 @@ namespace PBIRInspectorWinForm
         {
 
         }
+
+        private void chkBlank_CheckedChanged(object sender, EventArgs e)
+        {
+            if (chkBlank.Checked)
+            {
+                txtFabricWorkspaceId.Clear();
+                txtFabricWorkspaceId.Enabled = false;
+            }
+            else
+            {
+                txtFabricWorkspaceId.Enabled = true;
+                txtFabricWorkspaceId.Focus();
+            }
+        }
     }
 }

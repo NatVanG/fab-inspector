@@ -29,14 +29,17 @@ namespace PBIRInspectorClientLibrary.Utils
         public static async Task<bool> FileExistsAsync(
             string oneLakeUrl,
             TokenCredential credential,
+            Action<string>? onProgress = null,
             CancellationToken cancellationToken = default)
         {
+            onProgress?.Invoke($"Checking whether OneLake artifact exists at \"{oneLakeUrl}\".");
             var (fileSystemName, oneLakePath) = ParseAbsoluteUrl(oneLakeUrl);
             var fileClient = CreateServiceClient(credential)
                 .GetFileSystemClient(fileSystemName)
                 .GetFileClient(oneLakePath);
 
             Response<bool> exists = await fileClient.ExistsAsync(cancellationToken: cancellationToken);
+            onProgress?.Invoke($"OneLake artifact {(exists.Value ? "exists" : "does not exist")} at \"{oneLakeUrl}\".");
             return exists.Value;
         }
 
@@ -45,6 +48,7 @@ namespace PBIRInspectorClientLibrary.Utils
             string oneLakeUrl,
             bool overwrite,
             TokenCredential credential,
+            Action<string>? onProgress = null,
             CancellationToken cancellationToken = default)
         {
             if (!File.Exists(localFilePath))
@@ -53,7 +57,7 @@ namespace PBIRInspectorClientLibrary.Utils
             }
 
             await using var source = File.OpenRead(localFilePath);
-            await UploadStreamAsync(source, oneLakeUrl, overwrite, credential, cancellationToken);
+            await UploadStreamAsync(source, oneLakeUrl, overwrite, credential, onProgress, cancellationToken);
         }
 
         public static async Task UploadStreamAsync(
@@ -61,6 +65,7 @@ namespace PBIRInspectorClientLibrary.Utils
             string oneLakeUrl,
             bool overwrite,
             TokenCredential credential,
+            Action<string>? onProgress = null,
             CancellationToken cancellationToken = default)
         {
             var (fileSystemName, oneLakePath) = ParseAbsoluteUrl(oneLakeUrl);
@@ -79,7 +84,9 @@ namespace PBIRInspectorClientLibrary.Utils
                 source.Position = 0;
             }
 
+            onProgress?.Invoke($"Uploading to OneLake at \"{oneLakeUrl}\".");
             await fileClient.UploadAsync(source, overwrite: overwrite, cancellationToken: cancellationToken);
+            onProgress?.Invoke($"Upload complete at \"{oneLakeUrl}\".");
         }
 
         private static DataLakeServiceClient CreateServiceClient(TokenCredential credential)

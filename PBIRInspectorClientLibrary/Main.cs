@@ -84,7 +84,8 @@ namespace PBIRInspectorClientLibrary
                     }
 
                     using var rulesStream = OneLakeRulesFileDownloader
-                        .DownloadFileToMemoryStreamAsync(rulesPath, _credential)
+                        .DownloadFileToMemoryStreamAsync(rulesPath, _credential,
+                            onProgress: msg => OnMessageIssued(MessageTypeEnum.Information, msg))
                         .GetAwaiter()
                         .GetResult();
                     inspectionRules = JsonUtils.Deserialise<InspectionRules>(rulesStream);
@@ -169,13 +170,20 @@ namespace PBIRInspectorClientLibrary
                 await Main.EnsureAuthenticatedAsync();
             }
 
-            if (!args.Parallel)
+            try
             {
-                await RunSingleThreadedAsync(args, pageRenderer, registries).ConfigureAwait(false);
+                if (!args.Parallel)
+                {
+                    await RunSingleThreadedAsync(args, pageRenderer, registries).ConfigureAwait(false);
+                }
+                else
+                {
+                    await RunParallelAsync(args, pageRenderer, registries).ConfigureAwait(false);
+                }
             }
-            else
+            catch (Exception e)
             {
-                await RunParallelAsync(args, pageRenderer, registries).ConfigureAwait(false);
+                OnMessageIssued(MessageTypeEnum.Error, e.Message);
             }
         }
 
@@ -573,6 +581,10 @@ namespace PBIRInspectorClientLibrary
                     await UploadOutputArtifactsToOneLakeAsync(outputRootPath, outputArtifacts, Main._args.OverwriteOutput).ConfigureAwait(false);
                 }
             }
+            catch (Exception e)
+            {
+                OnMessageIssued(MessageTypeEnum.Error, string.Format("Could not output results. Exception: {0}", e.Message));
+            }
             finally
             {
                 if (localStagingCreated && Directory.Exists(localOutputDirPath))
@@ -615,7 +627,8 @@ namespace PBIRInspectorClientLibrary
                 var remoteUrl = OneLakeOutputUploader.CombineUrl(outputRootUrl, artifact.RelativePath);
                 if (!overwrite)
                 {
-                    var exists = await OneLakeOutputUploader.FileExistsAsync(remoteUrl, _credential).ConfigureAwait(false);
+                    var exists = await OneLakeOutputUploader.FileExistsAsync(remoteUrl, _credential,
+                    onProgress: msg => OnMessageIssued(MessageTypeEnum.Information, msg)).ConfigureAwait(false);
                     if (exists)
                     {
                         throw new PBIRInspectorException(
@@ -627,8 +640,8 @@ namespace PBIRInspectorClientLibrary
             foreach (var artifact in artifacts)
             {
                 var remoteUrl = OneLakeOutputUploader.CombineUrl(outputRootUrl, artifact.RelativePath);
-                OnMessageIssued(MessageTypeEnum.Information, string.Format("Uploading output artifact to OneLake at \"{0}\".", remoteUrl));
-                await OneLakeOutputUploader.UploadFileAsync(artifact.LocalPath, remoteUrl, overwrite, _credential).ConfigureAwait(false);
+                await OneLakeOutputUploader.UploadFileAsync(artifact.LocalPath, remoteUrl, overwrite, _credential,
+                    onProgress: msg => OnMessageIssued(MessageTypeEnum.Information, msg)).ConfigureAwait(false);
             }
         }
 
