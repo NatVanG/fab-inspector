@@ -81,6 +81,13 @@ namespace PBIRInspectorLibrary
         private readonly object _folderPathsLock = new object();
 
         /// <summary>
+        /// Raised when a long-running operation reports progress.
+        /// Clients can subscribe to display status messages or render structured progress.
+        /// Event args are <see cref="FabricProgressEventArgs"/> which extends <see cref="MessageIssuedEventArgs"/>.
+        /// </summary>
+        public event EventHandler<MessageIssuedEventArgs>? ProgressReported;
+
+        /// <summary>
         /// Gets the root path for this file system instance
         /// </summary>
         public string RootPath => _scopedItem != null 
@@ -193,6 +200,30 @@ namespace PBIRInspectorLibrary
         }
 
         /// <summary>
+        /// Raises the ProgressReported event with a simple message.
+        /// </summary>
+        private void OnProgressReported(string operationName, string message)
+        {
+            ProgressReported?.Invoke(this, new FabricProgressEventArgs(operationName, message));
+        }
+
+        /// <summary>
+        /// Raises the ProgressReported event with item context.
+        /// </summary>
+        private void OnProgressReported(string operationName, string message, string? itemId, string? itemName)
+        {
+            ProgressReported?.Invoke(this, new FabricProgressEventArgs(operationName, message, itemId, itemName));
+        }
+
+        /// <summary>
+        /// Raises the ProgressReported event with step progress and item context.
+        /// </summary>
+        private void OnProgressReported(string operationName, string message, string? itemId, string? itemName, int currentStep, int totalSteps)
+        {
+            ProgressReported?.Invoke(this, new FabricProgressEventArgs(operationName, message, itemId, itemName, currentStep, totalSteps));
+        }
+
+        /// <summary>
         /// Gets an access token from the credential and configures HTTP client authorization.
         /// Caches token and only refreshes when within 5 minutes of expiry (#1).
         /// </summary>
@@ -213,6 +244,7 @@ namespace PBIRInspectorLibrary
                     return;
                 }
 
+                OnProgressReported("Authentication", "Refreshing authentication token...");
                 var tokenRequestContext = new TokenRequestContext(new[] { "https://api.fabric.microsoft.com/.default" });
                 _cachedToken = await _credential.GetTokenAsync(tokenRequestContext, default).ConfigureAwait(false);
                 _tokenInitialized = true;
@@ -269,6 +301,7 @@ namespace PBIRInspectorLibrary
         /// </summary>
         private async Task<FabricItem> LoadItemMetadataAsync(string itemId)
         {
+            OnProgressReported("LoadItemMetadata", $"Loading item metadata for {itemId}...", itemId, null);
             await EnsureAuthenticatedAsync().ConfigureAwait(false);
             
             var url = $"{_baseUrl}/workspaces/{_workspaceId}/items/{itemId}";
@@ -297,6 +330,7 @@ namespace PBIRInspectorLibrary
 
         private async Task<List<FabricItem>> LoadWorkspaceItemsAsync()
         {
+            OnProgressReported("LoadWorkspaceItems", "Loading workspace items...");
             var items = new List<FabricItem>();
             string[] ignoreItemTypes = [ "none" ];
 
@@ -320,6 +354,7 @@ namespace PBIRInspectorLibrary
                 }
             }
 
+            OnProgressReported("LoadWorkspaceItems", $"Loaded {items.Count} workspace items.");
             return items;
         }
 
@@ -343,8 +378,13 @@ namespace PBIRInspectorLibrary
                 nextUrl += $"?type={Uri.EscapeDataString(itemType)}";
             }
 
+            int pageNumber = 0;
             while (nextUrl != null)
             {
+                pageNumber++;
+                OnProgressReported("LoadWorkspaceItems", string.IsNullOrEmpty(itemType)
+                    ? $"Loading workspace items (page {pageNumber})..."
+                    : $"Loading workspace items of type '{itemType}' (page {pageNumber})...");
                 var response = await _httpClient.GetAsync(nextUrl).ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
@@ -430,6 +470,7 @@ namespace PBIRInspectorLibrary
         /// </summary>
         private async Task<Dictionary<string, string>> LoadWorkspaceFolderPathsAsync()
         {
+            OnProgressReported("LoadWorkspaceFolders", "Loading workspace folder structure...");
             await EnsureAuthenticatedAsync().ConfigureAwait(false);
 
             var allFolders = new List<FabricFolder>();
@@ -534,6 +575,7 @@ namespace PBIRInspectorLibrary
         /// <param name="cancellationToken">Cancellation token to stop polling</param>
         private async Task<FabricItemDefinition> LoadItemDefinitionAsync(string itemId, CancellationToken cancellationToken = default)
         {
+            OnProgressReported("LoadItemDefinition", $"Requesting definition for item {itemId}...", itemId, null);
             await EnsureAuthenticatedAsync().ConfigureAwait(false);
             
             var url = $"{_baseUrl}/workspaces/{_workspaceId}/items/{itemId}/getDefinition";
@@ -552,6 +594,7 @@ namespace PBIRInspectorLibrary
                     else
                     {
                         //TODO: skip gracefully and carry on inspecting the rest of the workspace items
+                        OnProgressReported("LoadItemDefinition", $"Skipping item {itemId}: GetDefinition not supported.", itemId, null);
                         return new FabricItemDefinition { Parts = new List<FabricItemPart>() };
                     }
                 }
@@ -582,6 +625,9 @@ namespace PBIRInspectorLibrary
                     pollingUri = new Uri(new Uri(_baseUrl), locationHeader);
                 }
 
+                OnProgressReported("LoadItemDefinition", 
+                    $"Item definition request accepted, polling for result (operation: {operationId ?? "unknown"})...", itemId, null);
+
                 // Poll until operation completes
                 int currentDelayMs = Math.Max(_initialRetryDelayMs, (int)(retryAfterSeconds * 1000));
                 bool operationComplete = false;
@@ -589,6 +635,9 @@ namespace PBIRInspectorLibrary
                 
                 for (int attempt = 0; attempt < _maxLroAttempts; attempt++)
                 {
+                    OnProgressReported("LoadItemDefinition", 
+                        $"Polling item definition status (attempt {attempt + 1}/{_maxLroAttempts})...", 
+                        itemId, null, attempt + 1, _maxLroAttempts);
                     await Task.Delay(currentDelayMs, cancellationToken).ConfigureAwait(false);
                     
                     var pollResponse = await _httpClient.GetAsync(pollingUri, cancellationToken).ConfigureAwait(false);
@@ -620,6 +669,8 @@ namespace PBIRInspectorLibrary
                             if (string.Equals(operationResult.Status, "Succeeded", StringComparison.OrdinalIgnoreCase))
                             {
                                 // Operation succeeded - get the actual result
+                                OnProgressReported("LoadItemDefinition", 
+                                    $"Item definition retrieved successfully for {itemId}.", itemId, null);
                                 var resultUri = new Uri(pollingUri.ToString() + "/result");
                                 resultResponse = await _httpClient.GetAsync(resultUri, cancellationToken).ConfigureAwait(false);
                                 operationComplete = true;

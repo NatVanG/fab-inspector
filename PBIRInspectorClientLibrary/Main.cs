@@ -299,6 +299,7 @@ namespace PBIRInspectorClientLibrary
         private static async Task<IEnumerable<TestResult>?> RunSingleThreadedAsync(InspectionRules rules, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
             Inspector? insp = null;
+            FabricRemoteFileSystem? remoteFs = null;
 
             try
             {
@@ -315,6 +316,13 @@ namespace PBIRInspectorClientLibrary
                     fileSystem = string.IsNullOrWhiteSpace(Main._args.FabricItem)
                         ? new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._credential, Main._httpClient)
                         : await FabricRemoteFileSystem.CreateItemScopedAsync(Main._args.FabricWorkspaceId, Main._args.FabricItem, Main._credential, Main._httpClient).ConfigureAwait(false);
+
+                    // Subscribe to progress events from the remote file system
+                    if (fileSystem is FabricRemoteFileSystem rfs)
+                    {
+                        remoteFs = rfs;
+                        remoteFs.ProgressReported += Insp_MessageIssued;
+                    }
                 }
                 else
                 {
@@ -342,7 +350,10 @@ namespace PBIRInspectorClientLibrary
             }
             finally
             {
-                
+                if (remoteFs != null)
+                {
+                    remoteFs.ProgressReported -= Insp_MessageIssued;
+                }
                 if (insp != null)
                 {
                     insp.MessageIssued -= Insp_MessageIssued;
@@ -448,6 +459,7 @@ namespace PBIRInspectorClientLibrary
                     {
                         // Determine which file system to use based on Fabric workspace configuration
                         IFabricFileSystem fieldMapFileSystem;
+                        FabricRemoteFileSystem? fieldMapRemoteFs = null;
                         if (!string.IsNullOrWhiteSpace(Main._args.FabricWorkspaceId))
                         {
                             if (Main._credential == null)
@@ -460,6 +472,13 @@ namespace PBIRInspectorClientLibrary
                             fieldMapFileSystem = string.IsNullOrWhiteSpace(Main._args.FabricItem)
                                 ? new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._credential, Main._httpClient)
                                 : await FabricRemoteFileSystem.CreateItemScopedAsync(Main._args.FabricWorkspaceId, Main._args.FabricItem, Main._credential, Main._httpClient).ConfigureAwait(false);
+
+                            // Subscribe to progress events from the remote file system
+                            if (fieldMapFileSystem is FabricRemoteFileSystem rfs)
+                            {
+                                fieldMapRemoteFs = rfs;
+                                fieldMapRemoteFs.ProgressReported += Insp_MessageIssued;
+                            }
                         }
                         else
                         {
@@ -472,6 +491,12 @@ namespace PBIRInspectorClientLibrary
                         fieldMapInsp = new Inspector(fieldMapPathRules, registries, fieldMapFileSystem);
 
                         fieldMapResults = await Task.Run(() => fieldMapInsp.Inspect()).ConfigureAwait(false);
+
+                        // Unsubscribe from progress events
+                        if (fieldMapRemoteFs != null)
+                        {
+                            fieldMapRemoteFs.ProgressReported -= Insp_MessageIssued;
+                        }
 
                         var outputPNGDirPath = Path.Combine(localOutputDirPath, Constants.PNGOutputDir);
 
