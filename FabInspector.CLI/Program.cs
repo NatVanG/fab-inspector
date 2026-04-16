@@ -77,7 +77,19 @@ internal partial class Program
                 new StringContainsOperator(),
                 new ToRecordOperator(),
                 new ToStringOperator(),
-                new FromYamlFileOperator()
+                new FromYamlFileOperator(),
+                new KeysOperator(),
+                new ValuesOperator(),
+                new DistinctOperator(),
+                new TypeOfOperator(),
+                new HasPropOperator(),
+                new StringSplitOperator(),
+                new StringJoinOperator(),
+                new RegexExtractOperator(),
+                new CoalesceOperator(),
+                new SliceOperator(),
+                new NowOperator(),
+                new DateDiffOperator()
         }));
 
         registries.Add(new JsonLogicOperatorRegistry(

@@ -1,0 +1,397 @@
+{
+  "rules": [
+    {
+      "id": "KEYS_LIST_PROPERTIES",
+      "name": "List top-level property names",
+      "description": "Uses the 'keys' operator to return all top-level property names of a JSON object. Useful for discovering which properties are set on an object.",
+      "disabled": true,
+      "part": "Report",
+      "logType": "info",
+      "test": [
+        {
+          "keys": [
+            {
+              "var": ""
+            }
+          ]
+        },
+        []
+      ]
+    },
+    {
+      "id": "VALUES_LIST_PROPERTY_VALUES",
+      "name": "List top-level property values",
+      "description": "Uses the 'values' operator to return all top-level property values of a JSON object.",
+      "disabled": true,
+      "part": "Report",
+      "logType": "info",
+      "test": [
+        {
+          "values": [
+            {
+              "var": ""
+            }
+          ]
+        },
+        []
+      ]
+    },
+    {
+      "id": "DISTINCT_UNIQUE_VISUAL_TYPES",
+      "name": "List distinct visual types on a page",
+      "description": "Uses the 'distinct' operator to remove duplicates from an array. Here it returns the unique set of visual types used across all visuals on a page.",
+      "disabled": true,
+      "part": "Pages",
+      "logType": "info",
+      "test": [
+        {
+          "distinct": [
+            {
+              "map": [
+                {
+                  "part": "Visuals"
+                },
+                {
+                  "var": "visual.visualType"
+                }
+              ]
+            }
+          ]
+        },
+        []
+      ]
+    },
+    {
+      "id": "TYPEOF_CHECK_VALUE_TYPE",
+      "name": "Check that a property is of a specific type",
+      "description": "Uses the 'typeof' operator to return the JSON type of a value as a string: 'string', 'number', 'boolean', 'array', 'object', or 'null'. Useful for validating schema expectations.",
+      "disabled": true,
+      "part": "Report",
+      "logType": "info",
+      "test": [
+        {
+          "typeof": [
+            {
+              "var": "themeCollection"
+            }
+          ]
+        },
+        "object"
+      ]
+    },
+    {
+      "id": "HASPROP_CHECK_PROPERTY_EXISTS",
+      "name": "Check that a required property exists",
+      "description": "Uses the 'hasprop' operator to check if a JSON object contains a given property key. Unlike 'var', this correctly distinguishes between 'property is null' and 'property does not exist'.",
+      "disabled": true,
+      "part": "Report",
+      "logType": "info",
+      "test": [
+        {
+          "hasprop": [
+            {
+              "var": ""
+            },
+            "themeCollection"
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "STRSPLIT_PARSE_DELIMITED",
+      "name": "Split a delimited string into parts",
+      "description": "Uses the 'strsplit' operator to split a string by a delimiter and return an array. Useful for parsing dot-separated paths, comma-separated lists, etc.",
+      "disabled": true,
+      "part": "definition.pbir",
+      "logType": "info",
+      "test": [
+        {
+          "strsplit": [
+            {
+              "var": "datasetReference.byPath.path"
+            },
+            "/"
+          ]
+        },
+        []
+      ]
+    },
+    {
+      "id": "STRJOIN_BUILD_MESSAGE",
+      "name": "Join array elements into a string",
+      "description": "Uses the 'strjoin' operator to concatenate array elements with a separator. Here it joins visual names with a comma.",
+      "disabled": true,
+      "part": "Pages",
+      "logType": "info",
+      "test": [
+        {
+          "strjoin": [
+            {
+              "map": [
+                {
+                  "part": "Visuals"
+                },
+                {
+                  "var": "name"
+                }
+              ]
+            },
+            ", "
+          ]
+        },
+        ""
+      ]
+    },
+    {
+      "id": "REGEXEXTRACT_FIND_PATTERN",
+      "name": "Extract substrings matching a regex pattern",
+      "description": "Uses the 'regexextract' operator to find all matches of a regex pattern in a string. Returns an array of matched strings. Optionally specify a capture group index as the third parameter.",
+      "disabled": true,
+      "part": "definition.pbir",
+      "logType": "info",
+      "test": [
+        {
+          "regexextract": [
+            {
+              "var": "datasetReference.byPath.path"
+            },
+            "[A-Za-z0-9]+\\.Dataset"
+          ]
+        },
+        []
+      ]
+    },
+    {
+      "id": "COALESCE_FALLBACK_VALUE",
+      "name": "Use first non-null value as fallback",
+      "description": "Uses the 'coalesce' operator to return the first non-null value from a list. Unlike 'or', coalesce does not skip falsy values like 0, false, or empty string - it only skips null.",
+      "disabled": true,
+      "part": "Report",
+      "logType": "info",
+      "test": [
+        {
+          "coalesce": [
+            {
+              "var": "resourcePackages.0.name"
+            },
+            {
+              "var": "themeCollection.baseTheme.name"
+            },
+            "DefaultTheme"
+          ]
+        },
+        "DefaultTheme"
+      ]
+    },
+    {
+      "id": "SLICE_FIRST_N_ITEMS",
+      "name": "Get first N items from an array",
+      "description": "Uses the 'slice' operator to extract a sub-array. Follows JavaScript Array.prototype.slice() semantics: slice(array, start, end). Supports negative indices to count from the end.",
+      "disabled": true,
+      "part": "Pages",
+      "logType": "info",
+      "test": [
+        {
+          "slice": [
+            {
+              "map": [
+                {
+                  "part": "Visuals"
+                },
+                {
+                  "var": "name"
+                }
+              ]
+            },
+            0,
+            3
+          ]
+        },
+        []
+      ]
+    },
+    {
+      "id": "SLICE_LAST_N_ITEMS",
+      "name": "Get last 2 items from an array",
+      "description": "Uses the 'slice' operator with a negative start index to get the last N items from an array.",
+      "disabled": true,
+      "part": "Pages",
+      "logType": "info",
+      "test": [
+        {
+          "slice": [
+            {
+              "map": [
+                {
+                  "part": "Visuals"
+                },
+                {
+                  "var": "name"
+                }
+              ]
+            },
+            -2
+          ]
+        },
+        []
+      ]
+    },
+    {
+      "id": "NOW_CURRENT_TIMESTAMP",
+      "name": "Get current UTC timestamp",
+      "description": "Uses the 'now' operator with no parameters to return the current UTC date/time as an ISO 8601 string.",
+      "disabled": true,
+      "logType": "info",
+      "test": [
+        {
+          "now": []
+        },
+        ""
+      ]
+    },
+    {
+      "id": "NOW_RELATIVE_DATE",
+      "name": "Get a relative date (e.g. 7 days ago)",
+      "description": "Uses the 'now' operator with an offset and unit to compute a relative date. Supported units: seconds, minutes, hours, days, months, years. A negative offset means 'before now'.",
+      "disabled": true,
+      "logType": "info",
+      "test": [
+        {
+          "now": [
+            -7,
+            "days"
+          ]
+        },
+        ""
+      ]
+    },
+    {
+      "id": "DATEDIFF_COMPARE_DATES",
+      "name": "Calculate difference between two dates in days",
+      "description": "Uses the 'datediff' operator to compute date2 - date1 in specified units. Default unit is 'days'. Supported units: seconds, minutes, hours, days. A positive result means date2 is after date1.",
+      "disabled": true,
+      "logType": "info",
+      "test": [
+        {
+          "datediff": [
+            "2026-04-14T00:00:00Z",
+            "2026-04-16T00:00:00Z"
+          ]
+        },
+        2
+      ]
+    },
+    {
+      "id": "DATEDIFF_IN_HOURS",
+      "name": "Calculate difference between two dates in hours",
+      "description": "Uses the 'datediff' operator with an explicit 'hours' unit.",
+      "disabled": true,
+      "logType": "info",
+      "test": [
+        {
+          "datediff": [
+            "2026-04-16T10:00:00Z",
+            "2026-04-16T15:30:00Z",
+            "hours"
+          ]
+        },
+        5.5
+      ]
+    },
+    {
+      "id": "KEYS_HASPROP_COMBINED",
+      "name": "Check that a visual config has required properties",
+      "description": "Combines 'keys', 'hasprop', and 'filter' to find visuals missing a required config property. Returns names of visuals that don't have the expected property.",
+      "disabled": true,
+      "part": "Pages",
+      "logType": "info",
+      "test": [
+        {
+          "map": [
+            {
+              "filter": [
+                {
+                  "part": "Visuals"
+                },
+                {
+                  "!": [
+                    {
+                      "hasprop": [
+                        {
+                          "var": "visual"
+                        },
+                        "visualType"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "var": "name"
+            }
+          ]
+        },
+        []
+      ]
+    },
+    {
+      "id": "DISTINCT_COUNT_UNIQUE",
+      "name": "Check that page does not exceed N distinct visual types",
+      "description": "Combines 'distinct' with 'count' to limit the number of different visual types used on a single page.",
+      "disabled": true,
+      "part": "Pages",
+      "logType": "info",
+      "test": [
+        {
+          "<=": [
+            {
+              "count": [
+                {
+                  "distinct": [
+                    {
+                      "map": [
+                        {
+                          "part": "Visuals"
+                        },
+                        {
+                          "var": "visual.visualType"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            5
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "TYPEOF_COALESCE_COMBINED",
+      "name": "Ensure a property is a string after coalesce",
+      "description": "Combines 'coalesce' and 'typeof' to verify the resolved value is of the expected type.",
+      "disabled": true,
+      "part": "Report",
+      "logType": "info",
+      "test": [
+        {
+          "typeof": [
+            {
+              "coalesce": [
+                {
+                  "var": "themeCollection.baseTheme.name"
+                },
+                "FallbackTheme"
+              ]
+            }
+          ]
+        },
+        "string"
+      ]
+    }
+  ]
+}
