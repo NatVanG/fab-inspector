@@ -10,7 +10,7 @@ namespace FabInspector.WinImageLibrary.Drawing
         private string _pageDisplayName;
         private PageSize _pageSize;
         private List<VisualContainer> _visualContainers;
-        private Bitmap _bitmap;
+        private Bitmap _bitmap = null!;
 
         public ReportPage(string pageName, string pageDisplayName, PageSize pageSize, List<VisualContainer> visualContainers)
         {
@@ -112,8 +112,8 @@ namespace FabInspector.WinImageLibrary.Drawing
 
         public class VisualContainer
         {
-            public string Name;
-            public string VisualType;
+            public string? Name;
+            public string? VisualType;
             public int X;
             public int Y;
             public int Height;

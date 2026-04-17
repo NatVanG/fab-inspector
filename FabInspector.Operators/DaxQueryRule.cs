@@ -29,11 +29,11 @@ public class DaxQueryRule : Json.Logic.Rule
     internal Json.Logic.Rule Query { get; }
     internal Json.Logic.Rule WorspaceId { get; }
     internal Json.Logic.Rule SemanticModelId { get; }
-    internal Json.Logic.Rule IncludeNulls { get; }
-    internal Json.Logic.Rule ImpersonatedUserName { get; }
+    internal Json.Logic.Rule? IncludeNulls { get; }
+    internal Json.Logic.Rule? ImpersonatedUserName { get; }
 
 
-    internal DaxQueryRule(Json.Logic.Rule query, Json.Logic.Rule workspaceId, Json.Logic.Rule semanticModelId, Json.Logic.Rule includeNulls, Json.Logic.Rule impersonatedUserName)
+    internal DaxQueryRule(Json.Logic.Rule query, Json.Logic.Rule workspaceId, Json.Logic.Rule semanticModelId, Json.Logic.Rule? includeNulls, Json.Logic.Rule? impersonatedUserName)
     {
         Query = query;
         WorspaceId = workspaceId;
@@ -143,9 +143,9 @@ internal class DaxQueryJsonConverter : WeaklyTypedJsonConverter<DaxQueryRule>
             throw new JsonException("The daxquery rule requires at least one parameter: the DAX query expression.");
 
         return new DaxQueryRule(
-            parameters[0],
-            parameters.Length > 1 ? parameters[1] : Utils.Constants.ContextFabricWorkspace,
-            parameters.Length > 2 ? parameters[2] : Utils.Constants.ContextFabricItem,
+            parameters[0]!,
+            parameters.Length > 1 ? parameters[1]! : Utils.Constants.ContextFabricWorkspace,
+            parameters.Length > 2 ? parameters[2]! : Utils.Constants.ContextFabricItem,
             parameters.Length > 3 ? parameters[3] : null,
             parameters.Length > 4 ? parameters[4] : null
         );

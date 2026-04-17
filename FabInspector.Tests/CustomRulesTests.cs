@@ -21,7 +21,7 @@ namespace FabInspector.Tests
         [Test]
         public void IsNullOrEmptyRuleTest2()
         {
-            string json = null;
+            string? json = null;
             var rule = new IsNullOrEmptyRule(json);
             var result = rule.Apply(null);
             Assert.That((bool)result.AsValue(), Is.True);

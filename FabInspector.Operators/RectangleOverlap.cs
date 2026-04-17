@@ -37,7 +37,7 @@ namespace FabInspector.Operators;
         {
             JsonArray result = new JsonArray();
             var input = Input.Apply(data, contextData);
-            var margin = Margin != null ? Margin.Apply(data, contextData).Numberify() : 0;
+            var margin = Margin != null ? Margin.Apply(data, contextData).Numberify() : (decimal?)0;
 
             if (input is null) return result;
             if (input is not JsonArray arr)
@@ -46,15 +46,15 @@ namespace FabInspector.Operators;
             var namedRects = new List<NamedRectangle>();
             foreach (var item in arr)
             {
-                var name = item["name"].Stringify();
-                var x = item["x"].Numberify();
-                var y = item["y"].Numberify();
-                var width = item["width"].Numberify();
-                var height = item["height"].Numberify();
+                var name = item!["name"].Stringify();
+                var x = item!["x"].Numberify();
+                var y = item!["y"].Numberify();
+                var width = item!["width"].Numberify();
+                var height = item!["height"].Numberify();
 
-                var rect = new Rectangle((int)x, (int)y, (int)width, (int)height);
-                rect.Inflate((int)margin, (int)margin);
-                namedRects.Add(new NamedRectangle(name, rect));
+                var rect = new Rectangle((int)(x ?? 0), (int)(y ?? 0), (int)(width ?? 0), (int)(height ?? 0));
+                rect.Inflate((int)(margin ?? 0), (int)(margin ?? 0));
+                namedRects.Add(new NamedRectangle(name ?? string.Empty, rect));
             }
 
             var overlaps = CheckRectangleOverlaps(namedRects);

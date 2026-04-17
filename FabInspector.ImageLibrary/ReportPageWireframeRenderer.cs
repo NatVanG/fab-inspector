@@ -20,22 +20,22 @@ namespace FabInspector.ImageLibrary
             {
                 var testResultId = testResult.Id;
 
-                foreach (TestResult fields in fieldMapResults.Where(_ => _.ParentName.Equals(testResult.ParentName)))
+                foreach (TestResult fields in fieldMapResults.Where(_ => string.Equals(_.ParentName, testResult.ParentName)))
                 {
                     var pageName = fields.ParentName;
                     var pageDisplayName = fields.ParentDisplayName;
                     //TODO: page size is currently hardcoded to 1280x720 (i.e. 16x9 aspect ratio). 
                     var pageSize = new ReportPage.PageSize { Height = 720, Width = 1280 };
                     List<ReportPage.VisualContainer> visuals = new List<ReportPage.VisualContainer>();
-                    foreach (var f in fields.Actual.AsArray())
+                    foreach (var f in fields.Actual!.AsArray())
                     {
-                        var name = f["name"].ToString();
-                        var visualType = f["visualType"].ToString();
-                        var x = (int)Math.Round(f["x"].GetValue<decimal>());
-                        var y = (int)Math.Round(f["y"].GetValue<decimal>());
-                        var height = (int)Math.Round(f["height"].GetValue<decimal>());
-                        var width = (int)Math.Round(f["width"].GetValue<decimal>());
-                        var visible = f["visible"].GetValue<bool>();
+                        var name = f!["name"]?.ToString();
+                        var visualType = f!["visualType"]?.ToString();
+                        var x = (int)Math.Round(f!["x"]!.GetValue<decimal>());
+                        var y = (int)Math.Round(f!["y"]!.GetValue<decimal>());
+                        var height = (int)Math.Round(f!["height"]!.GetValue<decimal>());
+                        var width = (int)Math.Round(f!["width"]!.GetValue<decimal>());
+                        var visible = f!["visible"]!.GetValue<bool>();
 
                         //If a visual name is returned in the test actual array then highlight it as a test failure in the page wireframe
                         //A visual name can be returned either as a JsonValue or a named JsonObject (i.e. {"name": "VisualName"}) hence the "or else" operator below (i.e. "||")
@@ -44,14 +44,14 @@ namespace FabInspector.ImageLibrary
                                                                     && _ is JsonValue && _.AsValue().ToString().Equals(name)))
                                                           || (testResult.Actual != null && testResult.Actual is JsonArray
                                                         && testResult.Actual.AsArray().Any(_ => _ != null && _ is JsonObject && _ is not JsonValue
-                                                            && _["name"] != null && _["name"] is JsonValue && _["name"].AsValue().ToString().Equals(name)));
+                                                            && _["name"] != null && _["name"] is JsonValue && _["name"]!.AsValue().ToString().Equals(name)));
 
 
                         bool visualPass = !visualNameInTestActualArray;
-                        visuals.Add(new ReportPage.VisualContainer { Name = name.ToString(), VisualType = visualType.ToString(), X = x, Y = y, Height = height, Width = width, Pass = visualPass, Visible = visible });
+                        visuals.Add(new ReportPage.VisualContainer { Name = name ?? string.Empty, VisualType = visualType ?? string.Empty, X = x, Y = y, Height = height, Width = width, Pass = visualPass, Visible = visible });
 
                     }
-                    using var rp = new ReportPage(pageName, pageDisplayName, pageSize, visuals);
+                    using var rp = new ReportPage(pageName ?? string.Empty, pageDisplayName ?? string.Empty, pageSize, visuals);
                     rp.Draw();
                     var filename = string.Concat(testResultId, ".png");
                     var filepath = Path.Combine(outputDir, filename);

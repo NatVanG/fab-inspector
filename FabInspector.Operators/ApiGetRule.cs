@@ -27,9 +27,9 @@ public class ApiGetRule : Json.Logic.Rule
     private const string FabricApiBaseUrl = "https://api.fabric.microsoft.com/v1";
 
     internal Json.Logic.Rule UrlTemplate { get; }
-    internal List<Json.Logic.Rule> UrlParameters { get; }
+    internal List<Json.Logic.Rule>? UrlParameters { get; }
 
-    internal ApiGetRule(Json.Logic.Rule urlTemplate, List<Json.Logic.Rule> urlParameters)
+    internal ApiGetRule(Json.Logic.Rule urlTemplate, List<Json.Logic.Rule>? urlParameters)
     {
         UrlTemplate = urlTemplate;
         UrlParameters = urlParameters;
@@ -84,9 +84,13 @@ public class ApiGetRule : Json.Logic.Rule
         // placeholders are in the format {paramName}
         var placeholderMatches = Regex.Matches(resolvedUrl, @"\{[a-zA-Z0-9_-]+\}");
         var placeholderCount = placeholderMatches.Count;
-        if ((parameters == null && placeholderCount > 0) || (parameters != null && placeholderCount > parameters.Length))
+        if (parameters == null && placeholderCount > 0)
         {
-            throw new JsonLogicException($"The apiget rule has more parameters ({parameters.Length}) than placeholders ({placeholderCount}) in the URL template.");
+            throw new JsonLogicException($"The apiget rule requires {placeholderCount} placeholder parameter(s) but none were provided.");
+        }
+        if (parameters != null && placeholderCount > parameters.Length)
+        {
+            throw new JsonLogicException($"The apiget rule has more placeholders ({placeholderCount}) than parameters ({parameters.Length}) in the URL template.");
         }
 
         if (parameters != null)
@@ -140,7 +144,7 @@ internal class ApiGetJsonConverter : WeaklyTypedJsonConverter<ApiGetRule>
         if (parameters == null || parameters.Length < 1)
             throw new JsonException("The apiget rule requires at least one parameter: the API URL template.");
 
-        return new ApiGetRule(parameters[0], parameters.Length > 1 ? parameters[1..].ToList() : null);
+        return new ApiGetRule(parameters[0]!, parameters.Length > 1 ? parameters[1..].ToList() : null);
     }
 
     public override void Write(Utf8JsonWriter writer, ApiGetRule value, JsonSerializerOptions options)

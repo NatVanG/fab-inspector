@@ -140,26 +140,26 @@ namespace FabInspector.ClientLibrary
 
                     case "clientsecret":
                         _credential = FabricAuthenticationHelper.CreateClientSecretCredential(
-                            args.ClientId,
-                            args.ClientSecret,
-                            args.TenantId
+                            args.ClientId!,
+                            args.ClientSecret!,
+                            args.TenantId!
                         );
                         break;
 
                     case "certificate":
                         _credential = FabricAuthenticationHelper.CreateCertificateCredential(
-                            args.ClientId,
-                            args.TenantId,
-                            args.CertificatePath,
+                            args.ClientId!,
+                            args.TenantId!,
+                            args.CertificatePath!,
                             args.CertificatePassword
                         );
                         break;
 
                     case "federatedtoken":
                         _credential = FabricAuthenticationHelper.CreateFederatedTokenCredential(
-                            args.ClientId,
-                            args.FederatedToken,
-                            args.TenantId
+                            args.ClientId!,
+                            args.FederatedToken!,
+                            args.TenantId!
                         );
                         break;
 
@@ -216,7 +216,7 @@ namespace FabInspector.ClientLibrary
                 }
 
                 var tokenRequestContext = new TokenRequestContext(AuthenticationHelper.FabricScopes);
-                _cachedToken = await _credential.GetTokenAsync(tokenRequestContext, default).ConfigureAwait(false);
+                _cachedToken = await _credential!.GetTokenAsync(tokenRequestContext, default).ConfigureAwait(false);
                 _tokenInitialized = true;
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _cachedToken.Token);
                 if (!_httpClient.DefaultRequestHeaders.Accept.Contains(new MediaTypeWithQualityHeaderValue("application/json")))
@@ -238,13 +238,13 @@ namespace FabInspector.ClientLibrary
         public static async Task RunSingleThreadedAsync(Args args, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
             _args = args;
-            IEnumerable<TestResult> testResults = null;
+            IEnumerable<TestResult>? testResults = null;
             
             OnMessageIssued(MessageTypeEnum.Information, string.Concat("Test run started at (UTC): ", DateTime.Now.ToUniversalTime()));
 
             SetPartContext();
 
-            var rules = await Task.Run(() => DeserialiseRulesFromPath(Main._args.RulesFilePath)).ConfigureAwait(false);
+            var rules = await Task.Run(() => DeserialiseRulesFromPath(args.RulesFilePath ?? string.Empty)).ConfigureAwait(false);
             testResults = await RunSingleThreadedAsync(rules, registries).ConfigureAwait(false);
 
             if (testResults != null && testResults.Any())
@@ -264,7 +264,7 @@ namespace FabInspector.ClientLibrary
 
             SetPartContext();
 
-            var rules = await Task.Run(() => DeserialiseRulesFromPath(Main._args.RulesFilePath)).ConfigureAwait(false);
+            var rules = await Task.Run(() => DeserialiseRulesFromPath(args.RulesFilePath ?? string.Empty)).ConfigureAwait(false);
             var ruleBuckets = ChunkInspectionRules(rules);
             var globalResults = new ConcurrentBag<TestResult>();
 
@@ -319,7 +319,7 @@ namespace FabInspector.ClientLibrary
             {
                 // Determine which file system to use based on Fabric workspace configuration
                 IFabricFileSystem fileSystem;
-                if (!string.IsNullOrWhiteSpace(Main._args.FabricWorkspaceId))
+                if (!string.IsNullOrWhiteSpace(_args!.FabricWorkspaceId))
                 {
                     if (Main._credential == null)
                     {
@@ -327,9 +327,9 @@ namespace FabInspector.ClientLibrary
                     }
 
                     // Item-scoped vs workspace-scoped mode
-                    fileSystem = string.IsNullOrWhiteSpace(Main._args.FabricItem)
-                        ? new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._credential, Main._httpClient)
-                        : await FabricRemoteFileSystem.CreateItemScopedAsync(Main._args.FabricWorkspaceId, Main._args.FabricItem, Main._credential, Main._httpClient).ConfigureAwait(false);
+                    fileSystem = string.IsNullOrWhiteSpace(_args!.FabricItem)
+                        ? new FabricRemoteFileSystem(_args!.FabricWorkspaceId, Main._credential, Main._httpClient)
+                        : await FabricRemoteFileSystem.CreateItemScopedAsync(_args!.FabricWorkspaceId, _args!.FabricItem, Main._credential, Main._httpClient).ConfigureAwait(false);
 
                     // Subscribe to progress events from the remote file system
                     if (fileSystem is FabricRemoteFileSystem rfs)
@@ -341,14 +341,14 @@ namespace FabInspector.ClientLibrary
                 else
                 {
                     // Use PhysicalFileSystem with the specified path
-                    fileSystem = new FabricLocalFileSystem(Main._args.FabricItem ?? string.Empty);
+                    fileSystem = new FabricLocalFileSystem(_args!.FabricItem ?? string.Empty);
                 }
                 
                 insp = new Inspector(rules, registries, fileSystem);
 
                 insp.MessageIssued += Insp_MessageIssued;
                 var testResults = await Task.Run(() => insp.Inspect()).ConfigureAwait(false);
-                return testResults.Where(_ => (!Main._args.Verbose && !_.Pass) || (Main._args.Verbose));
+                return testResults.Where(_ => (!_args!.Verbose && !_.Pass) || (_args!.Verbose));
             }
             catch (PBIRInspectorException e)
             {
@@ -382,10 +382,10 @@ namespace FabInspector.ClientLibrary
         {
             string jsonTestRun = string.Empty;
             Inspector? fieldMapInsp = null;
-            IEnumerable<TestResult> fieldMapResults = null;
+            IEnumerable<TestResult>? fieldMapResults = null;
             var outputArtifacts = new List<(string LocalPath, string RelativePath)>();
 
-            var outputRootPath = Main._args.OutputDirPath ?? string.Empty;
+            var outputRootPath = _args!.OutputDirPath ?? string.Empty;
             var isOneLakeOutput = OneLakeOutputUploader.IsOneLakeDfsUrl(outputRootPath);
             var localOutputDirPath = outputRootPath;
             var localStagingCreated = false;
@@ -400,17 +400,17 @@ namespace FabInspector.ClientLibrary
 
             try
             {
-                if (Main._args.CONSOLEOutput || Main._args.ADOOutput || Main._args.GITHUBOutput)
+                if (_args!.CONSOLEOutput || _args!.ADOOutput || _args!.GITHUBOutput)
                 {
                     foreach (var result in testResults)
                     {
                         //TODO: use Test log type json property instead
                         var msgType = result.Pass ? MessageTypeEnum.Information : result.LogType;
-                        OnMessageIssued(result.ItemPath, msgType, result.Message);
+                        OnMessageIssued(result.ItemPath ?? string.Empty, msgType, result.Message);
                     }
 
                     // Summarise error and warning counts
-                    if (testResults != null && testResults.Any())
+                    if (testResults.Any())
                     {
                         OnMessageIssued(MessageTypeEnum.Information, string.Format("Test run summary: {0} errors, {1} warnings.",
                             testResults.Count(_ => _.LogType == MessageTypeEnum.Error),
@@ -423,7 +423,7 @@ namespace FabInspector.ClientLibrary
                 }
 
                 //Ensure output dir exists
-                if (!(Main._args.ADOOutput || Main._args.GITHUBOutput) && (Main._args.JSONOutput || Main._args.HTMLOutput || Main._args.PNGOutput))
+                if (!(_args!.ADOOutput || _args!.GITHUBOutput) && (_args!.JSONOutput || _args!.HTMLOutput || _args!.PNGOutput))
                 {
                     if (!Directory.Exists(localOutputDirPath))
                     {
@@ -431,10 +431,10 @@ namespace FabInspector.ClientLibrary
                     }
                 }
 
-                if (!(Main._args.ADOOutput || Main._args.GITHUBOutput) && (Main._args.JSONOutput || Main._args.HTMLOutput))
+                if (!(_args!.ADOOutput || _args!.GITHUBOutput) && (_args!.JSONOutput || _args!.HTMLOutput))
                 {
                     var outputFilePath = string.Empty;
-                    var outputFileIdentifier = !string.IsNullOrWhiteSpace(Main._args.FabricItem) ? Path.GetFileNameWithoutExtension(Main._args.FabricItem) :  Main._args.FabricWorkspaceId;
+                    var outputFileIdentifier = !string.IsNullOrWhiteSpace(_args!.FabricItem) ? Path.GetFileNameWithoutExtension(_args!.FabricItem) : _args!.FabricWorkspaceId;
                     var timestampSuffix = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
                     var jsonFileName = isOneLakeOutput
                         ? string.Concat("TestRun_", outputFileIdentifier, "_", timestampSuffix, ".json")
@@ -451,9 +451,9 @@ namespace FabInspector.ClientLibrary
 
                     var testedFilePath = BuildTestedFilePath();
 
-                    var testRun = new TestRun() { CompletionTime = DateTime.Now, TestedFilePath = testedFilePath, RulesFilePath = Main._args.RulesFilePath, Verbose = Main._args.Verbose, Results = testResults };
+                    var testRun = new TestRun() { CompletionTime = DateTime.Now, TestedFilePath = testedFilePath, RulesFilePath = _args!.RulesFilePath, Verbose = _args!.Verbose, Results = testResults };
                     jsonTestRun = JsonSerializer.Serialize(testRun);
-                    if (Main._args.JSONOutput)
+                    if (_args!.JSONOutput)
                     {
                         OnMessageIssued(MessageTypeEnum.Information, string.Format("Writing JSON output to file at \"{0}\".", outputFilePath));
                         File.WriteAllText(outputFilePath, jsonTestRun, System.Text.Encoding.UTF8);
@@ -465,16 +465,16 @@ namespace FabInspector.ClientLibrary
                     }
                 }
 
-                if (!(Main._args.ADOOutput || Main._args.GITHUBOutput) && (Main._args.PNGOutput || Main._args.HTMLOutput))
+                if (!(_args!.ADOOutput || _args!.GITHUBOutput) && (_args!.PNGOutput || _args!.HTMLOutput))
                 {
                     //optimisation - run only for report-related rules
-                    if (testResults.Any(_ => _.RuleItemType.Contains("Report", StringComparison.InvariantCultureIgnoreCase) ||
-                    _.RuleItemType.Contains("report_deprecated", StringComparison.InvariantCultureIgnoreCase)))
+                    if (testResults.Any(_ => (_.RuleItemType?.Contains("Report", StringComparison.InvariantCultureIgnoreCase) ?? false) ||
+                    (_.RuleItemType?.Contains("report_deprecated", StringComparison.InvariantCultureIgnoreCase) ?? false)))
                     {
                         // Determine which file system to use based on Fabric workspace configuration
                         IFabricFileSystem fieldMapFileSystem;
                         FabricRemoteFileSystem? fieldMapRemoteFs = null;
-                        if (!string.IsNullOrWhiteSpace(Main._args.FabricWorkspaceId))
+                        if (!string.IsNullOrWhiteSpace(_args!.FabricWorkspaceId))
                         {
                             if (Main._credential == null)
                             {
@@ -483,9 +483,9 @@ namespace FabInspector.ClientLibrary
 
                             // Item-scoped vs workspace-scoped mode
                             //TODO: reuse filesystem object from test run
-                            fieldMapFileSystem = string.IsNullOrWhiteSpace(Main._args.FabricItem)
-                                ? new FabricRemoteFileSystem(Main._args.FabricWorkspaceId, Main._credential, Main._httpClient)
-                                : await FabricRemoteFileSystem.CreateItemScopedAsync(Main._args.FabricWorkspaceId, Main._args.FabricItem, Main._credential, Main._httpClient).ConfigureAwait(false);
+                            fieldMapFileSystem = string.IsNullOrWhiteSpace(_args!.FabricItem)
+                                ? new FabricRemoteFileSystem(_args!.FabricWorkspaceId, Main._credential, Main._httpClient)
+                                : await FabricRemoteFileSystem.CreateItemScopedAsync(_args!.FabricWorkspaceId, _args!.FabricItem, Main._credential, Main._httpClient).ConfigureAwait(false);
 
                             // Subscribe to progress events from the remote file system
                             if (fieldMapFileSystem is FabricRemoteFileSystem rfs)
@@ -497,7 +497,7 @@ namespace FabInspector.ClientLibrary
                         else
                         {
                             // Use PhysicalFileSystem with the specified path
-                            fieldMapFileSystem = new FabricLocalFileSystem(Main._args.FabricItem ?? string.Empty);
+                            fieldMapFileSystem = new FabricLocalFileSystem(_args!.FabricItem ?? string.Empty);
                         }
                         // Create file system for field map inspection
                         //IFabricFileSystem fieldMapFileSystem = new FabricLocalFileSystem(Main._args.FabricItem ?? string.Empty);
@@ -516,7 +516,7 @@ namespace FabInspector.ClientLibrary
 
                         if (Directory.Exists(outputPNGDirPath))
                         {
-                            if (Main._args.OverwriteOutput)
+                            if (_args!.OverwriteOutput)
                             {
                                 Directory.Delete(outputPNGDirPath, true);
                             }
@@ -556,7 +556,7 @@ namespace FabInspector.ClientLibrary
                     }
                 }
 
-                if (!(Main._args.ADOOutput || Main._args.GITHUBOutput) && Main._args.HTMLOutput)
+                if (!(_args!.ADOOutput || _args!.GITHUBOutput) && _args!.HTMLOutput)
                 {
                     string pbiinspectorlogobase64 = string.Concat(Constants.Base64ImgPrefix, pageRenderer.ConvertBitmapToBase64(Constants.PBIInspectorPNG));
                     //string nowireframebase64 = string.Concat(Base64ImgPrefix, ImageUtils.ConvertBitmapToBase64(@"Files\png\nowireframe.png"));
@@ -576,7 +576,7 @@ namespace FabInspector.ClientLibrary
                     }
 
                     //Results have been written to a temporary directory so show output to user automatically.
-                    if (!isOneLakeOutput && Main._args.DeleteOutputDirOnExit && !Main._args.CONSOLEOutput)
+                    if (!isOneLakeOutput && _args!.DeleteOutputDirOnExit && !_args!.CONSOLEOutput)
                     {
                         AppUtils.OpenUrl(outputHTMLFilePath);
                     }
@@ -584,7 +584,7 @@ namespace FabInspector.ClientLibrary
 
                 if (isOneLakeOutput && outputArtifacts.Any())
                 {
-                    await UploadOutputArtifactsToOneLakeAsync(outputRootPath, outputArtifacts, Main._args.OverwriteOutput).ConfigureAwait(false);
+                    await UploadOutputArtifactsToOneLakeAsync(outputRootPath, outputArtifacts, _args!.OverwriteOutput).ConfigureAwait(false);
                 }
             }
             catch (Exception e)
@@ -603,17 +603,17 @@ namespace FabInspector.ClientLibrary
         private static string BuildTestedFilePath()
         {
             string path;
-            if (!string.IsNullOrWhiteSpace(Main._args.FabricWorkspaceId))
+            if (!string.IsNullOrWhiteSpace(_args!.FabricWorkspaceId))
             {
-                path = string.Concat("Workspace: ", Main._args.FabricWorkspaceId);
-                if (!string.IsNullOrWhiteSpace(Main._args.FabricItem))
+                path = string.Concat("Workspace: ", _args!.FabricWorkspaceId);
+                if (!string.IsNullOrWhiteSpace(_args!.FabricItem))
                 {
-                    path = string.Concat(path, " | Item: ", Main._args.FabricItem);
+                    path = string.Concat(path, " | Item: ", _args!.FabricItem);
                 }
             }
             else
             {
-                path = Main._args.FabricItem;
+                path = _args!.FabricItem ?? string.Empty;
             }
             return path;
         }

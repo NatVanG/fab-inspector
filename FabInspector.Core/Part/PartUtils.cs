@@ -105,8 +105,9 @@ namespace FabInspector.Core.Part
             return node;
         }
 
-        public static PartInfo? TryGetPartInfo(JsonNode node, bool setAdvancedProperties = false)
+        public static PartInfo? TryGetPartInfo(JsonNode? node, bool setAdvancedProperties = false)
         {
+            if (node is null) return null;
             var fileSystem = ContextService.Current?.Part?.GetFileSystem() ?? new FabricLocalFileSystem();
             var fileSystemPath = TryGetFileSystemPath(node, fileSystem);
             if (fileSystemPath != null)

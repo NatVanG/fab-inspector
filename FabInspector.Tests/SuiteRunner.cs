@@ -462,6 +462,11 @@ public class SuiteRunner
             var registries = sp.GetRequiredService<IEnumerable<JsonLogicOperatorRegistry>>();
             var fileSystem = new FabricLocalFileSystem(PBIPFilePath);
             var rules = JsonUtils.DeserialiseFromPath<InspectionRules>(RulesFilePath);
+            if (rules == null)
+            {
+                Console.WriteLine("Rules file could not be loaded.");
+                return Enumerable.Empty<TestCaseData>();
+            }
             Inspector insp = new Inspector(rules, registries, fileSystem);
 
             var testResults = insp.Inspect();
@@ -481,7 +486,7 @@ public class SuiteRunner
             Console.WriteLine(e.Message);
         }
 
-        return null;
+        return Enumerable.Empty<TestCaseData>();
     }
 
     public static IEnumerable<TestCaseData> Suite(string PBIPFilePath, InspectionRules inspectionRules)
@@ -510,6 +515,6 @@ public class SuiteRunner
             Console.WriteLine(e.Message);
         }
 
-        return null;
+        return Enumerable.Empty<TestCaseData>();
     }
 }

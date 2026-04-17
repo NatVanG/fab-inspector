@@ -95,7 +95,6 @@ For more information, visit: https://github.com/NatVanG/PBI-InspectorV2
         public static Args ParseArgs(string[] args)
         {
             const string PBIX = "-pbix", PBIP = "-pbip", PBIPREPORT = "-pbipreport", FABRICITEM = "-fabricitem", FABRICWORKSPACE = "-fabricworkspace", RULES = "-rules", OUTPUT = "-output", FORMATS = "-formats", VERBOSE = "-verbose", PARALLEL = "-parallel", OVERWRITEOUTPUT = "-overwriteoutput", AUTHMETHOD = "-authmethod", TENANTID = "-tenantid", CLIENTID = "-clientid", CLIENTSECRET = "-clientsecret", CERTIFICATEPATH = "-certificatepath", CERTIFICATEPASSWORD = "-certificatepassword", FEDERATEDTOKEN = "-federatedtoken", HELP = "-help";
-            const string TRUE = "true";
             const string FALSE = "false";
             string[] validOptions = { PBIX, PBIP, PBIPREPORT, FABRICITEM, FABRICWORKSPACE, RULES, OUTPUT, FORMATS, VERBOSE, PARALLEL, OVERWRITEOUTPUT, AUTHMETHOD, TENANTID, CLIENTID, CLIENTSECRET, CERTIFICATEPATH, CERTIFICATEPASSWORD, FEDERATEDTOKEN, HELP };
 

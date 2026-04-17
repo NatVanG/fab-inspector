@@ -8,7 +8,7 @@ using Ric.Operators;
 
 internal partial class Program
 {
-    private static Args _parsedArgs = null;
+    private static Args _parsedArgs = null!;
 
     private static async Task Main(string[] args)
     {
@@ -134,7 +134,7 @@ internal partial class Program
             //Console and ADO/GitHub outputs
             if ((!_parsedArgs.ADOOutput && !_parsedArgs.GITHUBOutput) || ((_parsedArgs.ADOOutput || _parsedArgs.GITHUBOutput) && (e.MessageType == MessageTypeEnum.Error || e.MessageType == MessageTypeEnum.Warning)))
             {
-                SafeWriteLine(FormatConsoleMessage(e.ItemPath, e.MessageType, e.Message));
+                SafeWriteLine(FormatConsoleMessage(e.ItemPath ?? string.Empty, e.MessageType, e.Message));
             }
 
             //ADO output only

@@ -41,7 +41,7 @@ public class ToRecordRule : Json.Logic.Rule
         for (var i = 0; i < count - 1; i += 2)
         {
             var key = Items[i];
-            var keyValue = key.Apply(data, contextData).Stringify();
+            var keyValue = key.Apply(data, contextData)?.Stringify() ?? string.Empty;
             var item = Items[i + 1];
             var value = item.Apply(data, contextData);
             result.Add(keyValue, value?.DeepClone());

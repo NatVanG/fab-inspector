@@ -9,8 +9,8 @@ namespace FabInspector.WinForm
 {
     public partial class MainForm : Form
     {
-        IReportPageWireframeRenderer _pageRenderer = null;
-        IEnumerable<JsonLogicOperatorRegistry> _registries = null;
+        IReportPageWireframeRenderer? _pageRenderer = null;
+        IEnumerable<JsonLogicOperatorRegistry>? _registries = null;
 
         public MainForm()
         {
@@ -254,7 +254,7 @@ namespace FabInspector.WinForm
 
             try
             {
-                await Main.AttendedRun(fabricWorskpaceId, fabricItem, rulesFilePath, outputPath, verbose, parallel, jsonOutput, htmlOutput, _pageRenderer, _registries);
+                await Main.AttendedRun(fabricWorskpaceId, fabricItem, rulesFilePath, outputPath, verbose, parallel, jsonOutput, htmlOutput, _pageRenderer!, _registries!);
             }
             finally
             {
@@ -303,7 +303,7 @@ namespace FabInspector.WinForm
             {
                 AppUtils.OpenUrl(Constants.ReadmePageUrl);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 MessageBox.Show("Unable to open link that was clicked.");
             }
@@ -315,7 +315,7 @@ namespace FabInspector.WinForm
             {
                 AppUtils.OpenUrl(Constants.LicensePageUrl);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 MessageBox.Show("Unable to open link that was clicked.");
             }
@@ -332,7 +332,7 @@ namespace FabInspector.WinForm
             {
                 AppUtils.OpenUrl(Constants.LatestReleasePageUrl);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 MessageBox.Show("Unable to open link that was clicked.");
             }
@@ -344,7 +344,7 @@ namespace FabInspector.WinForm
             {
                 AppUtils.OpenUrl(Constants.IssuesPageUrl);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 MessageBox.Show("Unable to open link that was clicked.");
             }

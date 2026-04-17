@@ -102,7 +102,7 @@ namespace FabInspector.ClientLibrary.Utils
 
         public bool OverwriteOutput { get; private set; } = false;
 
-        public string? AuthMethod { get; set; } = "local";
+        public string AuthMethod { get; set; } = "local";
         
         public string? TenantId { get; set; }
         

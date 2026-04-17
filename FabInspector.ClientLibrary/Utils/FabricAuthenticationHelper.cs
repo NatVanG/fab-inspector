@@ -91,7 +91,7 @@ namespace FabInspector.ClientLibrary.Utils
         {
             if (string.IsNullOrWhiteSpace(clientId))
             {
-                return new ManagedIdentityCredential();
+                return new ManagedIdentityCredential(ManagedIdentityId.SystemAssigned);
             }
 
             return new ManagedIdentityCredential(ManagedIdentityId.FromUserAssignedClientId(clientId));
