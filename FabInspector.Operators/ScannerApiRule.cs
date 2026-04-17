@@ -1,7 +1,7 @@
 using Json.Logic;
 using Json.More;
-using PBIRInspectorLibrary;
-using PBIRInspectorLibrary.Part;
+using FabInspector.Core;
+using FabInspector.Core.Part;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;

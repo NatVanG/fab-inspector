@@ -1,5 +1,5 @@
-﻿using System.Text.Json.Serialization;
-using PBIRInspectorLibrary;
+using System.Text.Json.Serialization;
+using FabInspector.Core;
 
 namespace Ric.Operators;
 

@@ -1,9 +1,9 @@
-﻿using Json.Logic;
+using Json.Logic;
 using Json.More;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
-using PBIRInspectorLibrary.Part;
+using FabInspector.Core.Part;
 
 namespace Ric.Operators;
 

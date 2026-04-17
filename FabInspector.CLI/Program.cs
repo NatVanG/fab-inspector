@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using PBIRInspectorClientLibrary;
-using PBIRInspectorClientLibrary.Utils;
-using PBIRInspectorLibrary;
+using FabInspector.ClientLibrary;
+using FabInspector.ClientLibrary.Utils;
+using FabInspector.Core;
 using FabInspector.Operators;
 using Ric.Operators;
 
@@ -35,9 +35,9 @@ internal partial class Program
             _parsedArgs = ArgsUtils.ParseArgs(args);
 
             Welcome();
-            PBIRInspectorClientLibrary.Main.WinMessageIssued += Main_MessageIssued;
-            PBIRInspectorClientLibrary.Main.CleanUpRootTempFolder();
-            await PBIRInspectorClientLibrary.Main.Run(_parsedArgs, pageRenderer, operatorRegistries);
+            FabInspector.ClientLibrary.Main.WinMessageIssued += Main_MessageIssued;
+            FabInspector.ClientLibrary.Main.CleanUpRootTempFolder();
+            await FabInspector.ClientLibrary.Main.Run(_parsedArgs, pageRenderer, operatorRegistries);
         }
         catch (Exception e)
         {
@@ -45,7 +45,7 @@ internal partial class Program
         }
         finally
         {
-            PBIRInspectorClientLibrary.Main.WinMessageIssued -= Main_MessageIssued;
+            FabInspector.ClientLibrary.Main.WinMessageIssued -= Main_MessageIssued;
             Exit();
         }
     }
@@ -105,7 +105,7 @@ internal partial class Program
 
         services.AddTransient<IEnumerable<JsonLogicOperatorRegistry>>(provider => registries);
 
-        services.AddTransient<IReportPageWireframeRenderer, PBIRInspectorImageLibrary.ReportPageWireframeRenderer>();
+        services.AddTransient<IReportPageWireframeRenderer, FabInspector.ImageLibrary.ReportPageWireframeRenderer>();
 
         // 3. Build the service provider from the service collection.
         var serviceProvider = services.BuildServiceProvider();
@@ -113,7 +113,7 @@ internal partial class Program
         return serviceProvider;
     }
 
-    private static void Main_MessageIssued(object? sender, PBIRInspectorLibrary.MessageIssuedEventArgs e)
+    private static void Main_MessageIssued(object? sender, FabInspector.Core.MessageIssuedEventArgs e)
     {
         if (e.MessageType == MessageTypeEnum.Dialog)
         {
@@ -140,7 +140,7 @@ internal partial class Program
             //ADO output only
             if (_parsedArgs.ADOOutput && e.MessageType == MessageTypeEnum.Complete)
             {
-                string completionStatus = PBIRInspectorClientLibrary.Main.ErrorCount > 0 ? "Failed" : ((PBIRInspectorClientLibrary.Main.WarningCount > 0) ? "SucceededWithIssues" : "Succeeded");
+                string completionStatus = FabInspector.ClientLibrary.Main.ErrorCount > 0 ? "Failed" : ((FabInspector.ClientLibrary.Main.WarningCount > 0) ? "SucceededWithIssues" : "Succeeded");
 
                 SafeWriteLine(string.Format(Constants.ADOCompleteTemplate, completionStatus));
             }
@@ -148,7 +148,7 @@ internal partial class Program
             //GitHub output only
             if (_parsedArgs.GITHUBOutput && e.MessageType == MessageTypeEnum.Complete)
             {
-                int exitCode = PBIRInspectorClientLibrary.Main.ErrorCount > 0 ? 1 : 0;
+                int exitCode = FabInspector.ClientLibrary.Main.ErrorCount > 0 ? 1 : 0;
                 Environment.ExitCode = exitCode;
             }
         }
@@ -189,7 +189,7 @@ internal partial class Program
 
     private static void Exit()
     {
-        var exitCode = PBIRInspectorClientLibrary.Main.ErrorCount > 0 ? 1 : 0;
+        var exitCode = FabInspector.ClientLibrary.Main.ErrorCount > 0 ? 1 : 0;
         Environment.Exit(exitCode);
     }
 }

@@ -223,7 +223,7 @@ To disable a rule, edit the rule's json to specify ```"disabled": true```. At ru
 
 ## <a id="gui"></a>Run from the graphical user interface (GUI)
 
-Running ```PBIRInspectorWinForm.exe``` presents the user with the following interface: 
+Running ```FabInspector.WinForm.exe``` presents the user with the following interface: 
 
 ![WinForm 1](DocsImages/WinForm1.png)
 

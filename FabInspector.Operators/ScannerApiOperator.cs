@@ -1,4 +1,4 @@
-using PBIRInspectorLibrary;
+using FabInspector.Core;
 
 namespace FabInspector.Operators;
 

@@ -1,0 +1,69 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows7.0</TargetFramework>
+    <AssemblyName>FabInspector.WinForm</AssemblyName>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <FileVersion>3.0.0.0</FileVersion>
+    <AssemblyVersion>3.0.0</AssemblyVersion>
+    <RootNamespace>FabInspector.WinForm</RootNamespace>
+    <VersionPrefix>3.0.0</VersionPrefix>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>pbiinspector.png</PackageIcon>
+    <PackageProjectUrl>https://github.com/NatVanG/PBIRInspector</PackageProjectUrl>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <RepositoryUrl>https://github.com/NatVanG/PBIRInspector</RepositoryUrl>
+    <ApplicationIcon>pbiinspector.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="pbiinspector.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Files\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Content Include="..\Rules\Base-rules.json" Link="Files\Base-rules.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\LICENSE" Link="LICENSE">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FabInspector.WinImageLibrary\FabInspector.WinImageLibrary.csproj" />
+    <ProjectReference Include="..\FabInspector.ClientLibrary\FabInspector.ClientLibrary.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="FabInspector.WinForm.pbitool.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Files\pbip\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.3" />
+  </ItemGroup>
+
+</Project>

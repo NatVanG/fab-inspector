@@ -1,8 +1,8 @@
-﻿using Json.Logic;
+using Json.Logic;
 using Json.More;
 using Microsoft.VisualBasic;
-using PBIRInspectorLibrary;
-using PBIRInspectorLibrary.Part;
+using FabInspector.Core;
+using FabInspector.Core.Part;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;

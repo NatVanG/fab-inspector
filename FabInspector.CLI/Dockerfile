@@ -11,9 +11,9 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["FabInspector.CLI/FabInspector.CLI.csproj", "FabInspector.CLI/"]
-COPY ["PBIRInspectorImageLibrary/PBIRInspectorImageLibrary.csproj", "PBIRInspectorImageLibrary/"]
-COPY ["PBIRInspectorLibrary/PBIRInspectorLibrary.csproj", "PBIRInspectorLibrary/"]
-COPY ["PBIRInspectorClientLibrary/PBIRInspectorClientLibrary.csproj", "PBIRInspectorClientLibrary/"]
+COPY ["FabInspector.ImageLibrary/FabInspector.ImageLibrary.csproj", "FabInspector.ImageLibrary/"]
+COPY ["FabInspector.Core/FabInspector.Core.csproj", "FabInspector.Core/"]
+COPY ["FabInspector.ClientLibrary/FabInspector.ClientLibrary.csproj", "FabInspector.ClientLibrary/"]
 COPY ["FabInspector.Operators/FabInspector.Operators.csproj", "FabInspector.Operators/"]
 COPY ["Ric.Operators/Ric.Operators.csproj", "Ric.Operators/"]
 
@@ -39,5 +39,5 @@ RUN apt-get update && \
 USER $APP_UID
 
 COPY --from=publish /app/publish .
-COPY PBIRInspectorClientLibrary/Files ./Files
+COPY FabInspector.ClientLibrary/Files ./Files
 ENTRYPOINT ["dotnet", "fab-inspector.dll"]

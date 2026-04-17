@@ -1,6 +1,6 @@
-﻿using Json.Logic;
+using Json.Logic;
 using Json.More;
-using PBIRInspectorLibrary.Part;
+using FabInspector.Core.Part;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;

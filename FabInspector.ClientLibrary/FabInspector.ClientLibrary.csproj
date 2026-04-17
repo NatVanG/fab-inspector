@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>FabInspector.ClientLibrary</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyVersion>3.0.0.0</AssemblyVersion>
+    <FileVersion>3.0.0.0</FileVersion>
+    <RootNamespace>FabInspector.ClientLibrary</RootNamespace>
+    <VersionPrefix>3.0.0</VersionPrefix>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FabInspector.Operators\FabInspector.Operators.csproj" />
+    <ProjectReference Include="..\FabInspector.Core\FabInspector.Core.csproj" />
+    <ProjectReference Include="..\Ric.Operators\Ric.Operators.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Files\html\" />
+    <Folder Include="Files\icon\" />
+    <Folder Include="Files\png\" />
+    <Folder Include="Properties\PublishProfiles\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.18.0" />
+    <PackageReference Include="Azure.Storage.Files.DataLake" Version="12.25.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Files\html\TestRunTemplate.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Files\icon\pbiinspector.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Files\icon\pbiinspector.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Files\png\nowireframe.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Files\ReportPageFieldMap.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

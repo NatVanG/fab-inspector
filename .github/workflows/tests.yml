@@ -1,4 +1,4 @@
-name: PBIRInspector Tests
+name: FabInspector Tests
 
 on:
   push:
@@ -19,8 +19,8 @@ jobs:
                              # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
 
     env:
-      Solution_Name: PBIRInspector.sln
-      Test_Project_Path: PBIRInspectorTests
+      Solution_Name: FabInspector.sln
+      Test_Project_Path: FabInspector.Tests
 
     steps:
     - name: Checkout

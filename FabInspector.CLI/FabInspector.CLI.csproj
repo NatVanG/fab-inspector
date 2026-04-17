@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -38,8 +38,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PBIRInspectorImageLibrary\PBIRInspectorImageLibrary.csproj" />
-    <ProjectReference Include="..\PBIRInspectorClientLibrary\PBIRInspectorClientLibrary.csproj" />
+    <ProjectReference Include="..\FabInspector.ImageLibrary\FabInspector.ImageLibrary.csproj" />
+    <ProjectReference Include="..\FabInspector.ClientLibrary\FabInspector.ClientLibrary.csproj" />
   </ItemGroup>
 
   <ItemGroup>

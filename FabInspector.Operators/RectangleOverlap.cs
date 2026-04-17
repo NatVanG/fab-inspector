@@ -1,10 +1,10 @@
-﻿using Json.Logic;
+using Json.Logic;
 using Json.More;
 using System.Drawing;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
-using PBIRInspectorLibrary;
+using FabInspector.Core;
 
 namespace FabInspector.Operators;
 
