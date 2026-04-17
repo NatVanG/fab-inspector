@@ -35,6 +35,7 @@ namespace Ric.Operators;
 [JsonSerializable(typeof(SliceRule))]
 [JsonSerializable(typeof(NowRule))]
 [JsonSerializable(typeof(DateDiffRule))]
+[JsonSerializable(typeof(LetRule))]
 [JsonSerializable(typeof(JsonPatch))]
 [JsonSerializable(typeof(PatchResult))]
 public partial class RicSerializerContext : JsonSerializerContext;

@@ -1,0 +1,336 @@
+{
+  "rules": [
+    {
+      "id": "LET_BASIC_BINDING",
+      "name": "Basic let binding",
+      "description": "The simplest use of 'let': bind a computed value to a name and reference it in the body. Here we compute the array once and count it. Useful when the same expression would otherwise appear multiple times.",
+      "disabled": true,
+      "logType": "info",
+      "test": [
+        {
+          "let": [
+            {
+              "items": {
+                "path": "$.visuals[*].name"
+              }
+            },
+            {
+              "count": [
+                {
+                  "var": "items"
+                }
+              ]
+            }
+          ]
+        },
+        0
+      ]
+    },
+    {
+      "id": "LET_MULTIPLE_BINDINGS",
+      "name": "Multiple bindings in a single let",
+      "description": "Bind several values at once. All bindings are evaluated against the original data in parallel (no binding sees another's result). The body can reference all bound names freely.",
+      "disabled": true,
+      "part": "Report",
+      "logType": "info",
+      "test": [
+        {
+          "let": [
+            {
+              "themeName": {
+                "var": "themeCollection.baseTheme.name"
+              },
+              "version": {
+                "var": "version"
+              }
+            },
+            {
+              "strjoin": [
+                [
+                  {
+                    "var": "themeName"
+                  },
+                  " @ v",
+                  {
+                    "var": "version"
+                  }
+                ],
+                ""
+              ]
+            }
+          ]
+        },
+        ""
+      ]
+    },
+    {
+      "id": "LET_AVOID_DUPLICATE_API_CALL",
+      "name": "Call an API once, reference result multiple times",
+      "description": "Without 'let', each occurrence of apiget would make a separate HTTP request. With 'let', the response is fetched once and bound to 'response'. The body references 'response' twice without triggering a second call.",
+      "disabled": true,
+      "logType": "warning",
+      "test": [
+        {
+          "let": [
+            {
+              "response": {
+                "apiget": [
+                  "https://api.fabric.microsoft.com/v1/admin/tenantsettings",
+                  "{context-token}"
+                ]
+              }
+            },
+            {
+              "and": [
+                {
+                  "!": [
+                    {
+                      "isnullorempty": [
+                        {
+                          "var": "response"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "==": [
+                    {
+                      "path": [
+                        "$.tenantsettings[?(@.settingName=='AllowServicePrincipalsUseReadAdminAPIs')].enabled",
+                        {
+                          "var": "response"
+                        }
+                      ]
+                    },
+                    true
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "LET_DATEDIFF_WITH_NOW",
+      "name": "Compute relative date once and compare",
+      "description": "Bind the current timestamp once with 'now', then use it in a datediff comparison. Without 'let', two calls to 'now' could return slightly different timestamps; here they are guaranteed to be identical.",
+      "disabled": true,
+      "logType": "warning",
+      "test": [
+        {
+          "let": [
+            {
+              "currentTime": {
+                "now": []
+              },
+              "cutoff": {
+                "now": [
+                  -7,
+                  "days"
+                ]
+              }
+            },
+            {
+              ">=": [
+                {
+                  "datediff": [
+                    {
+                      "var": "cutoff"
+                    },
+                    {
+                      "var": "currentTime"
+                    }
+                  ]
+                },
+                7
+              ]
+            }
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "LET_STRSPLIT_REUSE",
+      "name": "Split a path once, use different segments in the body",
+      "description": "Split a delimited string once and bind the result. The body can then reference any segment by index without re-splitting.",
+      "disabled": true,
+      "part": "definition.pbir",
+      "logType": "info",
+      "test": [
+        {
+          "let": [
+            {
+              "segments": {
+                "strsplit": [
+                  {
+                    "var": "datasetReference.byPath.path"
+                  },
+                  "/"
+                ]
+              }
+            },
+            {
+              "and": [
+                {
+                  ">": [
+                    {
+                      "count": [
+                        {
+                          "var": "segments"
+                        }
+                      ]
+                    },
+                    0
+                  ]
+                },
+                {
+                  "strcontains": [
+                    {
+                      "slice": [
+                        {
+                          "var": "segments"
+                        },
+                        -1
+                      ]
+                    },
+                    ".Dataset"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "LET_DISTINCT_VISUAL_TYPES_CHECK",
+      "name": "Compute distinct visual types once, check count and membership",
+      "description": "Compute the distinct visual types used on a page once, then check both the count limit and whether a specific type is absent — without traversing visuals twice.",
+      "disabled": true,
+      "part": "Pages",
+      "logType": "warning",
+      "test": [
+        {
+          "let": [
+            {
+              "visualTypes": {
+                "distinct": [
+                  {
+                    "map": [
+                      {
+                        "part": "Visuals"
+                      },
+                      {
+                        "var": "visual.visualType"
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "and": [
+                {
+                  "<=": [
+                    {
+                      "count": [
+                        {
+                          "var": "visualTypes"
+                        }
+                      ]
+                    },
+                    5
+                  ]
+                },
+                {
+                  "!": [
+                    {
+                      "in": [
+                        "scriptVisual",
+                        {
+                          "var": "visualTypes"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "LET_MULTI_API_GOVERNANCE",
+      "name": "Fetch two API endpoints once each for cross-item governance",
+      "description": "Demonstrates the key value proposition: two expensive API calls are made exactly once each, and their results are referenced freely throughout a complex body expression.",
+      "disabled": true,
+      "logType": "warning",
+      "test": [
+        {
+          "let": [
+            {
+              "tenantSettings": {
+                "apiget": [
+                  "https://api.fabric.microsoft.com/v1/admin/tenantsettings",
+                  "{context-token}"
+                ]
+              },
+              "workspaces": {
+                "apiget": [
+                  "https://api.fabric.microsoft.com/v1/admin/workspaces?type=Workspace",
+                  "{context-token}"
+                ]
+              }
+            },
+            {
+              "and": [
+                {
+                  "!": [
+                    {
+                      "isnullorempty": [
+                        {
+                          "var": "tenantSettings"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "!": [
+                    {
+                      "isnullorempty": [
+                        {
+                          "var": "workspaces"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  ">": [
+                    {
+                      "count": [
+                        {
+                          "var": "workspaces"
+                        }
+                      ]
+                    },
+                    0
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        true
+      ]
+    }
+  ]
+}

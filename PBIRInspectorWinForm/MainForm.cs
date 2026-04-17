@@ -61,7 +61,8 @@ namespace PBIRInspectorWinForm
                 new CoalesceOperator(),
                 new SliceOperator(),
                 new NowOperator(),
-                new DateDiffOperator()
+                new DateDiffOperator(),
+                new LetOperator()
             }));
 
             registries.Add(new JsonLogicOperatorRegistry(

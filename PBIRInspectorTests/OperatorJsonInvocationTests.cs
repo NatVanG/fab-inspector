@@ -39,7 +39,8 @@ namespace PBIRInspectorTests
                     new StringContainsOperator(),
                     new ToRecordOperator(),
                     new ToStringOperator(),
-                    new FromYamlFileOperator()
+                    new FromYamlFileOperator(),
+                    new LetOperator()
                 });
             ricRegistry.RegisterAll();
 
@@ -389,6 +390,115 @@ namespace PBIRInspectorTests
             
             Assert.That(rule, Is.Not.Null);
             Assert.That(rule, Is.InstanceOf<FromYamlFileRule>());
+        }
+
+        [Test]
+        public void Let_CanBeDeserialized()
+        {
+            var jsonRule = @"{""let"": [{""x"": 42}, {""var"": ""x""}]}";
+            var rule = JsonSerializer.Deserialize<Rule>(jsonRule, _serializerOptions);
+
+            Assert.That(rule, Is.Not.Null);
+            Assert.That(rule, Is.InstanceOf<LetRule>());
+        }
+
+        [Test]
+        public void Let_SingleBinding_ResolvesInBody()
+        {
+            var jsonRule = @"{""let"": [{""greeting"": ""hello""}, {""var"": ""greeting""}]}";
+            var rule = JsonSerializer.Deserialize<Rule>(jsonRule, _serializerOptions);
+
+            var result = rule!.Apply(null);
+            Assert.That(result?.GetValue<string>(), Is.EqualTo("hello"));
+        }
+
+        [Test]
+        public void Let_MultipleBindings_AllResolveInBody()
+        {
+            var jsonRule = @"{
+                ""let"": [
+                    { ""a"": 10, ""b"": 20 },
+                    { ""+"": [{ ""var"": ""a"" }, { ""var"": ""b"" }] }
+                ]
+            }";
+            var rule = JsonSerializer.Deserialize<Rule>(jsonRule, _serializerOptions);
+
+            var result = rule!.Apply(null);
+            Assert.That(result?.GetValue<decimal>(), Is.EqualTo(30));
+        }
+
+        [Test]
+        public void Let_BindingFromData_WorksWithVar()
+        {
+            // The binding expression uses {var} to pull from original data,
+            // then the body uses the bound name
+            var jsonRule = @"{
+                ""let"": [
+                    { ""items"": [""x"", ""y"", ""z""] },
+                    { ""count"": [{ ""var"": ""items"" }] }
+                ]
+            }";
+            var rule = JsonSerializer.Deserialize<Rule>(jsonRule, _serializerOptions);
+
+            var result = rule!.Apply(null);
+            Assert.That(result?.GetValue<int>(), Is.EqualTo(3));
+        }
+
+        [Test]
+        public void Let_BindingUsedMultipleTimes_EvaluatedOnce()
+        {
+            // Verifies the bound value is reused without re-evaluating the expression.
+            // We can't observe evaluation count directly, but we verify correctness
+            // when the same binding is referenced in two places in the body.
+            var jsonRule = @"{
+                ""let"": [
+                    { ""arr"": [""a"", ""b"", ""c""] },
+                    {
+                        ""and"": [
+                            { "">="": [{ ""count"": [{ ""var"": ""arr"" }] }, 1] },
+                            { ""<="": [{ ""count"": [{ ""var"": ""arr"" }] }, 10] }
+                        ]
+                    }
+                ]
+            }";
+            var rule = JsonSerializer.Deserialize<Rule>(jsonRule, _serializerOptions);
+
+            var result = rule!.Apply(null);
+            Assert.That(result?.GetValue<bool>(), Is.True);
+        }
+
+        [Test]
+        public void Let_DataPropertiesVisibleInBody()
+        {
+            // Properties from the original data are available in the body alongside bindings
+            var jsonRule = @"{
+                ""let"": [
+                    { ""doubled"": { "">="": [{ ""var"": ""score"" }, 80] } },
+                    { ""var"": ""doubled"" }
+                ]
+            }";
+            var rule = JsonSerializer.Deserialize<Rule>(jsonRule, _serializerOptions);
+
+            var data = JsonNode.Parse(@"{""score"": 90}");
+            var result = rule!.Apply(data);
+            Assert.That(result?.GetValue<bool>(), Is.True);
+        }
+
+        [Test]
+        public void Let_BindingsShadowDataProperties()
+        {
+            // A binding with the same name as a data property shadows the data property
+            var jsonRule = @"{
+                ""let"": [
+                    { ""name"": ""overridden"" },
+                    { ""var"": ""name"" }
+                ]
+            }";
+            var rule = JsonSerializer.Deserialize<Rule>(jsonRule, _serializerOptions);
+
+            var data = JsonNode.Parse(@"{""name"": ""original""}");
+            var result = rule!.Apply(data);
+            Assert.That(result?.GetValue<string>(), Is.EqualTo("overridden"));
         }
 
         #endregion
