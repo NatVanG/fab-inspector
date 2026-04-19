@@ -12,10 +12,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="JsonLogic" Version="6.0.0" />
-    <PackageReference Include="JsonPath.Net" Version="3.0.1" />
-    <PackageReference Include="Yaml2JsonNode" Version="3.0.0" />
-    <PackageReference Include="YamlDotNet" Version="16.3.0" />
+    <PackageReference Include="JsonLogic" Version="6.0.2" />
+    <PackageReference Include="JsonPath.Net" Version="3.0.2" />
+    <PackageReference Include="Yaml2JsonNode" Version="3.0.1" />
+    <PackageReference Include="YamlDotNet" Version="17.0.1" />
   </ItemGroup>
 
   <ItemGroup>
