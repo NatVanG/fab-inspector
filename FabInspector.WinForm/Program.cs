@@ -11,6 +11,7 @@ namespace FabInspector.WinForm
             // To customize application configuration such as set high DPI settings or default font,
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
+            FabInspector.ClientLibrary.Main.CleanUpRootTempFolder();
             Application.Run(new MainForm());
         }
     }
