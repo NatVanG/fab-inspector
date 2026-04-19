@@ -12,6 +12,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="FabInspector.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\FabInspector.Operators\FabInspector.Operators.csproj" />
     <ProjectReference Include="..\FabInspector.Core\FabInspector.Core.csproj" />
     <ProjectReference Include="..\Ric.Operators\Ric.Operators.csproj" />
