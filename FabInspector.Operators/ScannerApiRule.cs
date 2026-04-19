@@ -31,7 +31,7 @@ namespace FabInspector.Operators;
 ///   <item><description><b>datasetExpressions</b> (optional bool) – return dataset expressions (DAX / Mashup).</description></item>
 ///   <item><description><b>getArtifactUsers</b> (optional bool) – return user details for Power BI items.</description></item>
 /// </list>
-/// Requires <see cref="ContextService.HttpClient"/> and <see cref="ContextService.Credential"/> to be configured.
+/// Requires <see cref="ContextService.HttpClient"/> and <see cref="ContextService.TokenProvider"/> to be configured.
 /// </summary>
 [Operator("scannerapi")]
 [JsonConverter(typeof(ScannerApiJsonConverter))]
@@ -77,8 +77,8 @@ public class ScannerApiRule : Json.Logic.Rule
         var httpClient = ContextService.HttpClient
             ?? throw new InvalidOperationException("ContextService.HttpClient is not configured. Ensure authentication has been completed before running scannerapi rules.");
 
-        var credential = ContextService.Credential
-            ?? throw new InvalidOperationException("ContextService.Credential is not configured. Ensure authentication has been completed before running scannerapi rules.");
+        var tokenProvider = ContextService.TokenProvider
+            ?? throw new InvalidOperationException("ContextService.TokenProvider is not configured. Ensure authentication has been completed before running scannerapi rules.");
 
         // --- Resolve workspace IDs ---
         var workspaceIdsNode = WorkspaceIds.Apply(data, contextData);
@@ -108,7 +108,7 @@ public class ScannerApiRule : Json.Logic.Rule
         var postRequest = AuthenticationHelper.CreateAuthenticatedRequestAsync(
             HttpMethod.Post,
             postUrl,
-            credential,
+            tokenProvider,
             AuthenticationHelper.PowerBIScopes,
             content).ConfigureAwait(false).GetAwaiter().GetResult();
 
@@ -139,7 +139,7 @@ public class ScannerApiRule : Json.Logic.Rule
             var statusRequest = AuthenticationHelper.CreateAuthenticatedRequestAsync(
                 HttpMethod.Get,
                 statusUrl,
-                credential,
+                tokenProvider,
                 AuthenticationHelper.PowerBIScopes).ConfigureAwait(false).GetAwaiter().GetResult();
 
             var statusResponse = httpClient.SendAsync(statusRequest).ConfigureAwait(false).GetAwaiter().GetResult();
@@ -185,7 +185,7 @@ public class ScannerApiRule : Json.Logic.Rule
         var resultRequest = AuthenticationHelper.CreateAuthenticatedRequestAsync(
             HttpMethod.Get,
             resultUrl,
-            credential,
+            tokenProvider,
             AuthenticationHelper.PowerBIScopes).ConfigureAwait(false).GetAwaiter().GetResult();
 
         var resultResponse = httpClient.SendAsync(resultRequest).ConfigureAwait(false).GetAwaiter().GetResult();

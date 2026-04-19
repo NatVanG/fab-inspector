@@ -190,7 +190,7 @@ namespace FabInspector.Tests
 
             // Act & Assert
             Assert.Throws<ArgumentNullException>(() => new FabricRemoteFileSystem("", mockCredential));
-            Assert.Throws<ArgumentNullException>(() => new FabricRemoteFileSystem("workspace-id", null!));
+            Assert.Throws<ArgumentNullException>(() => new FabricRemoteFileSystem("workspace-id", (TokenCredential)null!));
             Assert.Throws<ArgumentNullException>(() => new FabricRemoteFileSystem(null!, mockCredential));
         }
 
@@ -593,7 +593,7 @@ namespace FabInspector.Tests
             // Act & Assert
             Assert.Throws<ArgumentNullException>(() => new FabricRemoteFileSystem("", "item1", mockCredential, null));
             Assert.Throws<ArgumentNullException>(() => new FabricRemoteFileSystem("workspace-id", "", mockCredential, null));
-            Assert.Throws<ArgumentNullException>(() => new FabricRemoteFileSystem("workspace-id", "item1", null!, null));
+            Assert.Throws<ArgumentNullException>(() => new FabricRemoteFileSystem("workspace-id", "item1", (TokenCredential)null!, null));
             Assert.Throws<ArgumentNullException>(() => new FabricRemoteFileSystem(null!, "item1", mockCredential, null));
             Assert.Throws<ArgumentNullException>(() => new FabricRemoteFileSystem("workspace-id", null!, mockCredential, null));
         }

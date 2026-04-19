@@ -5,9 +5,9 @@ namespace FabInspector.Core
     public class AuthenticationHelper
     {
         /// <summary>
-        /// Required scopes for Microsoft Fabric REST API
+        /// Scopes for the Power BI / Fabric REST API (analysis.windows.net audience).
+        /// Used by Power BI REST endpoints and legacy Fabric endpoints that share the same audience.
         /// </summary>
-        /// additional scopes? "https://onelake.dfs.fabric.microsoft.com/.default", "storage.azure.com/.default"
         public static readonly string[] FabricScopes = new[]
         {
             "https://analysis.windows.net/powerbi/api/.default"
@@ -18,6 +18,15 @@ namespace FabInspector.Core
             "https://analysis.windows.net/powerbi/api/.default"
         };
 
+        /// <summary>
+        /// Scopes for the Fabric Items REST API (api.fabric.microsoft.com audience).
+        /// Used by the /v1/workspaces/{id}/items endpoints.
+        /// </summary>
+        public static readonly string[] FabricItemsApiScopes = new[]
+        {
+            "https://api.fabric.microsoft.com/.default"
+        };
+
         public static readonly string[] OneLakeDfsScopes = new[]
         {
             "https://storage.azure.com/.default"
@@ -25,28 +34,22 @@ namespace FabInspector.Core
 
         /// <summary>
         /// Creates an HttpRequestMessage with the correct Bearer token for the target API.
-        /// Use this instead of setting DefaultRequestHeaders so a single HttpClient
-        /// can talk to both the Fabric API and the Power BI API simultaneously.
+        /// Uses the <see cref="ITokenProvider"/> for cached, thread-safe token acquisition
+        /// so that a single HttpClient can talk to multiple API audiences safely.
         /// </summary>
-        /// <param name="method">HTTP method</param>
-        /// <param name="requestUri">Request URI</param>
-        /// <param name="credential">TokenCredential to use</param>
-        /// <param name="scopes">Scopes to request (use FabricScopes or PowerBIScopes)</param>
-        /// <returns>HttpRequestMessage with Authorization header set</returns>
         public static async Task<HttpRequestMessage> CreateAuthenticatedRequestAsync(
             HttpMethod method,
             string requestUri,
-            TokenCredential credential,
+            ITokenProvider tokenProvider,
             string[] scopes,
             StringContent? stringContent = null,
             CancellationToken cancellationToken = default)
         {
-            var tokenRequestContext = new TokenRequestContext(scopes);
-            var token = await credential.GetTokenAsync(tokenRequestContext, cancellationToken).ConfigureAwait(false);
+            var token = await tokenProvider.GetTokenAsync(scopes, cancellationToken).ConfigureAwait(false);
 
             var request = new HttpRequestMessage(method, requestUri);
             request.Content = stringContent;
-            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.Token);
+            request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
             return request;
         }
     }

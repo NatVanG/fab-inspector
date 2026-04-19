@@ -77,8 +77,8 @@ public class DaxQueryRule : Json.Logic.Rule
         var httpClient = ContextService.HttpClient
             ?? throw new InvalidOperationException("ContextService.HttpClient is not configured. Ensure authentication has been completed before running daxquery rules.");
 
-        var credential = ContextService.Credential
-            ?? throw new InvalidOperationException("ContextService.Credential is not configured. Ensure authentication has been completed before running daxquery rules.");
+        var tokenProvider = ContextService.TokenProvider
+            ?? throw new InvalidOperationException("ContextService.TokenProvider is not configured. Ensure authentication has been completed before running daxquery rules.");
 
         var url = $"{PowerBIApiBaseUrl}/groups/{Uri.EscapeDataString(workspaceId)}/datasets/{Uri.EscapeDataString(semanticModelId)}/executeQueries";
 
@@ -112,7 +112,7 @@ public class DaxQueryRule : Json.Logic.Rule
         var pbiRequest = AuthenticationHelper.CreateAuthenticatedRequestAsync(
             HttpMethod.Post,
             url,
-            credential,
+            tokenProvider,
             AuthenticationHelper.PowerBIScopes,
             content).ConfigureAwait(false).GetAwaiter().GetResult();
 

@@ -59,8 +59,8 @@ public class ApiGetRule : Json.Logic.Rule
 
         var itemId = ContextService.FabricItem;
 
-        var credential = ContextService.Credential
-            ?? throw new InvalidOperationException("ContextService.Credential is not configured. Ensure authentication has been completed before running daxquery rules.");
+        var tokenProvider = ContextService.TokenProvider
+            ?? throw new InvalidOperationException("ContextService.TokenProvider is not configured. Ensure authentication has been completed before running apiget rules.");
 
         // Resolve the URL template with the provided parameters
         string hostService;
@@ -108,7 +108,7 @@ public class ApiGetRule : Json.Logic.Rule
         var pbiRequest = AuthenticationHelper.CreateAuthenticatedRequestAsync(
             HttpMethod.Get,
             resolvedUrl,
-            credential,
+            tokenProvider,
             hostService.Equals("PBI", StringComparison.InvariantCultureIgnoreCase) ? AuthenticationHelper.PowerBIScopes : AuthenticationHelper.FabricScopes).ConfigureAwait(false).GetAwaiter().GetResult();
 
         var response = ContextService.HttpClient.SendAsync(pbiRequest).ConfigureAwait(false).GetAwaiter().GetResult();

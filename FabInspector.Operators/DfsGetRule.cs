@@ -59,8 +59,8 @@ public class DfsGetRule : Json.Logic.Rule
         var workspaceId = ContextService.FabricWorkspaceId;
         var itemId = ContextService.FabricItem;
 
-        var credential = ContextService.Credential
-            ?? throw new InvalidOperationException("ContextService.Credential is not configured. Ensure authentication has been completed before running dfsget rules.");
+        var tokenProvider = ContextService.TokenProvider
+            ?? throw new InvalidOperationException("ContextService.TokenProvider is not configured. Ensure authentication has been completed before running dfsget rules.");
 
         var resolvedUrl = urlTemplate.Replace(Utils.Constants.ContextFabricWorkspace, workspaceId, StringComparison.InvariantCultureIgnoreCase);
         resolvedUrl = resolvedUrl.Replace(Utils.Constants.ContextFabricItem, itemId, StringComparison.InvariantCultureIgnoreCase);
@@ -88,7 +88,7 @@ public class DfsGetRule : Json.Logic.Rule
         var request = AuthenticationHelper.CreateAuthenticatedRequestAsync(
             HttpMethod.Get,
             resolvedUrl,
-            credential,
+            tokenProvider,
             AuthenticationHelper.OneLakeDfsScopes).ConfigureAwait(false).GetAwaiter().GetResult();
 
         var response = httpClient.SendAsync(request).ConfigureAwait(false).GetAwaiter().GetResult();

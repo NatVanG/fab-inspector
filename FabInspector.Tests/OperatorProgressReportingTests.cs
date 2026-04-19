@@ -56,7 +56,7 @@ public class OperatorProgressReportingTests
     public void TearDown()
     {
         ContextService.HttpClient = null;
-        ContextService.Credential = null;
+        ContextService.TokenProvider = null;
         ContextService.FabricWorkspaceId = null;
         ContextService.FabricItem = null;
 
@@ -76,7 +76,7 @@ public class OperatorProgressReportingTests
     {
         ContextService.HttpClient = CreateHttpClient(
             CreateJsonResponse(HttpStatusCode.OK, "{\"value\":[1]}"));
-        ContextService.Credential = new FakeTokenCredential();
+        ContextService.TokenProvider = new CachingTokenProvider(new FakeTokenCredential());
 
         var result = RunInspection(
             "api-get-progress.json",
@@ -93,7 +93,7 @@ public class OperatorProgressReportingTests
     {
         ContextService.HttpClient = CreateHttpClient(
             CreateJsonResponse(HttpStatusCode.OK, "{\"results\":[{\"tables\":[{\"rows\":[{\"Value\":1}]}]}]}"));
-        ContextService.Credential = new FakeTokenCredential();
+        ContextService.TokenProvider = new CachingTokenProvider(new FakeTokenCredential());
         ContextService.FabricWorkspaceId = "11111111-1111-1111-1111-111111111111";
         ContextService.FabricItem = "22222222-2222-2222-2222-222222222222";
 
@@ -120,7 +120,7 @@ public class OperatorProgressReportingTests
             CreateJsonResponse(HttpStatusCode.OK, "{\"status\":\"Succeeded\"}"),
             CreateJsonResponse(HttpStatusCode.OK, "{\"workspaces\":[{\"id\":\"ws-1\"}]}")
         );
-        ContextService.Credential = new FakeTokenCredential();
+        ContextService.TokenProvider = new CachingTokenProvider(new FakeTokenCredential());
         ContextService.FabricWorkspaceId = "33333333-3333-3333-3333-333333333333";
 
         var result = RunInspection(

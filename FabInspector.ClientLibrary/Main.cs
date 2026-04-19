@@ -7,9 +7,7 @@ using FabInspector.Core.Output;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Text.Json;
-using System.Threading;
 
 namespace FabInspector.ClientLibrary
 {
@@ -20,12 +18,8 @@ namespace FabInspector.ClientLibrary
         private static Args? _args = null;
         private static int _errorCount = 0;
         private static int _warningCount = 0;
-        // Token caching (#1)
         private static readonly HttpClient _httpClient = new HttpClient();
-        private static TokenCredential? _credential = null;
-        private static AccessToken _cachedToken;
-        private static bool _tokenInitialized;
-        private static readonly SemaphoreSlim _tokenSemaphore = new SemaphoreSlim(1, 1);
+        private static ITokenProvider? _tokenProvider = null;
 
         public static int ErrorCount
         {
@@ -84,14 +78,14 @@ namespace FabInspector.ClientLibrary
                 InspectionRules? inspectionRules;
                 if (isOneLakeRulesPath)
                 {
-                    if (_credential == null)
+                    if (_tokenProvider == null)
                     {
                         throw new InvalidOperationException(
                             "OneLake rules URL requires authentication. Use -authmethod interactive, clientsecret, certificate, federatedtoken, or managedidentity.");
                     }
 
                     using var rulesStream = OneLakeRulesFileDownloader
-                        .DownloadFileToMemoryStreamAsync(rulesPath, _credential,
+                        .DownloadFileToMemoryStreamAsync(rulesPath, _tokenProvider.Credential,
                             onProgress: msg => OnMessageIssued(MessageTypeEnum.Information, msg))
                         .GetAwaiter()
                         .GetResult();
@@ -130,17 +124,18 @@ namespace FabInspector.ClientLibrary
             // Authenticate based on auth method
             if (args.AuthMethod != "local")
             {
+                TokenCredential credential;
                 switch (args.AuthMethod.ToLower())
                 {
                     case "interactive":
-                        _credential = FabricAuthenticationHelper.CreateInteractiveCredential(
+                        credential = FabricAuthenticationHelper.CreateInteractiveCredential(
                             args.ClientId,
                             args.TenantId
                         );
                         break;
 
                     case "clientsecret":
-                        _credential = FabricAuthenticationHelper.CreateClientSecretCredential(
+                        credential = FabricAuthenticationHelper.CreateClientSecretCredential(
                             args.ClientId!,
                             args.ClientSecret!,
                             args.TenantId!
@@ -148,7 +143,7 @@ namespace FabInspector.ClientLibrary
                         break;
 
                     case "certificate":
-                        _credential = FabricAuthenticationHelper.CreateCertificateCredential(
+                        credential = FabricAuthenticationHelper.CreateCertificateCredential(
                             args.ClientId!,
                             args.TenantId!,
                             args.CertificatePath!,
@@ -157,7 +152,7 @@ namespace FabInspector.ClientLibrary
                         break;
 
                     case "federatedtoken":
-                        _credential = FabricAuthenticationHelper.CreateFederatedTokenCredential(
+                        credential = FabricAuthenticationHelper.CreateFederatedTokenCredential(
                             args.ClientId!,
                             args.FederatedToken!,
                             args.TenantId!
@@ -165,7 +160,7 @@ namespace FabInspector.ClientLibrary
                         break;
 
                     case "managedidentity":
-                        _credential = FabricAuthenticationHelper.CreateManagedIdentityCredential(
+                        credential = FabricAuthenticationHelper.CreateManagedIdentityCredential(
                             args.ClientId
                         );
                         break;
@@ -174,7 +169,12 @@ namespace FabInspector.ClientLibrary
                         throw new ArgumentException($"Unsupported authentication method: {args.AuthMethod}");
                 }
 
-                await Main.EnsureAuthenticatedAsync();
+                _tokenProvider = new CachingTokenProvider(credential);
+
+                // Warm the token cache for the primary API scope and configure the shared context
+                await _tokenProvider.GetTokenAsync(AuthenticationHelper.FabricScopes).ConfigureAwait(false);
+                FabInspector.Core.Part.ContextService.HttpClient = _httpClient;
+                FabInspector.Core.Part.ContextService.TokenProvider = _tokenProvider;
             }
 
             try
@@ -191,48 +191,6 @@ namespace FabInspector.ClientLibrary
             catch (Exception e)
             {
                 OnMessageIssued(MessageTypeEnum.Error, e.Message);
-            }
-        }
-
-        /// <summary>
-        /// Gets an access token from the credential and configures HTTP client authorization.
-        /// Caches token and only refreshes when within 5 minutes of expiry (#1).
-        /// </summary>
-        /// TODO: EnsureLogout is called on credential when test run is complete to clear cached token and any associated authentication state.
-        private static async Task EnsureAuthenticatedAsync()
-        {
-            // Fast path: token is valid with 5-minute buffer
-            if (_tokenInitialized && _cachedToken.ExpiresOn > DateTimeOffset.UtcNow.AddMinutes(5))
-            {
-                return;
-            }
-
-            await _tokenSemaphore.WaitAsync().ConfigureAwait(false);
-            try
-            {
-                // Double-check after acquiring lock
-                if (_tokenInitialized && _cachedToken.ExpiresOn > DateTimeOffset.UtcNow.AddMinutes(5))
-                {
-                    return;
-                }
-
-                var tokenRequestContext = new TokenRequestContext(AuthenticationHelper.FabricScopes);
-                _cachedToken = await _credential!.GetTokenAsync(tokenRequestContext, default).ConfigureAwait(false);
-                _tokenInitialized = true;
-                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _cachedToken.Token);
-                if (!_httpClient.DefaultRequestHeaders.Accept.Contains(new MediaTypeWithQualityHeaderValue("application/json")))
-                {
-                    _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                }
-
-                // Expose the authenticated client and credential context for JSON Logic operators (e.g. daxquery)
-                FabInspector.Core.Part.ContextService.HttpClient = _httpClient;
-                FabInspector.Core.Part.ContextService.Credential = _credential;
-                
-            }
-            finally
-            {
-                _tokenSemaphore.Release();
             }
         }
 
@@ -315,15 +273,15 @@ namespace FabInspector.ClientLibrary
         {
             if (!string.IsNullOrWhiteSpace(_args!.FabricWorkspaceId))
             {
-                if (Main._credential == null)
+                if (Main._tokenProvider == null)
                 {
                     throw new InvalidOperationException("Authentication credential is required for Fabric workspace access.");
                 }
 
                 // Item-scoped vs workspace-scoped mode
                 return string.IsNullOrWhiteSpace(_args!.FabricItem)
-                    ? new FabricRemoteFileSystem(_args!.FabricWorkspaceId, Main._credential, Main._httpClient)
-                    : await FabricRemoteFileSystem.CreateItemScopedAsync(_args!.FabricWorkspaceId, _args!.FabricItem, Main._credential, Main._httpClient).ConfigureAwait(false);
+                    ? new FabricRemoteFileSystem(_args!.FabricWorkspaceId, Main._tokenProvider, Main._httpClient)
+                    : await FabricRemoteFileSystem.CreateItemScopedAsync(_args!.FabricWorkspaceId, _args!.FabricItem, Main._tokenProvider, Main._httpClient).ConfigureAwait(false);
             }
 
             return new FabricLocalFileSystem(_args!.FabricItem ?? string.Empty);
@@ -394,7 +352,7 @@ namespace FabInspector.ClientLibrary
         {
             var orchestrator = new ResultOutputOrchestrator(
                 _args!,
-                _credential,
+                _tokenProvider?.Credential,
                 OnMessageIssued,
                 OnMessageIssued,
                 RaiseWinMessage,

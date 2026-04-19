@@ -50,7 +50,7 @@ namespace FabInspector.Core
     public class FabricRemoteFileSystem : IFabricFileSystem
     {
         private readonly string _workspaceId;
-        private readonly TokenCredential _credential;
+        private readonly ITokenProvider _tokenProvider;
         private readonly HttpClient _httpClient;
         private readonly string _baseUrl = "https://api.fabric.microsoft.com/v1";
         
@@ -58,11 +58,6 @@ namespace FabInspector.Core
         private readonly int _maxLroAttempts;
         private readonly int _initialRetryDelayMs;
         private readonly int _maxRetryDelayMs;
-        
-        // Token caching (#1)
-        private AccessToken _cachedToken;
-        private bool _tokenInitialized;
-        private readonly SemaphoreSlim _tokenSemaphore = new SemaphoreSlim(1, 1);
         
         // Scope tracking fields (null for workspace-scoped, set for item-scoped)
         private FabricItem? _scopedItem;
@@ -107,22 +102,35 @@ namespace FabInspector.Core
         /// <param name="maxRetryDelayMs">Maximum retry delay in milliseconds for exponential backoff (default: 10000)</param>
         public FabricRemoteFileSystem(string workspaceId, TokenCredential credential, HttpClient? httpClient = null, 
             int maxLroAttempts = 30, int initialRetryDelayMs = 1000, int maxRetryDelayMs = 10000)
+            : this(workspaceId, new CachingTokenProvider(credential), httpClient, maxLroAttempts, initialRetryDelayMs, maxRetryDelayMs)
+        {
+        }
+
+        /// <param name="tokenProvider">Token provider for cached, multi-scope authentication</param>
+        /// <param name="httpClient">Optional HttpClient instance for testing/reuse</param>
+        /// <param name="maxLroAttempts">Maximum number of polling attempts for long-running operations (default: 30)</param>
+        /// <param name="initialRetryDelayMs">Initial retry delay in milliseconds (default: 1000, overridden by Retry-After header)</param>
+        /// <param name="maxRetryDelayMs">Maximum retry delay in milliseconds for exponential backoff (default: 10000)</param>
+        public FabricRemoteFileSystem(string workspaceId, ITokenProvider tokenProvider, HttpClient? httpClient = null, 
+            int maxLroAttempts = 30, int initialRetryDelayMs = 1000, int maxRetryDelayMs = 10000)
         {
             if (string.IsNullOrWhiteSpace(workspaceId))
                 throw new ArgumentNullException(nameof(workspaceId));
-            if (credential == null)
-                throw new ArgumentNullException(nameof(credential));
+            if (tokenProvider == null)
+                throw new ArgumentNullException(nameof(tokenProvider));
 
             _workspaceId = workspaceId;
-            _credential = credential;
+            _tokenProvider = tokenProvider;
             _httpClient = httpClient ?? new HttpClient();
-            //_scopedItem = null;
             _maxLroAttempts = maxLroAttempts;
             _initialRetryDelayMs = initialRetryDelayMs;
             _maxRetryDelayMs = maxRetryDelayMs;
             
-            // Configure default headers
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            // Configure default headers (Accept only — Authorization is set per-request)
+            if (!_httpClient.DefaultRequestHeaders.Accept.Contains(new MediaTypeWithQualityHeaderValue("application/json")))
+            {
+                _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            }
         }
 
         /// <summary>
@@ -137,24 +145,32 @@ namespace FabInspector.Core
         /// <param name="maxRetryDelayMs">Maximum retry delay in milliseconds for exponential backoff (default: 10000)</param>
         public FabricRemoteFileSystem(string workspaceId, string itemId, TokenCredential credential, HttpClient? httpClient = null,
             int maxLroAttempts = 30, int initialRetryDelayMs = 1000, int maxRetryDelayMs = 10000)
+            : this(workspaceId, itemId, new CachingTokenProvider(credential), httpClient, maxLroAttempts, initialRetryDelayMs, maxRetryDelayMs)
+        {
+        }
+
+        public FabricRemoteFileSystem(string workspaceId, string itemId, ITokenProvider tokenProvider, HttpClient? httpClient = null,
+            int maxLroAttempts = 30, int initialRetryDelayMs = 1000, int maxRetryDelayMs = 10000)
         {
             if (string.IsNullOrWhiteSpace(workspaceId))
                 throw new ArgumentNullException(nameof(workspaceId));
             if (string.IsNullOrWhiteSpace(itemId))
                 throw new ArgumentNullException(nameof(itemId));
-            if (credential == null)
-                throw new ArgumentNullException(nameof(credential));
+            if (tokenProvider == null)
+                throw new ArgumentNullException(nameof(tokenProvider));
 
             _workspaceId = workspaceId;
-            _credential = credential;
+            _tokenProvider = tokenProvider;
             _httpClient = httpClient ?? new HttpClient();
-            //_scopedItemId = itemId;
             _maxLroAttempts = maxLroAttempts;
             _initialRetryDelayMs = initialRetryDelayMs;
             _maxRetryDelayMs = maxRetryDelayMs;
             
-            // Configure default headers
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            // Configure default headers (Accept only — Authorization is set per-request)
+            if (!_httpClient.DefaultRequestHeaders.Accept.Contains(new MediaTypeWithQualityHeaderValue("application/json")))
+            {
+                _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            }
 
             // Eagerly load item metadata to validate itemId and cache item name
             var item = LoadItemMetadataAsync(itemId).GetAwaiter().GetResult();
@@ -173,12 +189,24 @@ namespace FabInspector.Core
             int initialRetryDelayMs = 1000,
             int maxRetryDelayMs = 10000)
         {
+            return await CreateItemScopedAsync(workspaceId, itemId, new CachingTokenProvider(credential), httpClient, maxLroAttempts, initialRetryDelayMs, maxRetryDelayMs).ConfigureAwait(false);
+        }
+
+        public static async Task<FabricRemoteFileSystem> CreateItemScopedAsync(
+            string workspaceId,
+            string itemId,
+            ITokenProvider tokenProvider,
+            HttpClient? httpClient = null,
+            int maxLroAttempts = 30,
+            int initialRetryDelayMs = 1000,
+            int maxRetryDelayMs = 10000)
+        {
             if (string.IsNullOrWhiteSpace(itemId))
                 throw new ArgumentNullException(nameof(itemId));
 
             var fileSystem = new FabricRemoteFileSystem(
                 workspaceId,
-                credential,
+                tokenProvider,
                 httpClient,
                 maxLroAttempts,
                 initialRetryDelayMs,
@@ -224,36 +252,16 @@ namespace FabInspector.Core
         }
 
         /// <summary>
-        /// Gets an access token from the credential and configures HTTP client authorization.
-        /// Caches token and only refreshes when within 5 minutes of expiry (#1).
+        /// Sends an HTTP request with a per-request Authorization header.
+        /// Token acquisition and caching is handled by <see cref="ITokenProvider"/>.
         /// </summary>
-        private async Task EnsureAuthenticatedAsync()
+        private async Task<HttpResponseMessage> SendAuthenticatedAsync(HttpMethod method, string url, HttpContent? content = null, CancellationToken cancellationToken = default)
         {
-            // Fast path: token is valid with 5-minute buffer
-            if (_tokenInitialized && _cachedToken.ExpiresOn > DateTimeOffset.UtcNow.AddMinutes(5))
-            {
-                return;
-            }
-
-            await _tokenSemaphore.WaitAsync().ConfigureAwait(false);
-            try
-            {
-                // Double-check after acquiring lock
-                if (_tokenInitialized && _cachedToken.ExpiresOn > DateTimeOffset.UtcNow.AddMinutes(5))
-                {
-                    return;
-                }
-
-                OnProgressReported("Authentication", "Refreshing authentication token...");
-                var tokenRequestContext = new TokenRequestContext(new[] { "https://api.fabric.microsoft.com/.default" });
-                _cachedToken = await _credential.GetTokenAsync(tokenRequestContext, default).ConfigureAwait(false);
-                _tokenInitialized = true;
-                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _cachedToken.Token);
-            }
-            finally
-            {
-                _tokenSemaphore.Release();
-            }
+            var token = await _tokenProvider.GetTokenAsync(AuthenticationHelper.FabricItemsApiScopes, cancellationToken).ConfigureAwait(false);
+            var request = new HttpRequestMessage(method, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Content = content;
+            return await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -302,10 +310,9 @@ namespace FabInspector.Core
         private async Task<FabricItem> LoadItemMetadataAsync(string itemId)
         {
             OnProgressReported("LoadItemMetadata", $"Loading item metadata for {itemId}...", itemId, null);
-            await EnsureAuthenticatedAsync().ConfigureAwait(false);
             
             var url = $"{_baseUrl}/workspaces/{_workspaceId}/items/{itemId}";
-            var response = await _httpClient.GetAsync(url).ConfigureAwait(false);
+            var response = await SendAuthenticatedAsync(HttpMethod.Get, url).ConfigureAwait(false);
             
             if (!response.IsSuccessStatusCode)
             {
@@ -363,7 +370,6 @@ namespace FabInspector.Core
         /// </summary>
         private async Task<List<FabricItem>> LoadWorkspaceItemsByTypeAsync(string? itemType = null)
         {
-            await EnsureAuthenticatedAsync().ConfigureAwait(false);
 
             if (!string.IsNullOrEmpty(itemType) && itemType.Equals("report_deprecated", StringComparison.OrdinalIgnoreCase))
             {
@@ -385,7 +391,7 @@ namespace FabInspector.Core
                 OnProgressReported("LoadWorkspaceItems", string.IsNullOrEmpty(itemType)
                     ? $"Loading workspace items (page {pageNumber})..."
                     : $"Loading workspace items of type '{itemType}' (page {pageNumber})...");
-                var response = await _httpClient.GetAsync(nextUrl).ConfigureAwait(false);
+                var response = await SendAuthenticatedAsync(HttpMethod.Get, nextUrl).ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -471,14 +477,13 @@ namespace FabInspector.Core
         private async Task<Dictionary<string, string>> LoadWorkspaceFolderPathsAsync()
         {
             OnProgressReported("LoadWorkspaceFolders", "Loading workspace folder structure...");
-            await EnsureAuthenticatedAsync().ConfigureAwait(false);
 
             var allFolders = new List<FabricFolder>();
             string? nextUrl = $"{_baseUrl}/workspaces/{_workspaceId}/folders";
 
             while (nextUrl != null)
             {
-                var response = await _httpClient.GetAsync(nextUrl).ConfigureAwait(false);
+                var response = await SendAuthenticatedAsync(HttpMethod.Get, nextUrl).ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -576,10 +581,9 @@ namespace FabInspector.Core
         private async Task<FabricItemDefinition> LoadItemDefinitionAsync(string itemId, CancellationToken cancellationToken = default)
         {
             OnProgressReported("LoadItemDefinition", $"Requesting definition for item {itemId}...", itemId, null);
-            await EnsureAuthenticatedAsync().ConfigureAwait(false);
             
             var url = $"{_baseUrl}/workspaces/{_workspaceId}/items/{itemId}/getDefinition";
-            var initialResponse = await _httpClient.PostAsync(url, null, cancellationToken).ConfigureAwait(false);
+            var initialResponse = await SendAuthenticatedAsync(HttpMethod.Post, url, null, cancellationToken).ConfigureAwait(false);
 
             // Handle BadRequest "errorCode":"OperationNotSupportedForItem"
             if (initialResponse.StatusCode == System.Net.HttpStatusCode.BadRequest)
@@ -640,7 +644,7 @@ namespace FabInspector.Core
                         itemId, null, attempt + 1, _maxLroAttempts);
                     await Task.Delay(currentDelayMs, cancellationToken).ConfigureAwait(false);
                     
-                    var pollResponse = await _httpClient.GetAsync(pollingUri, cancellationToken).ConfigureAwait(false);
+                    var pollResponse = await SendAuthenticatedAsync(HttpMethod.Get, pollingUri.ToString(), null, cancellationToken).ConfigureAwait(false);
 
                     if (pollResponse.IsSuccessStatusCode)
                     {
@@ -672,7 +676,7 @@ namespace FabInspector.Core
                                 OnProgressReported("LoadItemDefinition", 
                                     $"Item definition retrieved successfully for {itemId}.", itemId, null);
                                 var resultUri = new Uri(pollingUri.ToString() + "/result");
-                                resultResponse = await _httpClient.GetAsync(resultUri, cancellationToken).ConfigureAwait(false);
+                                resultResponse = await SendAuthenticatedAsync(HttpMethod.Get, resultUri.ToString(), null, cancellationToken).ConfigureAwait(false);
                                 operationComplete = true;
                                 break;
                             }

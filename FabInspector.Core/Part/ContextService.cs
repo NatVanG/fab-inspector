@@ -19,12 +19,17 @@ namespace FabInspector.Core.Part
         }
 
         /// <summary>
-        /// Authenticated HTTP client configured with a Bearer token for the Fabric REST API.
-        /// Must be set after authentication is complete before any Fabric REST operator is invoked.
+        /// HTTP client for sending API requests. Operators should use per-request Authorization
+        /// headers via <see cref="TokenProvider"/> rather than relying on DefaultRequestHeaders.
         /// </summary>
         public static HttpClient? HttpClient { get; set; }
 
-        public static TokenCredential? Credential { get; set; }
+        /// <summary>
+        /// Centralised, caching token provider shared by all components.
+        /// Use <see cref="ITokenProvider.GetTokenAsync"/> for bearer tokens and
+        /// <see cref="ITokenProvider.Credential"/> when an SDK needs a raw <see cref="TokenCredential"/>.
+        /// </summary>
+        public static ITokenProvider? TokenProvider { get; set; }
 
         /// <summary>
         /// The Fabric workspace ID (GUID) used as the target for any REST API calls.
