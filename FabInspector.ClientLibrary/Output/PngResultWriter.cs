@@ -90,9 +90,11 @@ namespace FabInspector.ClientLibrary.Output
 
             if (context.IsOneLakeOutput)
             {
+                var dateFolder = DateTime.UtcNow.ToString("yyyy-MM-dd");
+                var runFolder = string.Concat("TestRun_", context.TestRunId.ToString("N"), "_", context.Timestamp);
                 foreach (var pngPath in Directory.GetFiles(outputPNGDirPath, "*.png", SearchOption.TopDirectoryOnly))
                 {
-                    var relativePngPath = Path.Combine(Constants.PNGOutputDir, Path.GetFileName(pngPath));
+                    var relativePngPath = Path.Combine(dateFolder, runFolder, Constants.PNGOutputDir, Path.GetFileName(pngPath));
                     context.OutputArtifacts.Add((pngPath, relativePngPath));
                 }
             }

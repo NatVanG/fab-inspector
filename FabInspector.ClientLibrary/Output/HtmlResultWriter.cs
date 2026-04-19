@@ -27,7 +27,10 @@ namespace FabInspector.ClientLibrary.Output
 
             if (context.IsOneLakeOutput)
             {
-                context.OutputArtifacts.Add((outputHTMLFilePath, Constants.TestRunHTMLFileName));
+                var dateFolder = DateTime.UtcNow.ToString("yyyy-MM-dd");
+                var runFolder = string.Concat("TestRun_", context.TestRunId.ToString("N"), "_", context.Timestamp);
+                var relativeHtmlPath = Path.Combine(dateFolder, runFolder, Constants.TestRunHTMLFileName);
+                context.OutputArtifacts.Add((outputHTMLFilePath, relativeHtmlPath));
             }
 
             // Results have been written to a temporary directory so show output to user automatically.

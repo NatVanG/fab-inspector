@@ -11,9 +11,8 @@ namespace FabInspector.ClientLibrary.Output
             var outputFileIdentifier = !string.IsNullOrWhiteSpace(context.FabricItem)
                 ? Path.GetFileNameWithoutExtension(context.FabricItem)
                 : context.FabricWorkspaceId;
-            var timestampSuffix = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
             var jsonFileName = context.IsOneLakeOutput
-                ? string.Concat("TestRun_", outputFileIdentifier, "_", timestampSuffix, ".json")
+                ? string.Concat("TestRun_", context.TestRunId.ToString("N"), "_", context.Timestamp, ".json")
                 : string.Concat("TestRun_", outputFileIdentifier, ".json");
 
             if (string.IsNullOrEmpty(context.LocalOutputDirPath))
@@ -25,6 +24,7 @@ namespace FabInspector.ClientLibrary.Output
 
             var testRun = new TestRun()
             {
+                Id = context.TestRunId,
                 CompletionTime = DateTime.Now,
                 TestedFilePath = context.TestedFilePath,
                 RulesFilePath = context.RulesFilePath,
@@ -39,7 +39,9 @@ namespace FabInspector.ClientLibrary.Output
 
             if (context.IsOneLakeOutput)
             {
-                context.OutputArtifacts.Add((outputFilePath, jsonFileName));
+                var dateFolder = DateTime.UtcNow.ToString("yyyy-MM-dd");
+                var relativeJsonPath = Path.Combine(dateFolder, jsonFileName);
+                context.OutputArtifacts.Add((outputFilePath, relativeJsonPath));
             }
 
             return Task.CompletedTask;

@@ -105,6 +105,7 @@ namespace FabInspector.Tests.Output
 
             Assert.That(context.OutputArtifacts, Has.Count.EqualTo(1));
             Assert.That(context.OutputArtifacts[0].RelativePath, Does.EndWith(".json"));
+            Assert.That(context.OutputArtifacts[0].RelativePath, Does.Match(@"\d{4}-\d{2}-\d{2}[/\\]TestRun_[a-f0-9]{32}_\d{6}\.json"));
         }
 
         [Test]
@@ -159,7 +160,7 @@ namespace FabInspector.Tests.Output
         }
 
         [Test]
-        public async Task WriteAsync_OneLakeOutput_FileNameIncludesTimestamp()
+        public async Task WriteAsync_OneLakeOutput_FileNameIncludesTestRunIdAndTimestamp()
         {
             var results = new List<TestResult>
             {
@@ -171,8 +172,25 @@ namespace FabInspector.Tests.Output
             await writer.WriteAsync(context);
 
             var jsonFiles = Directory.GetFiles(_tempDir, "*.json");
-            // OneLake files include timestamp suffix: TestRun_Report_20260419_123456.json
-            Assert.That(Path.GetFileName(jsonFiles[0]), Does.Match(@"TestRun_Report_\d{8}_\d{6}\.json"));
+            // OneLake files use TestRunId and timestamp: TestRun_{guid}_{HHmmss}.json
+            Assert.That(Path.GetFileName(jsonFiles[0]), Does.Match(@"TestRun_[a-f0-9]{32}_\d{6}\.json"));
+        }
+
+        [Test]
+        public async Task WriteAsync_OneLakeOutput_SetsTestRunIdOnSerializedTestRun()
+        {
+            var results = new List<TestResult>
+            {
+                new() { RuleName = "R1", Message = "ok", Pass = true }
+            };
+
+            var context = CreateContext(results, isOneLakeOutput: true);
+            var writer = new JsonResultWriter();
+            await writer.WriteAsync(context);
+
+            var testRun = JsonSerializer.Deserialize<TestRun>(context.JsonTestRun);
+            Assert.That(testRun, Is.Not.Null);
+            Assert.That(testRun!.Id, Is.EqualTo(context.TestRunId));
         }
 
         private OutputContext CreateContext(

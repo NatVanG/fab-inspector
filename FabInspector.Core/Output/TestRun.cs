@@ -2,7 +2,7 @@ namespace FabInspector.Core.Output
 {
     public class TestRun
     {
-        public Guid Id { get; private set; }
+        public Guid Id { get; set; }
             public string? TestedFilePath { get; set; }
             public string? RulesFilePath { get; set; }
         public DateTime CompletionTime { get; set; }

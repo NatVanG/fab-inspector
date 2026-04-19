@@ -92,7 +92,7 @@ namespace FabInspector.Tests.Output
             await writer.WriteAsync(context);
 
             Assert.That(context.OutputArtifacts, Has.Count.EqualTo(1));
-            Assert.That(context.OutputArtifacts[0].RelativePath, Is.EqualTo(Constants.TestRunHTMLFileName));
+            Assert.That(context.OutputArtifacts[0].RelativePath, Does.Match(@"\d{4}-\d{2}-\d{2}[/\\]TestRun_[a-f0-9]{32}_\d{6}[/\\]TestRun\.html"));
         }
 
         [Test]

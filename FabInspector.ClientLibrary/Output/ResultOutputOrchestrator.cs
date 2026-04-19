@@ -1,7 +1,6 @@
 using Azure.Core;
 using FabInspector.ClientLibrary.Utils;
 using FabInspector.Core;
-using FabInspector.Core.Exceptions;
 using FabInspector.Core.Output;
 
 namespace FabInspector.ClientLibrary.Output
@@ -96,7 +95,7 @@ namespace FabInspector.ClientLibrary.Output
 
                 if (isOneLakeOutput && context.OutputArtifacts.Any())
                 {
-                    await UploadOutputArtifactsToOneLakeAsync(outputRootPath, context.OutputArtifacts, _args.OverwriteOutput).ConfigureAwait(false);
+                    await UploadOutputArtifactsToOneLakeAsync(outputRootPath, context.OutputArtifacts).ConfigureAwait(false);
                 }
             }
             catch (Exception e)
@@ -167,8 +166,7 @@ namespace FabInspector.ClientLibrary.Output
 
         private async Task UploadOutputArtifactsToOneLakeAsync(
             string outputRootUrl,
-            IEnumerable<(string LocalPath, string RelativePath)> artifacts,
-            bool overwrite)
+            IEnumerable<(string LocalPath, string RelativePath)> artifacts)
         {
             if (_credential == null)
             {
@@ -178,22 +176,7 @@ namespace FabInspector.ClientLibrary.Output
             foreach (var artifact in artifacts)
             {
                 var remoteUrl = OneLakeOutputUploader.CombineUrl(outputRootUrl, artifact.RelativePath);
-                if (!overwrite)
-                {
-                    var exists = await OneLakeOutputUploader.FileExistsAsync(remoteUrl, _credential,
-                        onProgress: msg => _onMessage(MessageTypeEnum.Information, msg)).ConfigureAwait(false);
-                    if (exists)
-                    {
-                        throw new PBIRInspectorException(
-                            $"Output artifact already exists at '{remoteUrl}'. Set -overwriteoutput true to overwrite.");
-                    }
-                }
-            }
-
-            foreach (var artifact in artifacts)
-            {
-                var remoteUrl = OneLakeOutputUploader.CombineUrl(outputRootUrl, artifact.RelativePath);
-                await OneLakeOutputUploader.UploadFileAsync(artifact.LocalPath, remoteUrl, overwrite, _credential,
+                await OneLakeOutputUploader.UploadFileAsync(artifact.LocalPath, remoteUrl, false, _credential,
                     onProgress: msg => _onMessage(MessageTypeEnum.Information, msg)).ConfigureAwait(false);
             }
         }

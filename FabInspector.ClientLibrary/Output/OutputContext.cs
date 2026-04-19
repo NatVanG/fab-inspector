@@ -21,6 +21,9 @@ namespace FabInspector.ClientLibrary.Output
         public Action<string, MessageTypeEnum, string> OnItemMessage { get; init; } = (_, _, _) => { };
         public Func<MessageTypeEnum, string, MessageIssuedEventArgs> OnDialogMessage { get; init; } = (type, msg) => new MessageIssuedEventArgs(msg, type);
 
+        public Guid TestRunId { get; init; } = Guid.NewGuid();
+        public string Timestamp { get; init; } = DateTime.UtcNow.ToString("HHmmss");
+
         public List<(string LocalPath, string RelativePath)> OutputArtifacts { get; } = new();
 
         /// <summary>
