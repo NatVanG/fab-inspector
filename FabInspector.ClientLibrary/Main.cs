@@ -310,53 +310,72 @@ namespace FabInspector.ClientLibrary
             return ruleBuckets;
         }
 
+        private static async Task<IFabricFileSystem> CreateFileSystemAsync()
+        {
+            if (!string.IsNullOrWhiteSpace(_args!.FabricWorkspaceId))
+            {
+                if (Main._credential == null)
+                {
+                    throw new InvalidOperationException("Authentication credential is required for Fabric workspace access.");
+                }
+
+                // Item-scoped vs workspace-scoped mode
+                return string.IsNullOrWhiteSpace(_args!.FabricItem)
+                    ? new FabricRemoteFileSystem(_args!.FabricWorkspaceId, Main._credential, Main._httpClient)
+                    : await FabricRemoteFileSystem.CreateItemScopedAsync(_args!.FabricWorkspaceId, _args!.FabricItem, Main._credential, Main._httpClient).ConfigureAwait(false);
+            }
+
+            return new FabricLocalFileSystem(_args!.FabricItem ?? string.Empty);
+        }
+
+        private static FabricRemoteFileSystem? SubscribeToProgressEvents(IFabricFileSystem fileSystem)
+        {
+            if (fileSystem is FabricRemoteFileSystem rfs)
+            {
+                rfs.ProgressReported += Insp_MessageIssued;
+                return rfs;
+            }
+            return null;
+        }
+
+        private static void UnsubscribeFromProgressEvents(FabricRemoteFileSystem? remoteFs)
+        {
+            if (remoteFs != null)
+            {
+                remoteFs.ProgressReported -= Insp_MessageIssued;
+            }
+        }
+
+        private static async Task<IEnumerable<TestResult>> RunInspectionAsync(InspectionRules rules, IEnumerable<JsonLogicOperatorRegistry> registries, IFabricFileSystem fileSystem)
+        {
+            var insp = new Inspector(rules, registries, fileSystem);
+            try
+            {
+                insp.MessageIssued += Insp_MessageIssued;
+                return await Task.Run(() => insp.Inspect()).ConfigureAwait(false);
+            }
+            finally
+            {
+                insp.MessageIssued -= Insp_MessageIssued;
+            }
+        }
+
+        private static IEnumerable<TestResult> FilterResults(IEnumerable<TestResult> results)
+        {
+            return results.Where(_ => _args!.Verbose || !_.Pass);
+        }
+
         private static async Task<IEnumerable<TestResult>?> RunSingleThreadedAsync(InspectionRules rules, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
-            Inspector? insp = null;
             FabricRemoteFileSystem? remoteFs = null;
 
             try
             {
-                // Determine which file system to use based on Fabric workspace configuration
-                IFabricFileSystem fileSystem;
-                if (!string.IsNullOrWhiteSpace(_args!.FabricWorkspaceId))
-                {
-                    if (Main._credential == null)
-                    {
-                        throw new InvalidOperationException("Authentication credential is required for Fabric workspace access.");
-                    }
+                var fileSystem = await CreateFileSystemAsync().ConfigureAwait(false);
+                remoteFs = SubscribeToProgressEvents(fileSystem);
 
-                    // Item-scoped vs workspace-scoped mode
-                    fileSystem = string.IsNullOrWhiteSpace(_args!.FabricItem)
-                        ? new FabricRemoteFileSystem(_args!.FabricWorkspaceId, Main._credential, Main._httpClient)
-                        : await FabricRemoteFileSystem.CreateItemScopedAsync(_args!.FabricWorkspaceId, _args!.FabricItem, Main._credential, Main._httpClient).ConfigureAwait(false);
-
-                    // Subscribe to progress events from the remote file system
-                    if (fileSystem is FabricRemoteFileSystem rfs)
-                    {
-                        remoteFs = rfs;
-                        remoteFs.ProgressReported += Insp_MessageIssued;
-                    }
-                }
-                else
-                {
-                    // Use PhysicalFileSystem with the specified path
-                    fileSystem = new FabricLocalFileSystem(_args!.FabricItem ?? string.Empty);
-                }
-                
-                insp = new Inspector(rules, registries, fileSystem);
-
-                insp.MessageIssued += Insp_MessageIssued;
-                var testResults = await Task.Run(() => insp.Inspect()).ConfigureAwait(false);
-                return testResults.Where(_ => (!_args!.Verbose && !_.Pass) || (_args!.Verbose));
-            }
-            catch (PBIRInspectorException e)
-            {
-                OnMessageIssued(MessageTypeEnum.Error, e.Message);
-            }
-            catch (ArgumentException e)
-            {
-                OnMessageIssued(MessageTypeEnum.Error, e.Message);
+                var testResults = await RunInspectionAsync(rules, registries, fileSystem).ConfigureAwait(false);
+                return FilterResults(testResults);
             }
             catch (Exception e)
             {
@@ -364,24 +383,15 @@ namespace FabInspector.ClientLibrary
             }
             finally
             {
-                if (remoteFs != null)
-                {
-                    remoteFs.ProgressReported -= Insp_MessageIssued;
-                }
-                if (insp != null)
-                {
-                    insp.MessageIssued -= Insp_MessageIssued;
-                }
+                UnsubscribeFromProgressEvents(remoteFs);
             }
 
-            // Ensure all code paths return a value
             return Enumerable.Empty<TestResult>();
         }
 
         private static async Task OutputResultsAsync(IEnumerable<TestResult> testResults, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
             string jsonTestRun = string.Empty;
-            Inspector? fieldMapInsp = null;
             IEnumerable<TestResult>? fieldMapResults = null;
             var outputArtifacts = new List<(string LocalPath, string RelativePath)>();
 
@@ -471,45 +481,17 @@ namespace FabInspector.ClientLibrary
                     if (testResults.Any(_ => (_.RuleItemType?.Contains("Report", StringComparison.InvariantCultureIgnoreCase) ?? false) ||
                     (_.RuleItemType?.Contains("report_deprecated", StringComparison.InvariantCultureIgnoreCase) ?? false)))
                     {
-                        // Determine which file system to use based on Fabric workspace configuration
-                        IFabricFileSystem fieldMapFileSystem;
-                        FabricRemoteFileSystem? fieldMapRemoteFs = null;
-                        if (!string.IsNullOrWhiteSpace(_args!.FabricWorkspaceId))
+                        var fieldMapFileSystem = await CreateFileSystemAsync().ConfigureAwait(false);
+                        var fieldMapRemoteFs = SubscribeToProgressEvents(fieldMapFileSystem);
+
+                        try
                         {
-                            if (Main._credential == null)
-                            {
-                                throw new InvalidOperationException("Authentication credential is required for Fabric workspace access.");
-                            }
-
-                            // Item-scoped vs workspace-scoped mode
-                            //TODO: reuse filesystem object from test run
-                            fieldMapFileSystem = string.IsNullOrWhiteSpace(_args!.FabricItem)
-                                ? new FabricRemoteFileSystem(_args!.FabricWorkspaceId, Main._credential, Main._httpClient)
-                                : await FabricRemoteFileSystem.CreateItemScopedAsync(_args!.FabricWorkspaceId, _args!.FabricItem, Main._credential, Main._httpClient).ConfigureAwait(false);
-
-                            // Subscribe to progress events from the remote file system
-                            if (fieldMapFileSystem is FabricRemoteFileSystem rfs)
-                            {
-                                fieldMapRemoteFs = rfs;
-                                fieldMapRemoteFs.ProgressReported += Insp_MessageIssued;
-                            }
+                            var fieldMapPathRules = DeserialiseRulesFromPath(Constants.ReportPageFieldMapFilePath);
+                            fieldMapResults = await RunInspectionAsync(fieldMapPathRules, registries, fieldMapFileSystem).ConfigureAwait(false);
                         }
-                        else
+                        finally
                         {
-                            // Use PhysicalFileSystem with the specified path
-                            fieldMapFileSystem = new FabricLocalFileSystem(_args!.FabricItem ?? string.Empty);
-                        }
-                        // Create file system for field map inspection
-                        //IFabricFileSystem fieldMapFileSystem = new FabricLocalFileSystem(Main._args.FabricItem ?? string.Empty);
-                        var fieldMapPathRules = DeserialiseRulesFromPath(Constants.ReportPageFieldMapFilePath);
-                        fieldMapInsp = new Inspector(fieldMapPathRules, registries, fieldMapFileSystem);
-
-                        fieldMapResults = await Task.Run(() => fieldMapInsp.Inspect()).ConfigureAwait(false);
-
-                        // Unsubscribe from progress events
-                        if (fieldMapRemoteFs != null)
-                        {
-                            fieldMapRemoteFs.ProgressReported -= Insp_MessageIssued;
+                            UnsubscribeFromProgressEvents(fieldMapRemoteFs);
                         }
 
                         var outputPNGDirPath = Path.Combine(localOutputDirPath, Constants.PNGOutputDir);
