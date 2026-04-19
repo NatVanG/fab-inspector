@@ -21,6 +21,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="FabInspector.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Azure.Core" Version="1.51.1" />
     <PackageReference Include="JsonLogic" Version="6.0.0" />
     <PackageReference Include="JsonPatch.Net" Version="5.0.0" />

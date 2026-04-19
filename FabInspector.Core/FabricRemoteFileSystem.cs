@@ -47,7 +47,7 @@ namespace FabInspector.Core
     /// // Custom LRO configuration
     /// var fs = new FabricFileSystem(workspaceId, credential, maxLroAttempts: 60, maxRetryDelayMs: 30000);
     /// </remarks>
-    public class FabricRemoteFileSystem : IFabricFileSystem
+    public sealed class FabricRemoteFileSystem : IFabricFileSystem
     {
         private readonly string _workspaceId;
         private readonly ITokenProvider _tokenProvider;

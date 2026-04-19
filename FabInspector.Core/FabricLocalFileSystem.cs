@@ -2,6 +2,7 @@ using FabInspector.Core.Exceptions;
 using FabInspector.Core.Part;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Nodes;
@@ -9,25 +10,53 @@ using System.Threading.Tasks;
 
 namespace FabInspector.Core
 {
-    public class FabricLocalFileSystem : LocalFileSystem, IFabricFileSystem
+    public sealed class FabricLocalFileSystem : IFabricFileSystem
     {
-           string _rootDir = string.Empty;
+        private readonly string _rootPath;
+        private readonly string _rootDir;
 
-        /// <summary>
-        /// Initializes a new instance of PhysicalFileSystem with an empty root path
-        /// </summary>
-        public FabricLocalFileSystem() : base(string.Empty)
+        public FabricLocalFileSystem() : this(string.Empty)
         {
         }
 
-        /// <summary>
-        /// Initializes a new instance of PhysicalFileSystem with a specified root path
-        /// </summary>
-        /// <param name="rootPath">The root path for this file system instance</param>
-        public FabricLocalFileSystem(string rootPath) : base(rootPath)
+        public FabricLocalFileSystem(string rootPath)
         {
-            _rootDir = File.Exists(rootPath) ? System.IO.Path.GetDirectoryName(rootPath) ?? string.Empty : rootPath;
+            _rootPath = rootPath ?? string.Empty;
+            _rootDir = File.Exists(rootPath) ? Path.GetDirectoryName(rootPath) ?? string.Empty : _rootPath;
         }
+
+        public string RootPath => _rootPath;
+
+        public IEnumerable<string>? ScopedItemTypes { get; set; }
+
+        public bool FileExists(string path) => File.Exists(path);
+
+        public bool DirectoryExists(string path) => Directory.Exists(path);
+
+        public byte[] ReadAllBytes(string path) => File.ReadAllBytes(path);
+
+        public string ReadAllText(string path) => File.ReadAllText(path);
+
+        public void WriteAllText(string path, string contents) => File.WriteAllText(path, contents);
+
+        public IEnumerable<string> GetFiles(string path, string searchPattern, SearchOption searchOption)
+            => Directory.GetFiles(path, searchPattern, searchOption);
+
+        public IEnumerable<string> GetFiles(string path) => Directory.GetFiles(path);
+
+        public IEnumerable<string> GetDirectories(string path) => Directory.GetDirectories(path);
+
+        public string GetFileName(string path) => Path.GetFileName(path);
+
+        public string GetDirectoryName(string path) => Path.GetDirectoryName(path) ?? string.Empty;
+
+        public string GetExtension(string path) => Path.GetExtension(path);
+
+        public string PathCombine(params string[] paths) => Path.Combine(paths);
+
+        public long GetFileSize(string path) => new FileInfo(path).Length;
+
+        public string GetFileNameWithoutExtension(string path) => Path.GetFileNameWithoutExtension(path);
 
         public IEnumerable<FabricItem> GetFabricItems(string path)
         {
@@ -52,12 +81,12 @@ namespace FabInspector.Core
                     var fabricItem = new FabricItem
                     {
                         Id = Guid.NewGuid().ToString(), //TODO: set to null/empty string?
-                        DisplayName = PartUtils.TryGetJsonNodeStringValue(platformNode, "/metadata/displayName") ?? System.IO.Path.GetFileNameWithoutExtension(platformFile),
+                        DisplayName = PartUtils.TryGetJsonNodeStringValue(platformNode, "/metadata/displayName") ?? Path.GetFileNameWithoutExtension(platformFile),
                         Type = itemType,
                         Description = "",
                         WorkspaceId = "",
                         FilePath = platformFile,
-                        DirectoryPath = System.IO.Path.GetDirectoryName(platformFile) ?? string.Empty
+                        DirectoryPath = Path.GetDirectoryName(platformFile) ?? string.Empty
                     };
                     fabricItems.Add(fabricItem);
                 }

@@ -7,7 +7,7 @@ namespace FabInspector.Core
     /// <summary>
     /// Deserialises inspection rules from json 
     /// </summary>
-    public class InspectionRules : IInspectionRules
+    public sealed class InspectionRules
     {
         public List<Rule> Rules { get; set; } = [];
     }

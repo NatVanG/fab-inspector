@@ -1,19 +1,22 @@
 using System.Text.Json.Serialization;
 
-public class JsonLogicOperatorRegistry
+namespace FabInspector.Core
 {
-    public JsonSerializerContext SerializerContext { get; }
-    public IReadOnlyCollection<IJsonLogicOperator> Operators { get; }
-
-    public JsonLogicOperatorRegistry(JsonSerializerContext context, IEnumerable<IJsonLogicOperator> operators)
+    public class JsonLogicOperatorRegistry
     {
-        SerializerContext = context;
-        Operators = operators.ToList().AsReadOnly();
-    }
+        public JsonSerializerContext SerializerContext { get; }
+        public IReadOnlyCollection<IJsonLogicOperator> Operators { get; }
 
-    public void RegisterAll()
-    {
-        foreach (var op in Operators)
-            op.Register(SerializerContext);
+        public JsonLogicOperatorRegistry(JsonSerializerContext context, IEnumerable<IJsonLogicOperator> operators)
+        {
+            SerializerContext = context;
+            Operators = operators.ToList().AsReadOnly();
+        }
+
+        public void RegisterAll()
+        {
+            foreach (var op in Operators)
+                op.Register(SerializerContext);
+        }
     }
 }

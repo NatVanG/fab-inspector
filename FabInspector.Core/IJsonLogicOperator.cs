@@ -1,9 +1,11 @@
-using FabInspector.Core;
 using System.Text.Json.Serialization;
 
-public interface IJsonLogicOperator
+namespace FabInspector.Core
 {
-    string OperatorName { get; }
-    Type RuleType { get; }
-    void Register(JsonSerializerContext context);
+    public interface IJsonLogicOperator
+    {
+        string OperatorName { get; }
+        Type RuleType { get; }
+        void Register(JsonSerializerContext context);
+    }
 }

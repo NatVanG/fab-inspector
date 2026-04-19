@@ -2,7 +2,7 @@ using System.Text.Json.Nodes;
 
 namespace FabInspector.Core.Output
 {
-    public class TestResult
+    public sealed class TestResult
     {
         public Guid Id { get; private set; }
 

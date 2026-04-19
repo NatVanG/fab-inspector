@@ -12,13 +12,15 @@ namespace FabInspector.Core
     /// <summary>
     /// Iterates through input rules and runs them against input PBI files
     /// </summary>
-    public class Inspector : InspectorBase
+    public sealed class Inspector
     {
         private const string JSONPOINTERSTART = "/";
         private const string CONTEXTNODE = ".";
         internal const char DRILLCHAR = '>';
 
         private readonly InspectionRules _inspectionRules;
+        private readonly IEnumerable<JsonLogicOperatorRegistry> _registries;
+        private readonly IFabricFileSystem _fileSystem;
 
         public event EventHandler<MessageIssuedEventArgs>? MessageIssued;
 
@@ -28,9 +30,22 @@ namespace FabInspector.Core
         /// <param name="inspectionRules"></param>
         /// <param name="registries"></param>
         /// <param name="fileSystem"></param>
-        public Inspector(InspectionRules inspectionRules, IEnumerable<JsonLogicOperatorRegistry> registries, IFabricFileSystem fileSystem) : base(inspectionRules, registries, fileSystem)
+        public Inspector(InspectionRules inspectionRules, IEnumerable<JsonLogicOperatorRegistry> registries, IFabricFileSystem fileSystem)
         {
+            if (fileSystem == null) throw new ArgumentNullException(nameof(fileSystem));
+            _fileSystem = fileSystem;
+            _fileSystem.ScopedItemTypes = inspectionRules.Rules.SelectMany(_ => _.ItemType.Split("|")).Distinct();
             _inspectionRules = inspectionRules;
+            _registries = registries;
+            UseRegistries();
+        }
+
+        private void UseRegistries()
+        {
+            foreach (var registry in _registries)
+            {
+                registry.RegisterAll();
+            }
         }
 
         public List<TestResult> Inspect()
@@ -106,13 +121,13 @@ namespace FabInspector.Core
             return testResults;
         }
 
-        protected void OnMessageIssued(MessageTypeEnum messageType, string message)
+        private void OnMessageIssued(MessageTypeEnum messageType, string message)
         {
             var args = new MessageIssuedEventArgs(message, messageType);
             OnMessageIssued(args);
         }
 
-        protected virtual void OnMessageIssued(MessageIssuedEventArgs e)
+        private void OnMessageIssued(MessageIssuedEventArgs e)
         {
             EventHandler<MessageIssuedEventArgs>? handler = MessageIssued;
             if (handler != null)

@@ -1,6 +1,6 @@
 namespace FabInspector.Core.Output
 {
-    public class TestRun
+    public sealed class TestRun
     {
         public Guid Id { get; set; }
             public string? TestedFilePath { get; set; }

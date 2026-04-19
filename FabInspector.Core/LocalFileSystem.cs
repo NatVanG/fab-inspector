@@ -5,9 +5,10 @@ using System.IO;
 namespace FabInspector.Core
 {
     /// <summary>
-    /// Physical file system implementation that uses actual file system operations
+    /// Physical file system implementation that uses actual file system operations.
+    /// This class is internal; use <see cref="FabricLocalFileSystem"/> instead.
     /// </summary>
-    public class LocalFileSystem
+    internal class LocalFileSystem
     {
         private readonly string _rootPath;
 

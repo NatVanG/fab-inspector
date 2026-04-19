@@ -1,10 +1,12 @@
 using Json.Logic;
 using Json.More;
+using FabInspector.Core;
 using FabInspector.Operators;
 using Ric.Operators;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using NUnit.Framework.Constraints;
+using Rule = Json.Logic.Rule;
 
 namespace FabInspector.Tests
 {

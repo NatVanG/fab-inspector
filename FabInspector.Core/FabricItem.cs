@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace FabInspector.Core
 {
-    public class FabricItem
+    public sealed class FabricItem
     {
         public string Id { get; set; } = string.Empty;
         public string DisplayName { get; set; } = string.Empty;
