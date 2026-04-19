@@ -18,14 +18,15 @@ Fab Inspector supports local, workspace, and OneLake-based validation workflows.
 
 | Scenario | Fabric items source | Rules source | Test results output targets | Typical auth method |
 |---|---|---|---|---|
-| 1. Local-only | Local folder | Local JSON | Local HTML/JSON or Console | `local` |
-| 2. CI/CD checkout | Git checkout on build agent | Local JSON in repo or pipeline workspace | ADO/GitHub logs | `local` |
-| 3. Workspace + OneLake | Published Fabric workspace items | OneLake JSON | OneLake JSON | `interactive`, `clientsecret`, `certificate`, `federatedtoken`, or `managedidentity` |
-| 4. Hybrid | Local and/or workspace items and/or Power BI/Fabric REST API | Local and/or OneLake JSON | Any combination of console, local files, logs, and OneLake JSON | Depends on selected remote resources |
+| 1. Local-only | Local folder | Local JSON | Console, HTML, JSON, PNG | `local` |
+| 2. CI/CD checkout | Git checkout on build agent | Local JSON in repo or pipeline workspace | ADO/GitHub logs, JSON/HTML pipeline artifacts | `local` or `federatedtoken` (GitHub OIDC) |
+| 3. Workspace-scoped | All items in a Fabric workspace | Local or OneLake JSON | Console, local or OneLake JSON/HTML | `interactive`, `clientsecret`, `certificate`, `federatedtoken`, or `managedidentity` |
+| 4. Item-scoped workspace | Single item in a Fabric workspace | Local or OneLake JSON | Console, local or OneLake JSON/HTML | `interactive`, `clientsecret`, `certificate`, `federatedtoken`, or `managedidentity` |
+| 5. Hybrid | Mix: local items, workspace items, and/or REST API responses | Local or OneLake JSON | Any combination of console, local files, logs, and OneLake JSON | Depends on selected remote resources |
 
-### 1. Local Fabric item definitions + local rules + local HTML/JSON output
+### 1. Local Fabric item definitions + local rules + local output
 
-Use this when developing rules or validating item definitions on your machine before committing code.
+Use this when developing rules or validating item definitions on your machine before committing code. Supports all output formats: `Console`, `JSON`, `HTML`, and `PNG`.
 
 ```mermaid
 flowchart LR
@@ -43,7 +44,9 @@ fab-inspector -fabricitem "C:\FabricProject" -rules "C:\Rules\MyRules.json" -out
 
 ### 2. Fabric item definitions in source control + local rules in CI/CD
 
-Use this when a pipeline checks out a repository and runs quality gates as part of pull request or deployment validation.
+Use this when a pipeline checks out a repository and runs quality gates as part of pull request or deployment validation. The `-formats ADO` or `-formats GitHub` option emits native CI log commands. Use `-parallel true` to split rules across available CPU cores for faster runs (local auth only).
+
+An easy way to run Fab Inspector on a GitHub Ubuntu runner is via the published `fab-inspector` Docker image — see the [example GitHub Actions workflow](https://github.com/NatVanG/fab-inspector-cicd-example/blob/main/.github/workflows/fab-inspector.yml).
 
 ```mermaid
 flowchart LR
@@ -53,46 +56,77 @@ flowchart LR
     C --> E[Pipeline artifacts\nJSON and/or HTML]
 ```
 
-Typical command (example for CI logs):
+Typical command (Azure DevOps):
 
 ```bash
 fab-inspector -fabricitem "./FabricProject" -rules "./Rules/ci-rules.json" -formats "ADO"
 ```
 
-### 3. Published Fabric items + OneLake-hosted rules + JSON results to OneLake
+GitHub Actions with federated token (OIDC) authentication, validating against a Fabric workspace in the pipeline:
 
-Use this when validating deployed items directly from a Fabric workspace and centralizing rules/results in OneLake.
+```bash
+fab-inspector -fabricworkspace "<workspace-guid>" -rules "./Rules/ci-rules.json" -authmethod federatedtoken -clientid "<client-id>" -tenantid "<tenant-id>" -federatedtoken "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" -formats "GitHub"
+```
+
+### 3. Workspace-scoped: all items in a Fabric workspace
+
+Use this to inspect every item in a Fabric workspace in a single run. Omit `-fabricitem` to target the whole workspace. Rules and output can be hosted on OneLake.
 
 ```mermaid
 flowchart LR
-    A[Published Fabric items\nFabric workspace] --> C[Fab Inspector CLI]
-    B[Rules JSON hosted in OneLake] --> C
-    C --> D[JSON results written to OneLake]
+    A[All items in\nFabric workspace] --> C[Fab Inspector CLI]
+    B[Rules JSON\nlocal or OneLake] --> C
+    C --> D[Console, local JSON/HTML]
+    C --> E[OneLake JSON]
 ```
 
-Typical command (authenticating with Service Principal in this example):
+Typical command (interactive auth):
+
+```bash
+fab-inspector -fabricworkspace "<workspace-guid>" -rules ".\Files\Base-rules.json" -authmethod interactive -formats "JSON,HTML"
+```
+
+With OneLake-hosted rules and results (service principal):
 
 ```bash
 fab-inspector -fabricworkspace "<workspace-guid>" -rules "https://onelake.dfs.fabric.microsoft.com/<workspace>/<lakehouse>/Files/rules/rules.json" -authmethod clientsecret -clientid "<client-id>" -tenantid "<tenant-id>" -clientsecret "<secret>" -output "https://onelake.dfs.fabric.microsoft.com/<workspace>/<lakehouse>/Files/results" -formats "JSON"
 ```
 
-Or scoped to a published Fabric item:
+### 4. Item-scoped: single item in a Fabric workspace
 
-```bash
-fab-inspector -fabricworkspace "<workspace-guid>" -fabricitem "<item-guid>" -rules "https://onelake.dfs.fabric.microsoft.com/<workspace>/<lakehouse>/Files/rules/rules.json" -authmethod clientsecret -clientid "<client-id>" -tenantid "<tenant-id>" -clientsecret "<secret>" -output "https://onelake.dfs.fabric.microsoft.com/<workspace>/<lakehouse>/Files/results" -formats "JSON"
+Use this to target a specific published Fabric item by its GUID. Provide the item GUID via `-fabricitem`.
+
+```mermaid
+flowchart LR
+    A[Single Fabric item\nFabric workspace] --> C[Fab Inspector CLI]
+    B[Rules JSON\nlocal or OneLake] --> C
+    C --> D[Console, local JSON/HTML]
+    C --> E[OneLake JSON]
 ```
 
-### 4. Hybrid pattern (any combination)
+Typical command (interactive auth):
 
-Inputs and outputs are independent, so you can mix local and remote sources as needed.
+```bash
+fab-inspector -fabricworkspace "<workspace-guid>" -fabricitem "<item-guid>" -rules ".\Files\Base-rules.json" -authmethod interactive -formats "Console"
+```
+
+CI/CD pipeline (client secret):
+
+```bash
+fab-inspector -fabricworkspace "<workspace-guid>" -fabricitem "<item-guid>" -rules ".\Files\Base-rules.json" -authmethod clientsecret -clientid "<client-id>" -tenantid "<tenant-id>" -clientsecret "<secret>" -formats "ADO"
+```
+
+### 5. Hybrid pattern (any combination)
+
+Inputs and outputs are independent, so you can mix local and remote sources as needed. Rules can call the Power BI and Fabric REST APIs, the OneLake DFS endpoint, or execute DAX queries directly from within rule logic using the [`apiget`](DocsExamples/FabInspector-Operators.md#apiget), [`dfsget`](DocsExamples/FabInspector-Operators.md#dfsget), [`daxquery`](DocsExamples/FabInspector-Operators.md#daxquery), and [`scannerapi`](DocsExamples/FabInspector-Operators.md#scannerapi) operators. Use `-parallel true` to split rules across CPU cores when using local auth (not supported with remote auth methods).
 
 ```mermaid
 flowchart TB
     subgraph Inputs
       A1[Fabric items: Local folder]
       A2[Fabric items: Workspace items]
-      A3[Fabric REST API]
-      A4[Power BI REST API]
+      A3["Fabric REST API\n(apiget, dfsget, scannerapi)"]
+      A4["Power BI REST API & DAX\n(apiget, daxquery)"]
       B1[Rules: Local JSON]
       B2[Rules: OneLake JSON]
     end
@@ -123,9 +157,10 @@ Example combinations:
 1. Local item definitions + OneLake rules + local HTML output.
 2. Workspace items + local rules + GitHub annotations.
 3. Workspace items + OneLake rules + OneLake JSON output.
-4. Workspace items + OneLake rules (including REST API calls) + OneLake JSON output.
+4. Workspace items + OneLake rules (including REST API and DAX calls via operators) + OneLake JSON output.
+5. Local items + parallel rule execution (`-parallel true`) + JSON output for fast validation during development.
 
-This flexibility lets teams start local, then move to CI/CD and workspace-scoped validation without changing the core rule model.
+This flexibility lets teams start local, then progressively adopt CI/CD, workspace-scoped inspection, and API-driven rules without changing the core rule model.
 
 ## NOTE :pencil:
 
@@ -358,7 +393,9 @@ For a tutorial on how to run the Fab Inspector CLI (aka Fab Inspector) as part o
 
 ## <a id="customerruleguide"></a>Custom Rules Guide
 
-:pencil: This is a high-level guide to custom rules for a deeper explanation of rules and operators see the [Fab Inspector wiki](https://github.com/NatVanG/PBI-InspectorV2/wiki).
+:pencil: This is a high-level guide to custom rules for a deeper explanation of rules and operators see the [Fab Inspector wiki](https://github.com/NatVanG/PBI-InspectorV2/wiki). For a quick-reference of all available operators see:
+- [Ric Operators](DocsExamples/Ric-Operators.md) — navigation, data transformation, string, set, date/time, and file-system operators
+- [FabInspector Operators](DocsExamples/FabInspector-Operators.md) — REST API (`apiget`, `dfsget`, `daxquery`, `scannerapi`) and layout (`rectoverlap`) operators
 
 Custom rules are defined in a JSON file as an array of rule objects as follows:
 
@@ -655,6 +692,10 @@ For full rule file examples see:
 - [CopyJob Rules](DocsExamples/Sample-CopyJob-Rules.json) - Rules to check for CopyJob settings/metadata. Yes you can now test any Fabric item's metadata!
 - [Environment Rules](DocsExamples/Example-Environment-Rules.json) - Example rules to check Fabric Environment CI/CD item types.
 - [Rules Template](DocsExamples/RulesTemplate.json) - A simple rules file  template to get you started with your own rules
+
+For operator quick-reference and usage snippets see:
+- [Ric Operators](DocsExamples/Ric-Operators.md) — all built-in JSON Logic extension operators
+- [FabInspector Operators](DocsExamples/FabInspector-Operators.md) — REST API and layout operators requiring authentication
 
 ## <a id="rulecreationwithvscode"></a>Create and Debug Rules with VS Code 
 
