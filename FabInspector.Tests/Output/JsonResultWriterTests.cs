@@ -88,7 +88,7 @@ namespace FabInspector.Tests.Output
             await writer.WriteAsync(context);
 
             var jsonFiles = Directory.GetFiles(_tempDir, "*.json");
-            Assert.That(Path.GetFileName(jsonFiles[0]), Does.Contain("MyReport"));
+            Assert.That(Path.GetFileName(jsonFiles[0]), Does.Contain("TestRun_"));
         }
 
         [Test]

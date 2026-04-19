@@ -1,3 +1,4 @@
+using FabInspector.ClientLibrary.Utils;
 using FabInspector.Core;
 using FabInspector.Core.Output;
 using System.Text.Json;
@@ -8,12 +9,7 @@ namespace FabInspector.ClientLibrary.Output
     {
         public Task WriteAsync(OutputContext context)
         {
-            var outputFileIdentifier = !string.IsNullOrWhiteSpace(context.FabricItem)
-                ? Path.GetFileNameWithoutExtension(context.FabricItem)
-                : context.FabricWorkspaceId;
-            var jsonFileName = context.IsOneLakeOutput
-                ? string.Concat("TestRun_", context.TestRunId.ToString("N"), "_", context.Timestamp, ".json")
-                : string.Concat("TestRun_", outputFileIdentifier, ".json");
+            var jsonFileName = string.Concat("TestRun_", context.TestRunId.ToString("N"), "_", context.Timestamp, ".json");
 
             if (string.IsNullOrEmpty(context.LocalOutputDirPath))
             {

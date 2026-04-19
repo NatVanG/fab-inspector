@@ -71,7 +71,7 @@ namespace FabInspector.ClientLibrary.Output
                     FabricItem = _args.FabricItem,
                     FabricWorkspaceId = _args.FabricWorkspaceId,
                     DeleteOutputDirOnExit = _args.DeleteOutputDirOnExit,
-                    CONSOLEOutput = _args.CONSOLEOutput,
+                    CONSOLEOutput = _args.CONSOLEOutput || _args.ADOOutput || _args.GITHUBOutput,
                     OnMessage = _onMessage,
                     OnItemMessage = _onItemMessage,
                     OnDialogMessage = _onDialogMessage,
@@ -80,7 +80,7 @@ namespace FabInspector.ClientLibrary.Output
                 var writers = BuildWriters(pageRenderer, registries);
 
                 // Ensure output dir exists for file-based writers
-                if (!(_args.ADOOutput || _args.GITHUBOutput) && (_args.JSONOutput || _args.HTMLOutput || _args.PNGOutput))
+                if (_args.JSONOutput || _args.HTMLOutput || _args.PNGOutput)
                 {
                     if (!Directory.Exists(localOutputDirPath))
                     {
@@ -121,12 +121,12 @@ namespace FabInspector.ClientLibrary.Output
             }
 
             // JSON must run before HTML (HTML consumes JsonTestRun)
-            if (!(_args.ADOOutput || _args.GITHUBOutput) && (_args.JSONOutput || _args.HTMLOutput))
+            if (_args.JSONOutput || _args.HTMLOutput)
             {
                 writers.Add(new JsonResultWriter());
             }
 
-            if (!(_args.ADOOutput || _args.GITHUBOutput) && (_args.PNGOutput || _args.HTMLOutput))
+            if (_args.PNGOutput || _args.HTMLOutput)
             {
                 writers.Add(new PngResultWriter(
                     pageRenderer,
@@ -138,7 +138,7 @@ namespace FabInspector.ClientLibrary.Output
                     _unsubscribeFromProgress));
             }
 
-            if (!(_args.ADOOutput || _args.GITHUBOutput) && _args.HTMLOutput)
+            if (_args.HTMLOutput)
             {
                 writers.Add(new HtmlResultWriter(pageRenderer));
             }

@@ -473,55 +473,6 @@ namespace FabInspector.Tests
             }
         }
 
-
-        [Test]
-        public void TestCLIArgsUtilsThrows_InteractiveWithADOFormat_WasDeviceCode()
-        {
-            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -formats ADO".Split(" ");
-            Args? parsedArgs = null;
-
-            ArgumentException ex = Assert.Throws<ArgumentException>(
-                () => parsedArgs = ArgsUtils.ParseArgs(args));
-            
-            Assert.That(ex.Message.Contains("authentication is not compatible with ADO or GitHub"));
-        }
-
-        [Test]
-        public void TestCLIArgsUtilsThrows_InteractiveWithGitHubFormat_WasDeviceCode()
-        {
-            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -formats GitHub".Split(" ");
-            Args? parsedArgs = null;
-
-            ArgumentException ex = Assert.Throws<ArgumentException>(
-                () => parsedArgs = ArgsUtils.ParseArgs(args));
-            
-            Assert.That(ex.Message.Contains("authentication is not compatible with ADO or GitHub"));
-        }
-
-        [Test]
-        public void TestCLIArgsUtilsThrows_InteractiveWithADOAndGitHubFormats_WasDeviceCode()
-        {
-            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -formats ADO,GitHub".Split(" ");
-            Args? parsedArgs = null;
-
-            ArgumentException ex = Assert.Throws<ArgumentException>(
-                () => parsedArgs = ArgsUtils.ParseArgs(args));
-            
-            Assert.That(ex.Message.Contains("authentication is not compatible with ADO or GitHub"));
-        }
-
-        [Test]
-        public void TestCLIArgsUtilsThrows_InteractiveWithMixedFormatsIncludingADO_WasDeviceCode()
-        {
-            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -formats HTML,ADO,JSON".Split(" ");
-            Args? parsedArgs = null;
-
-            ArgumentException ex = Assert.Throws<ArgumentException>(
-                () => parsedArgs = ArgsUtils.ParseArgs(args));
-            
-            Assert.That(ex.Message.Contains("authentication is not compatible with ADO or GitHub"));
-        }
-
         [Test]
         public void TestCLIArgsUtilsSuccess_InteractiveWithAllowedFormats_WasDeviceCode()
         {
@@ -554,42 +505,6 @@ namespace FabInspector.Tests
 
             Assert.That(parsedArgs.AuthMethod.Equals("clientsecret", StringComparison.OrdinalIgnoreCase) 
                 && parsedArgs.GITHUBOutput);
-        }
-
-        [Test]
-        public void TestCLIArgsUtilsThrows_InteractiveWithADOFormat()
-        {
-            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -formats ADO".Split(" ");
-            Args? parsedArgs = null;
-
-            ArgumentException ex = Assert.Throws<ArgumentException>(
-                () => parsedArgs = ArgsUtils.ParseArgs(args));
-            
-            Assert.That(ex.Message.Contains("interactive authentication is not compatible with ADO or GitHub"));
-        }
-
-        [Test]
-        public void TestCLIArgsUtilsThrows_InteractiveWithGitHubFormat()
-        {
-            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -formats GitHub".Split(" ");
-            Args? parsedArgs = null;
-
-            ArgumentException ex = Assert.Throws<ArgumentException>(
-                () => parsedArgs = ArgsUtils.ParseArgs(args));
-            
-            Assert.That(ex.Message.Contains("interactive authentication is not compatible with ADO or GitHub"));
-        }
-
-        [Test]
-        public void TestCLIArgsUtilsThrows_InteractiveWithMixedFormatsIncludingADO()
-        {
-            string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -formats HTML,ADO,JSON".Split(" ");
-            Args? parsedArgs = null;
-
-            ArgumentException ex = Assert.Throws<ArgumentException>(
-                () => parsedArgs = ArgsUtils.ParseArgs(args));
-            
-            Assert.That(ex.Message.Contains("interactive authentication is not compatible with ADO or GitHub"));
         }
 
         [Test]

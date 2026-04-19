@@ -11,6 +11,11 @@ namespace FabInspector.ClientLibrary.Utils
         {
             try
             {
+                if (string.IsNullOrEmpty(url) || !File.Exists(url))
+                {
+                    throw new PBIRInspectorException($"Path is not a local file path: {url}");
+                }
+
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     ProcessStartInfo ps = new()
@@ -29,6 +34,10 @@ namespace FabInspector.ClientLibrary.Utils
                     throw new PBIRInspectorException($"Unsupported OS platform for opening: {url}");
                 }
             }
+            catch (PBIRInspectorException)
+            {
+                throw;
+            }
             catch
             {
                 throw new PBIRInspectorException(string.Format("Could not launch browser or file explorer for location \"{0}\".", url));
@@ -46,6 +55,5 @@ namespace FabInspector.ClientLibrary.Utils
         {
             return Path.Combine(Path.GetTempPath(), Constants.FabInspectorTemp);
         }
-
     }
 }

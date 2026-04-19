@@ -203,16 +203,6 @@ For more information, visit: https://github.com/NatVanG/PBI-InspectorV2
                 throw new ArgumentException("OneLake output URL requires authentication. Use -authmethod interactive, clientsecret, certificate, federatedtoken, or managedidentity.");
             }
 
-            // Validate incompatible format and auth method combinations
-            if (authMethod == "interactive" && !string.IsNullOrWhiteSpace(formatsString))
-            {
-                var upperFormats = formatsString.ToUpper();
-                if (upperFormats.Contains("ADO") || upperFormats.Contains("GITHUB"))
-                {
-                    throw new ArgumentException("interactive authentication is not compatible with ADO or GitHub output formats. These formats are designed for CI/CD pipelines which require non-interactive authentication. Use clientsecret, certificate, federatedtoken, or managedidentity authentication method instead.");
-                }
-            }
-
             // Validate parallel execution is not enabled with remote auth methods
             if (authMethod != "local" && bool.TryParse(parallelString, out bool isParallel) && isParallel)
             {
