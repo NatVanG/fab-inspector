@@ -217,7 +217,7 @@ The `-parallel` option is now available with the CLI only as an experimental fea
 - [Interpreting results](#results)
 - [Azure DevOps and GitHub integration](#ado)
 - [Custom rules guide](#customerruleguide)
-- [Patching](#patching)
+- [Patching](#patching) ::warning:: deprecated
 - [Create and Debug Rules with VS Code](#rulecreationwithvscode)
 - [Examples](#customrulesexamples)
 - [Wiki](#wiki)
@@ -504,6 +504,8 @@ For example (without the optional patch logic), the following rule checks that, 
  ```
 
 ## <a id="patching"></a>Patching
+
+::warning:: Deprecated
 
 Optionally a rule can now also define a *patch* to fix items (e.g. visuals) failing the test. For example a patch for the test above is as follows. The patch iterates through the failing visual names returned and fixes the "Visuals" part of the report definition by setting the "showAxisTitle" property to "true" for both the category and value axes:
 

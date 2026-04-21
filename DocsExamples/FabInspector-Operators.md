@@ -33,12 +33,12 @@ Performs an authenticated HTTP GET against the Power BI or Fabric REST API and r
 | Form | When to use |
 |---|---|
 | Simple string | URL requires no runtime parameters |
-| Array | URL contains `{0}`, `{1}` … numbered placeholders to fill from a parameter list |
+| Array | URL contains additional placeholders such as `{type}`, `{recursive}`, `{folder}`, `{fileName}` to fill from a parameter list |
 
 | Parameter | Type | Description |
 |---|---|---|
-| urlTemplate | string | Fully-qualified Power BI or Fabric REST API URL. May contain `{context-fabricworkspace}`, `{context-fabricitem}`, and numbered `{0}`, `{1}` … placeholders. |
-| urlParameters | string[] | Values substituted into the numbered placeholders in order (optional) |
+| urlTemplate | string | Fully-qualified Power BI or Fabric REST API URL. May contain `{context-fabricworkspace}`, `{context-fabricitem}`, and additional placeholders such as `{type}` or `{recursive}`. |
+| urlParameters | string[] | Values substituted into the remaining placeholders in the order they appear in the URL (optional) |
 
 **Returns:** Parsed JSON API response.
 
@@ -49,7 +49,7 @@ Performs an authenticated HTTP GET against the Power BI or Fabric REST API and r
 ```json
 {
   "apiget": [
-    "https://api.fabric.microsoft.com/v1/workspaces/{context-fabricworkspace}/items?type={0}&recursive={1}",
+    "https://api.fabric.microsoft.com/v1/workspaces/{context-fabricworkspace}/items?type={type}&recursive={recursive}",
     "Lakehouse",
     "true"
   ]
@@ -72,15 +72,15 @@ The URL must use HTTPS and target a host ending in `.dfs.fabric.microsoft.com`.
 
 | Parameter | Type | Description |
 |---|---|---|
-| urlTemplate | string | OneLake DFS HTTPS URL. May contain `{context-fabricworkspace}`, `{context-fabricitem}`, and numbered `{0}`, `{1}` … placeholders. |
-| urlParameters | string[] | Values substituted into the numbered placeholders in order (optional) |
+| urlTemplate | string | OneLake DFS HTTPS URL. May contain `{context-fabricworkspace}`, `{context-fabricitem}`, and additional placeholders such as `{folder}` and `{fileName}`. |
+| urlParameters | string[] | Values substituted into the remaining placeholders in the order they appear in the URL (optional) |
 
 **Returns:** Parsed JSON node, or raw string if the response is not JSON.
 
 ```json
 {
   "dfsget": [
-    "https://onelake.dfs.fabric.microsoft.com/{context-fabricworkspace}/{context-fabricitem}/Files/{0}/{1}",
+    "https://onelake.dfs.fabric.microsoft.com/{context-fabricworkspace}/{context-fabricitem}/Files/{folder}/{fileName}",
     "Config",
     "settings.json"
   ]

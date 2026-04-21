@@ -1,0 +1,101 @@
+{
+    "rules": [
+        {
+            "id": "WORKSPACE_NAMES_USE_WS_CAMELCASE",
+            "name": "Workspace names must use WS_ + camelCase",
+            "description": "Checks that every workspace name starts with WS_ and the suffix follows camelCase.",
+            "itemType": "none",
+            "disabled": true,
+            "test": [
+                {
+                    "map": [
+                        {
+                            "filter": [
+                                {
+                                    "var": "workspaces"
+                                },
+                                {
+                                    "!": [
+                                        {
+                                            "strcontains": [
+                                                {
+                                                    "var": ""
+                                                },
+                                                "^WS_[a-z]+(?:[A-Z][a-z0-9]*)*$"
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "var": ""
+                        }
+                    ]
+                },
+                {
+                    "workspaces": [
+                        "WS_FinanceOps",
+                        "WS_SalesAnalytics",
+                        "WS_marketingInsights"
+                    ]
+                },
+                []
+            ]
+        },
+        {
+            "id": "FABRIC_API_WORKSPACE_NAMES_USE_WS_CAMELCASE",
+            "name": "Fabric API workspace names must use WS_ + camelCase",
+            "description": "Calls the Fabric API to get workspaces and returns names that do not start with WS_ followed by camelCase.",
+            "itemType": "none",
+            "disabled": false,
+            "test": [
+                {
+                    "let": [
+                        {
+                            "response": {
+                                "apiget": [
+                                    "https://api.fabric.microsoft.com/v1/workspaces"
+                                ]
+                            }
+                        },
+                        {
+                            "map": [
+                                {
+                                    "filter": [
+                                        {
+                                            "query": [
+                                                {
+                                                    "var": "response"
+                                                },
+                                                {
+                                                    "path": "$.value[*].displayName"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "!": [
+                                                {
+                                                    "strcontains": [
+                                                        {
+                                                            "var": ""
+                                                        },
+                                                        "^WS_[a-z]+(?:[A-Z][a-z0-9]*)*$"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "var": ""
+                                }
+                            ]
+                        }
+                    ]
+                },
+                []
+            ]
+        }
+    ]
+}
