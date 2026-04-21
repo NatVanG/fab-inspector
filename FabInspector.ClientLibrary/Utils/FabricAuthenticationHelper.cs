@@ -97,5 +97,29 @@ namespace FabInspector.ClientLibrary.Utils
             return new ManagedIdentityCredential(ManagedIdentityId.FromUserAssignedClientId(clientId));
         }
 
+        /// <summary>
+        /// Creates an Azure CLI credential for developer flow authentication.
+        /// Requires a prior <c>az login</c>. Uses <see cref="AzureCliCredential"/> explicitly
+        /// rather than <see cref="DefaultAzureCredential"/> to avoid unintended credential
+        /// pickup from environment variables or managed identity in shared environments.
+        /// </summary>
+        /// <param name="tenantId">Optional tenant ID to pin token acquisition to a specific tenant,
+        /// preventing cross-tenant token leakage when the developer is logged into multiple tenants.</param>
+        /// <returns>TokenCredential backed by the Azure CLI token cache</returns>
+        public static TokenCredential CreateAzureCliCredential(string? tenantId = null)
+        {
+            if (string.IsNullOrWhiteSpace(tenantId))
+            {
+                return new AzureCliCredential();
+            }
+
+            var options = new AzureCliCredentialOptions
+            {
+                TenantId = tenantId
+            };
+
+            return new AzureCliCredential(options);
+        }
+
     }
 }

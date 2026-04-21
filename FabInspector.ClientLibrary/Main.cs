@@ -81,7 +81,7 @@ namespace FabInspector.ClientLibrary
                     if (_tokenProvider == null)
                     {
                         throw new InvalidOperationException(
-                            "OneLake rules URL requires authentication. Use -authmethod interactive, clientsecret, certificate, federatedtoken, or managedidentity.");
+                            "OneLake rules URL requires authentication. Use -authmethod interactive, azurecli, clientsecret, certificate, federatedtoken, or managedidentity.");
                     }
 
                     using var rulesStream = OneLakeRulesFileDownloader
@@ -162,6 +162,12 @@ namespace FabInspector.ClientLibrary
                     case "managedidentity":
                         credential = FabricAuthenticationHelper.CreateManagedIdentityCredential(
                             args.ClientId
+                        );
+                        break;
+
+                    case "azurecli":
+                        credential = FabricAuthenticationHelper.CreateAzureCliCredential(
+                            args.TenantId
                         );
                         break;
 

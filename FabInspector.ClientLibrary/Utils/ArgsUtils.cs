@@ -37,7 +37,7 @@ OPTIONAL PARAMETERS:
 
 AUTHENTICATION PARAMETERS (use -authmethod):
   -authmethod <method>            Authentication method (default: local)
-                                  Valid: local, interactive, clientsecret, certificate, 
+                                  Valid: local, interactive, azurecli, clientsecret, certificate, 
                                          federatedtoken, managedidentity
   
   LOCAL (default - no authentication):
@@ -45,6 +45,11 @@ AUTHENTICATION PARAMETERS (use -authmethod):
   
   INTERACTIVE:
     -clientid <id>                Azure AD application ID (optional)
+  
+  AZURECLI (developer flow - requires prior 'az login'):
+    -tenantid <id>                Azure tenant ID (optional, pins to a specific tenant)
+    Uses the Azure CLI token cache. No client ID or secrets needed.
+    Run 'az login' before using this method.
   
   CLIENTSECRET:
     -tenantid <id>                Azure tenant ID or name
@@ -86,6 +91,14 @@ EXAMPLES:
   # Analyze specific Fabric item in workspace
   PBIRInspectorCLI.exe -fabricworkspace workspace-guid -fabricitem item-guid -rules rules.json ^
     -authmethod interactive
+
+  # Developer flow: analyze Fabric workspace using Azure CLI credentials (after 'az login')
+  PBIRInspectorCLI.exe -fabricworkspace workspace-guid -rules rules.json ^
+    -authmethod azurecli
+
+  # Developer flow with tenant pinning
+  PBIRInspectorCLI.exe -fabricworkspace workspace-guid -rules rules.json ^
+    -authmethod azurecli -tenantid my-tenant-id
 
 For more information, visit: https://github.com/NatVanG/PBI-InspectorV2
 ";
@@ -142,10 +155,10 @@ For more information, visit: https://github.com/NatVanG/PBI-InspectorV2
             var federatedToken = dic.ContainsKey(FEDERATEDTOKEN) ? dic[FEDERATEDTOKEN] : null;
 
             // Validate auth method
-            string[] validAuthMethods = { "local", "interactive", "clientsecret", "certificate", "federatedtoken", "managedidentity" };
+            string[] validAuthMethods = { "local", "interactive", "azurecli", "clientsecret", "certificate", "federatedtoken", "managedidentity" };
             if (!validAuthMethods.Contains(authMethod))
             {
-                throw new ArgumentException($"Invalid auth method: '{authMethod}'. Valid options: local, interactive, clientsecret, certificate, federatedtoken, managedidentity");
+                throw new ArgumentException($"Invalid auth method: '{authMethod}'. Valid options: local, interactive, azurecli, clientsecret, certificate, federatedtoken, managedidentity");
             }
 
             // Validate required parameters based on auth method
@@ -195,18 +208,18 @@ For more information, visit: https://github.com/NatVanG/PBI-InspectorV2
 
             if (OneLakeRulesFileDownloader.IsOneLakeDfsUrl(rulesPath) && authMethod == "local")
             {
-                throw new ArgumentException("OneLake rules URL requires authentication. Use -authmethod interactive, clientsecret, certificate, federatedtoken, or managedidentity.");
+                throw new ArgumentException("OneLake rules URL requires authentication. Use -authmethod interactive, azurecli, clientsecret, certificate, federatedtoken, or managedidentity.");
             }
 
             if (OneLakeOutputUploader.IsOneLakeDfsUrl(outputPath) && authMethod == "local")
             {
-                throw new ArgumentException("OneLake output URL requires authentication. Use -authmethod interactive, clientsecret, certificate, federatedtoken, or managedidentity.");
+                throw new ArgumentException("OneLake output URL requires authentication. Use -authmethod interactive, azurecli, clientsecret, certificate, federatedtoken, or managedidentity.");
             }
 
             // Validate parallel execution is not enabled with remote auth methods
             if (authMethod != "local" && bool.TryParse(parallelString, out bool isParallel) && isParallel)
             {
-                throw new ArgumentException("Parallel execution is not supported when using remote authentication methods (interactive, clientsecret, certificate, federatedtoken, managedidentity). Please set -parallel to false (default) when using remote authentication.");
+                throw new ArgumentException("Parallel execution is not supported when using remote authentication methods (interactive, azurecli, clientsecret, certificate, federatedtoken, managedidentity). Please set -parallel to false (default) when using remote authentication.");
             }
 
             // Validate Fabric workspace access requirements
@@ -214,7 +227,7 @@ For more information, visit: https://github.com/NatVanG/PBI-InspectorV2
             {
                 if (authMethod == "local")
                 {
-                    throw new ArgumentException("Fabric workspace access requires authentication. Use -authmethod interactive, clientsecret, certificate, federatedtoken, or managedidentity.");
+                    throw new ArgumentException("Fabric workspace access requires authentication. Use -authmethod interactive, azurecli, clientsecret, certificate, federatedtoken, or managedidentity.");
                 }
 
                 // Validate workspace ID is a GUID
