@@ -1,0 +1,127 @@
+{
+    "rules": [
+        {
+            "id": "LET_NESTED_LOCAL_BINDINGS_SAMPLE",
+            "name": "Nested let with local mapped sample data",
+            "description": "Demonstrates local data mapping and nested let scoping. Outer let binds shared values; inner let derives dependent values from those bindings.",
+            "itemType": "none",
+            "disabled": false,
+            "test": [
+                {
+                    "let": [
+                        {
+                            "results": {
+                                "var": "run.Results"
+                            },
+                            "resultCount": {
+                                "count": [
+                                    {
+                                        "var": "results"
+                                    }
+                                ]
+                            },
+                            "expectedCount": {
+                                "var": "run.Summary.expectedCount"
+                            },
+                            "maxFailing": {
+                                "var": "limits.maxFailing"
+                            },
+                            "failing": {
+                                "filter": [
+                                    {
+                                        "var": "results"
+                                    },
+                                    {
+                                        "!=": [
+                                            {
+                                                "var": "status"
+                                            },
+                                            "Pass"
+                                        ]
+                                    }
+                                ]
+                            },
+                            "failingCount": {
+                                "count": [
+                                    {
+                                        "var": "failing"
+                                    }
+                                ]
+                            },
+                            "passingCount": {
+                                "-": [
+                                    {
+                                        "var": "resultCount"
+                                    },
+                                    {
+                                        "var": "failingCount"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "and": [
+                                {
+                                    "==": [
+                                        {
+                                            "var": "resultCount"
+                                        },
+                                        {
+                                            "var": "expectedCount"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "<=": [
+                                        {
+                                            "var": "failingCount"
+                                        },
+                                        {
+                                            "var": "maxFailing"
+                                        }
+                                    ]
+                                },
+                                {
+                                    ">": [
+                                        {
+                                            "var": "passingCount"
+                                        },
+                                        0
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "run": {
+                        "Results": [
+                            {
+                                "name": "A",
+                                "status": "Pass",
+                                "durationMs": 1200
+                            },
+                            {
+                                "name": "B",
+                                "status": "Fail",
+                                "durationMs": 800
+                            },
+                            {
+                                "name": "C",
+                                "status": "Pass",
+                                "durationMs": 500
+                            }
+                        ],
+                        "Summary": {
+                            "expectedCount": 3
+                        }
+                    },
+                    "limits": {
+                        "maxFailing": 1
+                    }
+                },
+                true
+            ]
+        }
+    ]
+}

@@ -152,7 +152,7 @@ A test is an array with **2 or 3 elements**:
 | Element | Required | Description |
 |---------|----------|-------------|
 | Logic | Yes | A JSONLogic expression that produces a result. |
-| Data mapping | No | Named variables bound via JSON Pointer paths. Can be omitted (2-element test). |
+| Data mapping | No | Named variables bound via JSON Pointer paths; these variables are then available via the `var` operator in the logic expression. JSONLogic expressions cannot be evaluated in here. Data mapping can be omitted (2-element test). |
 | Expected result | Yes | The value the logic must produce for the test to pass. |
 
 The test **passes** when the logic output matches the expected result exactly.
@@ -224,7 +224,7 @@ Fab Inspector uses JSONLogic as its expression language. All [standard JSONLogic
 | Data | `var`, `missing`, `missing_some` |
 | Other | `log` |
 
-The JSONLogicExample.json file contains examples of JSONLogic expressions, data mappings (optional) and their expected results.
+The [JsonLogicExamples.json](JsonLogicExamples.json) file contains examples of JSONLogic expressions, data mappings (optional) and their expected results.
 
 ## 5 — Custom operators reference
 
@@ -414,7 +414,10 @@ Extracts a slice of an array (start/end indices).
 ### Variable binding
 
 #### `let`
-Binds computed values to named variables for reuse within the same expression. Avoids duplicate computation (e.g., multiple API calls).
+Binds computed values to named variables for reuse within the same expression. Avoids duplicate computation (e.g., multiple API calls). The binding behaviour is as follows:
+1. Earlier bindings are available to later bindings in the same let.
+2. Existing input fields are still visible.
+3. Bound names still shadow existing fields with the same name.
 
 **Basic binding:**
 

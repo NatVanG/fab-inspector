@@ -1,0 +1,35 @@
+{
+  "rules": [
+    {
+      "id": "ONELAKE_RESULTS_COUNT",
+      "name": "Count items in Results array from OneLake JSON",
+      "description": "Fetches a OneLake JSON file using dfsget and verifies the Results array can be counted.",
+      "itemType": "none",
+      "disabled": false,
+      "test": [
+        {
+          ">=": [
+            {
+              "count": [
+                {
+                  "query": [
+                    {
+                      "dfsget": [
+                        "https://onelake.dfs.fabric.microsoft.com/LoadTestWS2/LoadTestResults.Lakehouse/Files/FabInspector/2026-04-17/f45498e6-9f62-4bbb-bdb6-6d8a7e3a2703/52dabb3a-6985-4c00-87d8-a9eada76782e/TestRun_65ee343536d143aeb182d2bfe42f976d.json"
+                      ]
+                    },
+                    {
+                      "path": "$.Results[*]"
+                    }
+                  ]
+                }
+              ]
+            },
+            0
+          ]
+        },
+        true
+      ]
+    }
+  ]
+}

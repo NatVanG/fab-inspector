@@ -14,8 +14,9 @@ namespace Ric.Operators;
 /// Syntax: <c>{"let": [{"name1": expr1, "name2": expr2, ...}, body]}</c>
 /// </para>
 /// <para>
-/// All bindings are evaluated against the <em>original</em> data (parallel semantics).
-/// The body is evaluated against the original data extended with the bound values.
+/// Bindings are evaluated in declaration order against progressively extended data.
+/// This allows later bindings to reference earlier bindings from the same <c>let</c>.
+/// The body is evaluated against the original data extended with all bound values.
 /// Existing data properties are visible in the body and are shadowed by any
 /// binding with the same name.
 /// </para>
@@ -46,10 +47,10 @@ public class LetRule : Json.Logic.Rule
             foreach (var (key, val) in existing)
                 extended[key] = val?.DeepClone();
 
-        // Evaluate every binding against the original data (parallel semantics —
-        // bindings do not see each other's results)
+        // Evaluate bindings in declaration order against progressively extended data
+        // so later bindings can reference earlier binding results.
         foreach (var (name, rule) in Bindings)
-            extended[name] = rule.Apply(data, contextData)?.DeepClone();
+            extended[name] = rule.Apply(extended, contextData)?.DeepClone();
 
         return Body.Apply(extended, contextData);
     }
