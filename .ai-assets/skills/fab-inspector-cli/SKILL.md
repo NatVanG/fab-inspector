@@ -65,8 +65,8 @@ fab-inspector -fabricworkspace <guid> -fabricitem <guid> -rules <path|url> [opti
 
 | Parameter | Value | Description |
 |-----------|-------|-------------|
-| `-authmethod` | `local\|interactive\|clientsecret\|certificate\|federatedtoken\|managedidentity` | Authentication method. Default: `local`. |
-| `-tenantid` | `<guid>` | Azure AD tenant ID. Required for `clientsecret`, `certificate`, `federatedtoken`. |
+| `-authmethod` | `local\|interactive\|azurecli\|clientsecret\|certificate\|federatedtoken\|managedidentity` | Authentication method. Default: `local`. |
+| `-tenantid` | `<guid>` | Azure AD tenant ID. Required for `clientsecret`, `certificate`, `federatedtoken`; optional for `azurecli` (tenant pinning). |
 | `-clientid` | `<guid>` | Application (client) ID. Required for `clientsecret`, `certificate`, `federatedtoken`. Optional for `interactive` and `managedidentity` (user-assigned). |
 | `-clientsecret` | `<string>` | Client secret. Required for `clientsecret` auth. |
 | `-certificatepath` | `<path>` | Path to certificate file (.pem, .p12). Required for `certificate` auth. |
@@ -76,13 +76,26 @@ fab-inspector -fabricworkspace <guid> -fabricitem <guid> -rules <path|url> [opti
 ## 4 — Authentication methods
 
 ### local (default)
-No additional parameters required. Uses only the local file system. Cannot access Fabric workspaces or OneLake URLs.
+No additional parameters required. Uses only the local file system. Cannot access Fabric workspaces or OneLake URLs or APIs.
 
 ### interactive
 Opens a browser-based authentication flow. Optionally provide `-clientid`.
 
 ```bash
 fab-inspector -fabricworkspace "<ws-guid>" -rules ".\rules.json" -authmethod interactive
+```
+
+### azurecli
+Developer flow using Azure CLI credentials. Requires prior `az login` command. Uses the Azure CLI token cache via `AzureCliCredential`. Optionally provide `-tenantid` to pin token acquisition to a specific tenant.
+
+```bash
+# Standard developer flow
+az login
+fab-inspector -fabricworkspace "<ws-guid>" -rules ".\rules.json" -authmethod azurecli
+
+# With tenant pinning
+az login
+fab-inspector -fabricworkspace "<ws-guid>" -rules ".\rules.json" -authmethod azurecli -tenantid "<tenant-id>"
 ```
 
 ### clientsecret
@@ -145,6 +158,7 @@ fab-inspector -fabricitem ".\FabricProject" -rules ".\rules.json" -formats "JSON
 7. **`clientsecret` auth** requires all three: `-tenantid`, `-clientid`, `-clientsecret`.
 8. **`certificate` auth** requires: `-tenantid`, `-clientid`, `-certificatepath`.
 9. **`federatedtoken` auth** requires: `-tenantid`, `-clientid`, `-federatedtoken`.
+10. **`azurecli` auth** requires prior `az login`; optionally provide `-tenantid` for tenant pinning.
 
 ## 7 — Common invocation examples
 
@@ -172,6 +186,13 @@ fab-inspector -fabricworkspace "<ws-guid>" -rules "./Rules/ci-rules.json" \
 
 ```bash
 fab-inspector -fabricworkspace "<ws-guid>" -rules ".\Base-rules.json" -authmethod interactive -formats "JSON,HTML"
+```
+
+### Workspace-scoped with Azure CLI (developer flow)
+
+```bash
+az login
+fab-inspector -fabricworkspace "<ws-guid>" -rules ".\Base-rules.json" -authmethod azurecli -formats "JSON,HTML"
 ```
 
 ### Workspace-scoped with OneLake rules and output
@@ -204,6 +225,7 @@ See the [example GitHub Actions workflow](https://github.com/NatVanG/fab-inspect
 
 - **Never log or output** tokens, passwords, client secrets, or federated tokens.
 - Service principal credentials can be passed via environment variables (`FABRIC_TENANT_ID`, `FABRIC_CLIENT_ID`, `FABRIC_CLIENT_SECRET`) instead of command-line arguments.
+- **Azure CLI credentials** (`azurecli` auth) are managed by Azure CLI/MSAL token storage; no client secrets are passed on the command line.
 - If a user shares sensitive strings, advise rotating/regenerating them.
 - When suggesting commands that include `-clientsecret` or `-federatedtoken`, use placeholder values and note the security implications.
 
@@ -233,3 +255,9 @@ fab-inspector /?
 - **Base rules**: `Rules/Base-rules.json`
 - **Docker image**: published as `fab-inspector` on container registries
 - **CI/CD example**: https://github.com/NatVanG/fab-inspector-cicd-example
+
+
+
+
+
+
