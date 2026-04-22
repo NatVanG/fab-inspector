@@ -253,8 +253,6 @@ fab-inspector /?
 - **Wiki**: https://github.com/NatVanG/PBI-InspectorV2/wiki
 - **Example rules**: `DocsExamples/` folder in this repository
 - **Base rules**: `Rules/Base-rules.json`
-- **Docker image**: published as `fab-inspector` on container registries
-- **CI/CD example**: https://github.com/NatVanG/fab-inspector-cicd-example
 
 
 
