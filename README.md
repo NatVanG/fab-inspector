@@ -16,7 +16,7 @@ Meet Ric, the Fab Inspector!
 
 This is a community project that is not supported by Microsoft.
 
-:exclamation: For Power BI reports, Fab Inspector only supports the new enhanced metadata report format (PBIR)
+:exclamation: When testing Power BI reports, Fab Inspector only supports the new enhanced metadata report format (PBIR). Also PBIX files are not currently supported, only PBIP or "{my-report}.Report" folders.
 
 ## <a name="contents"></a>Contents
 
