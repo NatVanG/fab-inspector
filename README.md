@@ -12,16 +12,67 @@ Meet Ric, the Fab Inspector!
   <img src="DocsImages/FabInsp_500x500.png" alt="Fab Inspector logo" height="240"/>
 </div>
 
+## NOTE :pencil:
+
+This is a community project that is not supported by Microsoft.
+
+:exclamation: For Power BI reports, Fab Inspector only supports the new enhanced metadata report format (PBIR)
+
+## <a name="contents"></a>Contents
+
+- [Intro](#intro)
+- [Usage scenarios](#usage-scenarios)
+- [Thanks](#thanks-pray)
+- [Bugs](#bugs-beetle)
+- [Breaking changes](#breaking-changes-boom)
+- [Release notes](#release-notes-scroll)
+- [Releases](#releases)
+- [Base rules](#baserulesoverview)
+- [Run from the graphical user interface (GUI)](#gui)
+- [Run from the Command line (CLI)](#cli)
+- [Interpreting results](#results)
+- [Azure DevOps and GitHub integration](#ado)
+- [Custom rules guide](#customerruleguide)
+- [Patching](#patching) :warning: deprecated
+- [Create and Debug Rules with VS Code](#rulecreationwithvscode)
+- [Rule File Examples](#customrulesexamples)
+- [Wiki](#wiki)
+- [Known issues](#knownissues)
+- [Report an issue](#reportanissue)
+
+## <a id="intro"></a>Intro
+
+Fab Inspector is a deterministic validator for Microsoft Fabric deployments. It lets teams codify quality expectations as JSON rules, run those rules against local files or published workspace items, and produce repeatable pass/fail results that are easy to automate.
+
+In practice, Fab Inspector acts like a unit test runner for Fabric artifacts. Instead of asserting behavior in application code, you assert metadata contracts: naming conventions, report design guardrails, CopyJob and pipeline settings, Lakehouse definitions, and even API-derived checks via built-in operators. The result is policy-as-code for Fabric solutions, with outputs that fit both developer feedback loops and enterprise pipelines.
+
+Rules are expressed as declarative JSON rather than imperative scripts or custom code. This has practical advantages over alternatives such as PowerShell scripts, Python notebooks, or hard-coded validation logic:
+
+- **No compilation or runtime dependencies** — rules are plain JSON files that any text editor, version control system, or LLM can read, generate, and diff without a build step.
+- **Separation of concerns** — validation intent lives outside application code, so rules evolve independently and can be owned by different personas (architects, governance teams, or AI agents).
+- **Composable and parameterised** — rules support variables, conditional logic via [JSONLogic](https://jsonlogic.com/), and operator extensions (REST API calls, DAX queries, OneLake reads) without writing code.
+- **Portable** — the same JSON rules file runs locally on a developer's machine, in Azure DevOps pipelines, and in GitHub Actions with no modification.
+- **AI-friendly** — the declarative structure is easy for language models to generate, review, and explain, making rules a natural artefact in agentic workflows.
+
+Fab Inspector is designed with agentic development workflows in mind. AI agents can generate or refactor Fabric items quickly, but speed and non-deterministic outputs increase the need for reliable validation gates. Fab Inspector provides that gate by:
+
+- validating agent-produced artifacts before merge or deployment
+- enforcing team standards consistently across item types
+- surfacing actionable failures in Console, HTML, JSON, Azure DevOps, or GitHub formats
+- enabling fast local checks and scalable CI/CD quality controls with the same rule model
+
+Whether you are authoring rules locally, running checks in pull requests, or validating an entire Fabric workspace, Fab Inspector helps teams move faster with confidence by making quality requirements explicit, testable, and automatable.
+
 ## Usage scenarios
 
 Fab Inspector supports local, workspace, and OneLake-based validation workflows. The scenarios below show common usage patterns and how inputs/outputs can be mixed.
 
-| Scenario | Fabric items source | Rules source | Test results output targets | Typical auth method |
+| Scenario | Fabric items source | Rules source | Test results output targets | Auth method |
 |---|---|---|---|---|
 | 1. Local-only | Local folder | Local JSON | Console, HTML, JSON, PNG | `local` |
 | 2. CI/CD checkout | Git checkout on build agent | Local JSON in repo or pipeline workspace | ADO/GitHub logs, JSON/HTML pipeline artifacts | `local` or `federatedtoken` (GitHub OIDC) |
-| 3. Workspace-scoped | All items in a Fabric workspace | Local or OneLake JSON | Console, local or OneLake JSON/HTML | `interactive`, `clientsecret`, `certificate`, `federatedtoken`, or `managedidentity` |
-| 4. Item-scoped workspace | Single item in a Fabric workspace | Local or OneLake JSON | Console, local or OneLake JSON/HTML | `interactive`, `clientsecret`, `certificate`, `federatedtoken`, or `managedidentity` |
+| 3. Workspace-scoped | All items in a Fabric workspace | Local or OneLake JSON | Console, local or OneLake JSON/HTML | `interactive`, `azurecli`, [`clientsecret`](#handling-client-secrets-safely), `certificate`, `federatedtoken`, or `managedidentity` |
+| 4. Item-scoped workspace | Single item in a Fabric workspace | Local or OneLake JSON | Console, local or OneLake JSON/HTML | `interactive`, `azurecli`, [`clientsecret`](#handling-client-secrets-safely), `certificate`, `federatedtoken`, or `managedidentity` |
 | 5. Hybrid | Mix: local items, workspace items, and/or REST API responses | Local or OneLake JSON | Any combination of console, local files, logs, and OneLake JSON | Depends on selected remote resources |
 
 ### 1. Local Fabric item definitions + local rules + local output
@@ -86,7 +137,7 @@ Typical command (interactive auth):
 fab-inspector -fabricworkspace "<workspace-guid>" -rules ".\Files\Base-rules.json" -authmethod interactive -formats "JSON,HTML"
 ```
 
-With OneLake-hosted rules and results (service principal):
+With OneLake-hosted rules and results using [client secret authentication](#handling-client-secrets-safely):
 
 ```bash
 fab-inspector -fabricworkspace "<workspace-guid>" -rules "https://onelake.dfs.fabric.microsoft.com/<workspace>/<lakehouse>/Files/rules/rules.json" -authmethod clientsecret -clientid "<client-id>" -tenantid "<tenant-id>" -clientsecret "<secret>" -output "https://onelake.dfs.fabric.microsoft.com/<workspace>/<lakehouse>/Files/results" -formats "JSON"
@@ -110,7 +161,7 @@ Typical command (interactive auth):
 fab-inspector -fabricworkspace "<workspace-guid>" -fabricitem "<item-guid>" -rules ".\Files\Base-rules.json" -authmethod interactive -formats "Console"
 ```
 
-CI/CD pipeline (client secret):
+CI/CD pipeline using [client secret authentication](#handling-client-secrets-safely):
 
 ```bash
 fab-inspector -fabricworkspace "<workspace-guid>" -fabricitem "<item-guid>" -rules ".\Files\Base-rules.json" -authmethod clientsecret -clientid "<client-id>" -tenantid "<tenant-id>" -clientsecret "<secret>" -formats "ADO"
@@ -162,11 +213,15 @@ Example combinations:
 
 This flexibility lets teams start local, then progressively adopt CI/CD, workspace-scoped inspection, and API-driven rules without changing the core rule model.
 
-## NOTE :pencil:
+## Thanks :pray:
 
-This is a community project that is not supported by Microsoft. 
+Thanks to [Michael Kovalsky](https://github.com/m-kovalsky) of [Semantic Link Labs](https://github.com/microsoft/semantic-link-labs) fame and [Rui Romano](https://github.com/ruiromano) for their feedback on this project. Thanks also to [Luke Young](https://www.linkedin.com/in/luke-young-2301/) for creating the original PBI Inspector logo and this new V2 version. 
 
-:exclamation: Aside from Fabric items other than Power BI reports, Fab Inspector only supports the new enhanced metadata file format (PBIR), see https://learn.microsoft.com/en-gb/power-bi/developer/projects/projects-report?tabs=desktop#pbir-format. For the older PBIR-legacy file format (see https://learn.microsoft.com/en-gb/power-bi/developer/projects/projects-report?tabs=desktop#report-files), please check out the PBI Inspector repository available at https://github.com/NatVanG/PBI-Inspector :exclamation:
+Special thanks also to [David Mitchell](https://www.linkedin.com/in/davidmitchell85) for his unwavering support and advocacy of PBI Inspector. Check out [David's Microsoft blog post and tooling](https://www.microsoft.com/en-us/microsoft-fabric/blog/2024/12/02/automate-your-migration-to-microsoft-fabric-capacities/) for automating the migration of workspaces from Power BI Premium to Microsoft Fabric capacities.
+
+## Bugs :beetle:
+
+Please report issues [here](https://github.com/NatVanG/PBI-InspectorV2/issues).
 
 ## Breaking changes :boom:
 **PBI Inspector v2.0.0**: To support the new enhanced report format (PBIR), a new "part" custom command has been introduced which helps to navigate to or iterate over the new metadata file format's parts such as "Pages", "Visuals", "Bookmarks" etc. Rules defined against the new format are not backward compatible with the older PBIR-legacy format and vice versa.
@@ -187,16 +242,6 @@ This is a community project that is not supported by Microsoft.
 
  ```/home/fabricproject/folder1/copyjob1.CopyJob/copyjob-content.json```
 
-## Thanks :pray:
-
-Thanks to [Michael Kovalsky](https://github.com/m-kovalsky) of [Semantic Link Labs](https://github.com/microsoft/semantic-link-labs) fame and [Rui Romano](https://github.com/ruiromano) for their feedback on this project. Thanks also to [Luke Young](https://www.linkedin.com/in/luke-young-2301/) for creating the original PBI Inspector logo and this new V2 version. 
-
-Special thanks also to [David Mitchell](https://www.linkedin.com/in/davidmitchell85) for his unwavering support and advocacy of PBI Inspector. Check out [David's Microsoft blog post and tooling](https://www.microsoft.com/en-us/microsoft-fabric/blog/2024/12/02/automate-your-migration-to-microsoft-fabric-capacities/) for automating the migration of workspaces from Power BI Premium to Microsoft Fabric capacities.
-
-## Bugs :beetle:
-
-Please report issues [here](https://github.com/NatVanG/PBI-InspectorV2/issues).
-
 ## Release notes :scroll:
 
 **PBI Inspector v2.3.0**: PBI Inspector V2 has evolved to support testing any Fabric items' CI/CD metadata, not just Power BI reports. Use either the Windows Forms desktop application or the CLI, which includes the `-fabricitem` option for targeting local or Fabric items and the `-help` option to list all supported CLI parameters. Here's an example rules file that tests a CopyJob Fabric item's metadata: [CopyJob Rules](DocsExamples/Example-CopyJob-Rules.json). Here's another example that tests metadata across Fabric item types: [Cross-Fabric Items Rule](DocsExamples/Example-FabricCrossItem-Rules.json).
@@ -206,31 +251,6 @@ Please report issues [here](https://github.com/NatVanG/PBI-InspectorV2/issues).
 The Console output as well as the Azure DevOps and GitHub outputs now include the file path of the current Fabric item being tested or failing a test. This is especically useful when pointing PBI Inspector V2 at a parent folder containing many reports and other Fabric items.
 
 The `-parallel` option is now available with the CLI only as an experimental feature. See details in the [Run from the Command line (CLI)](#cli) section.
-
-## <a name="contents"></a>Contents
-
-- [Intro](#intro)
-- [Releases](#releases)
-- [Base rules](#baserulesoverview)
-- [Run from the Graphical user interface](#gui)
-- [Run from the Command line (CLI)](#cli)
-- [Interpreting results](#results)
-- [Azure DevOps and GitHub integration](#ado)
-- [Custom rules guide](#customerruleguide)
-- [Patching](#patching) ::warning:: deprecated
-- [Create and Debug Rules with VS Code](#rulecreationwithvscode)
-- [Examples](#customrulesexamples)
-- [Wiki](#wiki)
-- [Known issues](#knownissues)
-- [Report an issue](#reportanissue)
-
-## <a id="intro"></a>Intro
-
-So we've DevOps, MLOps and DataOps... but why not VisOps? How can we ensure that business intelligence charts and other visuals within report pages are published in a consistent, performance optimised and accessible state? For example, are local report settings set in a consistent manner for a consistent user experience? Are visuals deviating from the specified theme by, say, using custom colours? Are visuals kept lean so they render quickly? Are charts axes titles displayed? etc.
-
-With Microsoft Power BI, visuals are placed on a canvas and formatted as desired, images may be included and theme files referenced. Testing the consistency of the visuals output has thus far typically been a manual process. The [Power BI Project file format (.pbip) was introduced](https://powerbi.microsoft.com/en-us/blog/deep-dive-into-power-bi-desktop-developer-mode-preview/) then more recently [enhanced](https://learn.microsoft.com/en-gb/power-bi/developer/projects/projects-report) to enable pro developer application lifecycle management and source control also known as CI/CD. Fab Inspector contributes to CI/CD for Power BI reports by providing the ability to define fully configurable testing rules written in json. Fab Inspector is powered by Greg Dennis's Json Logic .NET implementation, see https://json-everything.net/json-logic. 
-
-**PBI Inspector v2.3**: Fab Inspector (previously PBI Inspector V2) has evolved to support testing any Fabric items' CI/CD metadata, not just Power BI reports. Use either the Windows Forms desktop application or the CLI, which includes the `-fabricitem` option for targeting local or Fabric items and the `-help` option to list all supported CLI parameters. Here's an example rules file that tests a CopyJob Fabric item's metadata: [CopyJob Rules](DocsExamples/Example-CopyJob-Rules.json). Here's another example that tests metadata across Fabric item types: [Cross-Fabric Items Rule](DocsExamples/Example-FabricCrossItem-Rules.json).
 
 ## <a id="releases"></a>Releases
 
@@ -260,15 +280,16 @@ To disable a rule, edit the rule's json to specify ```"disabled": true```. At ru
 
 Running ```FabInspector.WinForm.exe``` presents the user with the following interface: 
 
-![WinForm 1](DocsImages/WinForm1.png)
+![WinForm](DocsImages/FabInspector.WinForm.png)
 
-1. Browse to a local Fabric CI/CD folder containing one or more Fabric CI/CD item definitions or paste the folder path.
-2. Either use the base (Power BI) rules file included in the application or select your own.
-3. Use the "Browse" button to select an output directory to which the results will be written. Alternatively, select the "Use temp files" check box to write the resuls to a temporary folder that will be deleted upon exiting the application.
-4. Select output formats, either JSON or HTML or both. To simply view the test results in a formatted page select the HTML output.
-5. Select "Verbose" to output both test passes and fails, if left unselected then only failed test results will be reported.  
-6. Select "Run". The test run log messages are displayed at the bottom of the window. If "Use temp files" is selected (or the Output directory field is left blank) along with the HTML output check box, then the browser will open to display the HTML results.
-7. Any test run information, warnings or errors are displayed in the console output textbox.
+1. Specify the Workspace Id to test. Leave blank to test Fabric item definitions on the local file system.
+2. If Workspace Id is blank, browse to a local Fabric CI/CD folder containing one or more Fabric CI/CD item definitions or paste the folder path. Alternatively if a Workspace ID is defined, optional scope the rules to a Fabric Item ID
+3. Either use the base (Power BI) rules file included in the application or select your own local rules file or a DFS URL to a rules file in OneLake.
+4. Use the "Browse" button to select a local output directory to which the results will be written. Another option is to specify a DFS URL to a folder in OneLake storage. Alternatively, select the "Use temp files" check box to write the resuls to a temporary local folder that will be deleted upon exiting the application.
+5. Select output formats, either JSON or HTML or both. To simply view the test results in a formatted page select the HTML output.
+6. Select "Verbose" to output both test passes and fails, if left unselected then only failed test results will be reported.  
+7. Select "Run". The test run log messages are displayed at the bottom of the window. If "Use temp files" is selected (or the Output directory field is left blank) along with the HTML output check box, then the browser will open to display the HTML results.
+8. Test run information, warnings or errors are displayed in the console output textbox.
 
 ## <a id="cli"></a>Run from the command line interface (CLI)
 
@@ -279,7 +300,7 @@ All command line parameters are as follows:
 ```-fabricworkspace workspaceid```: Optional. Microsoft Fabric Workspace ID (GUID). When specified, enables Fabric mode where the Inspector uses the Fabric remote file system to access items directly from a Fabric workspace.
 - **Workspace-scoped access**: Omit `-fabricitem` to inspect all items in the workspace.
 - **Item-scoped access**: Provide a Fabric Item ID GUID via `-fabricitem` to inspect only that item.
-- **Authentication required**: `-authmethod` must be one of `interactive`, `clientsecret`, `certificate`, `federatedtoken`, or `managedidentity`.
+- **Authentication required**: `-authmethod` must be one of `interactive`, `azurecli`, `clientsecret`, `certificate`, `federatedtoken`, or `managedidentity`.
 
 ```-pbip filepath```: Deprecated, use `-fabricitem` instead. The path to the `*.pbip` file still works for local mode.
 
@@ -289,19 +310,20 @@ All command line parameters are as follows:
 
 ```-rules filepath```: Required. Path to the rules file. This can be a local JSON file path or a OneLake DFS URL. OneLake rules URLs require non-local authentication.
 
-```-authmethod local|interactive|clientsecret|certificate|federatedtoken|managedidentity```: Optional, defaults to `local`.
+```-authmethod local|interactive|azurecli|clientsecret|certificate|federatedtoken|managedidentity```: Optional, defaults to `local`.
 - **local** (default): No authentication, uses local file system.
 - **interactive**: Interactive browser authentication.
-- **clientsecret**: Service principal authentication using client secret (recommended for CI/CD pipelines).
+- **azurecli**: Developer authentication using Azure CLI credentials from a prior `az login`. Optionally pair with `-tenantid` to pin to a specific tenant.
+- **clientsecret**: Service principal authentication using client secret. See [Handling client secrets safely](#handling-client-secrets-safely).
 - **certificate**: Service principal authentication using a certificate.
 - **federatedtoken**: Service principal authentication using federated token.
 - **managedidentity**: Managed identity authentication.
 
 ```-clientid clientid```: Optional. Azure AD application (client) ID. Required for `clientsecret`, `certificate`, and `federatedtoken`. Optional for `interactive` and `managedidentity`. Can also be provided via `FABRIC_CLIENT_ID`.
 
-```-tenantid tenantid```: Optional. Azure AD tenant ID/name. Required for `clientsecret`, `certificate`, and `federatedtoken`. Can also be provided via `FABRIC_TENANT_ID`.
+```-tenantid tenantid```: Optional. Azure AD tenant ID/name. Required for `clientsecret`, `certificate`, and `federatedtoken`; optional for `azurecli` tenant pinning. Can also be provided via `FABRIC_TENANT_ID`.
 
-```-clientsecret secret```: Optional. Required for `clientsecret`. Can also be provided via `FABRIC_CLIENT_SECRET`.
+```-clientsecret secret```: Optional. Required for `clientsecret`. Can also be provided via `FABRIC_CLIENT_SECRET`. See [Handling client secrets safely](#handling-client-secrets-safely).
 
 ```-certificatepath path```: Optional. Required for `certificate`. Path to certificate file (`.pem`, `.p12`, etc.).
 
@@ -312,7 +334,7 @@ All command line parameters are as follows:
 ```-verbose true|false```: Optional, false by default. If false then only rule violations are shown; if true then all results are listed.
 
 ```-parallel true|false```: Optional, false by default. If true, rules are split across available processors and run in parallel before results are merged. If false, rules are executed on a single thread.
-- **Note**: Parallel execution is not supported with remote authentication methods (`interactive`, `clientsecret`, `certificate`, `federatedtoken`, `managedidentity`).
+- **Note**: Parallel execution is not supported with remote authentication methods (`interactive`, `azurecli`, `clientsecret`, `certificate`, `federatedtoken`, `managedidentity`).
 
 ```-output directorypath|onelakeurl```: Optional. Output local directory path or OneLake folder URL. If omitted, a temporary local directory is created. OneLake output requires non-local authentication.
 
@@ -357,13 +379,23 @@ All command line parameters are as follows:
 
 ``` fab-inspector -fabricworkspace "12345678-1234-1234-1234-123456789abc" -rules ".\Files\Base-rules.json" -authmethod interactive -formats "JSON,HTML"```
 
+- Run rules against all items in a Fabric workspace using Azure CLI authentication after `az login`:
+
+``` fab-inspector -fabricworkspace "12345678-1234-1234-1234-123456789abc" -rules ".\Files\Base-rules.json" -authmethod azurecli -formats "JSON,HTML"```
+
 - Run rules against a specific item in a Fabric workspace (item-scoped access) using interactive authentication:
 
 ``` fab-inspector -fabricworkspace "12345678-1234-1234-1234-123456789abc" -fabricitem "87654321-4321-4321-4321-cba987654321" -rules ".\Files\Base-rules.json" -authmethod interactive -formats Console```
 
-- Run rules in CI/CD pipeline using client secret authentication:
+- Run rules in CI/CD pipeline using [client secret authentication](#handling-client-secrets-safely):
 
 ``` fab-inspector -fabricworkspace "12345678-1234-1234-1234-123456789abc" -fabricitem "87654321-4321-4321-4321-cba987654321" -rules ".\Files\Base-rules.json" -authmethod clientsecret -clientid "your-client-id" -tenantid "your-tenant-id" -clientsecret "your-secret" -formats ADO```
+
+### Handling client secrets safely
+
+Treat client secrets as credentials, not configuration. Do not commit them to source control, paste real values into checked-in scripts, or expose them in build logs, screenshots, or shared chat threads.
+
+Prefer CI/CD secret stores, environment variables, or platform-managed credential mechanisms over hard-coded command lines. If a secret may have been exposed, rotate it immediately and update any dependent pipeline or app configuration.
 
 ## <a id="results"></a>Interpreting results
 
@@ -505,7 +537,7 @@ For example (without the optional patch logic), the following rule checks that, 
 
 ## <a id="patching"></a>Patching
 
-::warning:: Deprecated
+:warning: Deprecated
 
 Optionally a rule can now also define a *patch* to fix items (e.g. visuals) failing the test. For example a patch for the test above is as follows. The patch iterates through the failing visual names returned and fixes the "Visuals" part of the report definition by setting the "showAxisTitle" property to "true" for both the category and value axes:
 

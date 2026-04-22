@@ -25,6 +25,8 @@ namespace Ric.Operators;
 [JsonConverter(typeof(NowJsonConverter))]
 public class NowRule : Json.Logic.Rule
 {
+    private const string Iso8601UtcFormat = "yyyy-MM-dd'T'HH:mm:ss.fffffff'Z'";
+
     internal Json.Logic.Rule? Offset { get; }
     internal Json.Logic.Rule? Unit { get; }
 
@@ -39,7 +41,7 @@ public class NowRule : Json.Logic.Rule
         var now = DateTimeOffset.UtcNow;
 
         if (Offset is null)
-            return now.ToString("o", CultureInfo.InvariantCulture);
+            return now.UtcDateTime.ToString(Iso8601UtcFormat, CultureInfo.InvariantCulture);
 
         var offsetNode = Offset.Apply(data, contextData);
         double offsetValue;
@@ -75,7 +77,7 @@ public class NowRule : Json.Logic.Rule
             _ => throw new JsonLogicException($"The now rule does not support unit '{unit}'. Supported: seconds, minutes, hours, days, months, years.")
         };
 
-        return result.ToString("o", CultureInfo.InvariantCulture);
+        return result.UtcDateTime.ToString(Iso8601UtcFormat, CultureInfo.InvariantCulture);
     }
 }
 

@@ -1,0 +1,98 @@
+{
+  "rules": [
+    {
+      "id": "SCAN_MODIFIED_WORKSPACES_LAST_7_DAYS",
+      "name": "Scanner API - scan workspaces modified in last 7 days",
+      "description": "Uses the Admin GetModifiedWorkspaces endpoint with modifiedSince set to now-7 days, then runs scannerapi for the returned workspace IDs. If no workspaces were modified, it skips scannerapi safely.",
+      "itemType": "none",
+      "disabled": false,
+      "test": [
+        {
+          "let": [
+            {
+              "cutoffUtc": {
+                "now": [
+                  -7,
+                  "days"
+                ]
+              },
+              "modifiedWorkspaces": {
+                "apiget": [
+                  "https://api.powerbi.com/v1.0/myorg/admin/workspaces/modified?modifiedSince={modifiedSince}&excludePersonalWorkspaces={excludePersonalWorkspaces}&excludeInActiveWorkspaces={excludeInActiveWorkspaces}",
+                  {
+                    "var": "cutoffUtc"
+                  },
+                  "true",
+                  "true"
+                ]
+              },
+              "workspaceIds": {
+                "map": [
+                  {
+                    "var": "modifiedWorkspaces"
+                  },
+                  {
+                    "var": "id"
+                  }
+                ]
+              },
+              "scanResult": {
+                "if": [
+                  {
+                    ">": [
+                      {
+                        "count": [
+                          {
+                            "var": "workspaceIds"
+                          }
+                        ]
+                      },
+                      0
+                    ]
+                  },
+                  {
+                    "scannerapi": [
+                      {
+                        "var": "workspaceIds"
+                      },
+                      true,
+                      false,
+                      false,
+                      false,
+                      false
+                    ]
+                  },
+                  {
+                    "torecord": [
+                      "workspaces",
+                      []
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "==": [
+                {
+                  "count": [
+                    {
+                      "var": "workspaceIds"
+                    }
+                  ]
+                },
+                {
+                  "count": [
+                    {
+                      "var": "scanResult.workspaces"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        true
+      ]
+    }
+  ]
+}

@@ -588,6 +588,7 @@ namespace FabInspector.Tests
 
             Assert.That(result, Is.Not.Null);
             var dateStr = result!.GetValue<string>();
+            Assert.That(dateStr, Does.Match(@"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{7}Z$"));
             var parsed = DateTimeOffset.Parse(dateStr);
             Assert.That(parsed, Is.GreaterThanOrEqualTo(before.AddSeconds(-1)));
             Assert.That(parsed, Is.LessThanOrEqualTo(after.AddSeconds(1)));
@@ -603,7 +604,9 @@ namespace FabInspector.Tests
             var result = rule!.Apply(null);
             Assert.That(result, Is.Not.Null);
 
-            var parsed = DateTimeOffset.Parse(result!.GetValue<string>());
+            var dateStr = result!.GetValue<string>();
+            Assert.That(dateStr, Does.Match(@"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{7}Z$"));
+            var parsed = DateTimeOffset.Parse(dateStr);
             var expected = DateTimeOffset.UtcNow.AddDays(-2);
             Assert.That(parsed, Is.EqualTo(expected).Within(TimeSpan.FromSeconds(2)));
         }
@@ -618,7 +621,9 @@ namespace FabInspector.Tests
             var result = rule!.Apply(null);
             Assert.That(result, Is.Not.Null);
 
-            var parsed = DateTimeOffset.Parse(result!.GetValue<string>());
+            var dateStr = result!.GetValue<string>();
+            Assert.That(dateStr, Does.Match(@"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{7}Z$"));
+            var parsed = DateTimeOffset.Parse(dateStr);
             var expected = DateTimeOffset.UtcNow.AddHours(-5);
             Assert.That(parsed, Is.EqualTo(expected).Within(TimeSpan.FromSeconds(2)));
         }
@@ -633,7 +638,9 @@ namespace FabInspector.Tests
             var result = rule!.Apply(null);
             Assert.That(result, Is.Not.Null);
 
-            var parsed = DateTimeOffset.Parse(result!.GetValue<string>());
+            var dateStr = result!.GetValue<string>();
+            Assert.That(dateStr, Does.Match(@"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{7}Z$"));
+            var parsed = DateTimeOffset.Parse(dateStr);
             var expected = DateTimeOffset.UtcNow.AddMinutes(30);
             Assert.That(parsed, Is.EqualTo(expected).Within(TimeSpan.FromSeconds(2)));
         }
