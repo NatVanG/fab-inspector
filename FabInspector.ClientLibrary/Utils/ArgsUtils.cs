@@ -13,6 +13,21 @@ PBIRInspector CLI - Power BI / Fabric Inspector Command Line Tool
 
 USAGE:
   PBIRInspectorCLI.exe -fabricitem <path> -rules <path> [options]
+  PBIRInspectorCLI.exe serve
+
+MCP SERVER MODE:
+  serve                           Start as an MCP (Model Context Protocol) server over stdio.
+                                  Exposes CLI functionality as MCP tools for AI assistants.
+                                  
+                                  VS Code / Claude Desktop configuration example:
+                                  {
+                                    ""mcpServers"": {
+                                      ""fab-inspector"": {
+                                        ""command"": ""fab-inspector"",
+                                        ""args"": [""serve""]
+                                      }
+                                    }
+                                  }
 
 REQUIRED PARAMETERS:
   -fabricitem <path>|<guid>       Path to local folder containing one or more Fabric item definition or, if supplied with -fabricworkspace, Fabric item ID (guid).

@@ -4,6 +4,7 @@ using FabInspector.ClientLibrary;
 using FabInspector.ClientLibrary.Utils;
 using FabInspector.Core;
 using FabInspector.Operators;
+using ModelContextProtocol.Server;
 using Ric.Operators;
 
 internal partial class Program
@@ -18,6 +19,13 @@ internal partial class Program
             args[0].Equals("/?", StringComparison.OrdinalIgnoreCase)))
         {
             ArgsUtils.DisplayHelp();
+            return;
+        }
+
+        // MCP server mode
+        if (args.Length > 0 && args[0].Equals("serve", StringComparison.OrdinalIgnoreCase))
+        {
+            await StartMcpServer();
             return;
         }
 
@@ -52,9 +60,13 @@ internal partial class Program
 
     private static ServiceProvider InitServiceProvider()
     {
-        // 1. Create the service collection.
         var services = new ServiceCollection();
+        ConfigureSharedServices(services);
+        return services.BuildServiceProvider();
+    }
 
+    internal static void ConfigureSharedServices(IServiceCollection services)
+    {
         var registries = new List<JsonLogicOperatorRegistry>();
 
         registries.Add(new JsonLogicOperatorRegistry(
@@ -103,14 +115,32 @@ internal partial class Program
                 new ScannerApiOperator()
         }));
 
-        services.AddTransient<IEnumerable<JsonLogicOperatorRegistry>>(provider => registries);
+        services.AddSingleton<IEnumerable<JsonLogicOperatorRegistry>>(registries);
+        services.AddSingleton<IReportPageWireframeRenderer, FabInspector.ImageLibrary.ReportPageWireframeRenderer>();
+    }
 
-        services.AddTransient<IReportPageWireframeRenderer, FabInspector.ImageLibrary.ReportPageWireframeRenderer>();
+    private static async Task StartMcpServer()
+    {
+        // Redirect Console.Out to stderr so inspection log messages
+        // don't corrupt the MCP stdio transport (which uses stdout).
+        Console.SetOut(Console.Error);
 
-        // 3. Build the service provider from the service collection.
-        var serviceProvider = services.BuildServiceProvider();
+        var builder = Host.CreateApplicationBuilder();
+        ConfigureSharedServices(builder.Services);
 
-        return serviceProvider;
+        builder.Services
+            .AddMcpServer(options =>
+            {
+                options.ServerInfo = new()
+                {
+                    Name = "fab-inspector",
+                    Version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "3.0.0"
+                };
+            })
+            .WithStdioServerTransport()
+            .WithToolsFromAssembly();
+
+        await builder.Build().RunAsync();
     }
 
     private static void Main_MessageIssued(object? sender, FabInspector.Core.MessageIssuedEventArgs e)

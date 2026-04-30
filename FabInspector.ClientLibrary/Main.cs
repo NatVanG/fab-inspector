@@ -119,68 +119,116 @@ namespace FabInspector.ClientLibrary
             }
         }
 
+        /// <summary>
+        /// Runs inspection and returns structured results without writing files.
+        /// Intended for programmatic consumers such as the MCP server mode.
+        /// </summary>
+        public static async Task<TestRun> RunAndReturnResultsAsync(Args args, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
+        {
+            _args = args;
+
+            // Authenticate if needed (same logic as Run)
+            if (args.AuthMethod != "local")
+            {
+                await AuthenticateAsync(args).ConfigureAwait(false);
+            }
+
+            SetPartContext();
+
+            var rules = await Task.Run(() => DeserialiseRulesFromPath(args.RulesFilePath ?? string.Empty)).ConfigureAwait(false);
+
+            IEnumerable<TestResult> testResults;
+            if (args.Parallel)
+            {
+                var ruleBuckets = ChunkInspectionRules(rules);
+                var tasks = ruleBuckets.Select(async bucket => await RunSingleThreadedCoreAsync(bucket, registries).ConfigureAwait(false));
+                var allResults = await Task.WhenAll(tasks).ConfigureAwait(false);
+                testResults = allResults.SelectMany(r => r ?? Enumerable.Empty<TestResult>()).OrderBy(r => r.RuleId);
+            }
+            else
+            {
+                testResults = await RunSingleThreadedCoreAsync(rules, registries).ConfigureAwait(false) ?? Enumerable.Empty<TestResult>();
+            }
+
+            testResults = FilterResults(testResults);
+
+            return new TestRun
+            {
+                CompletionTime = DateTime.UtcNow,
+                TestedFilePath = args.FabricItem,
+                RulesFilePath = args.RulesFilePath,
+                Verbose = args.Verbose,
+                Results = testResults
+            };
+        }
+
+        private static async Task AuthenticateAsync(Args args)
+        {
+            TokenCredential credential;
+            switch (args.AuthMethod.ToLower())
+            {
+                case "interactive":
+                    credential = FabricAuthenticationHelper.CreateInteractiveCredential(args.ClientId, args.TenantId);
+                    break;
+                case "clientsecret":
+                    credential = FabricAuthenticationHelper.CreateClientSecretCredential(args.ClientId!, args.ClientSecret!, args.TenantId!);
+                    break;
+                case "certificate":
+                    credential = FabricAuthenticationHelper.CreateCertificateCredential(args.ClientId!, args.TenantId!, args.CertificatePath!, args.CertificatePassword);
+                    break;
+                case "federatedtoken":
+                    credential = FabricAuthenticationHelper.CreateFederatedTokenCredential(args.ClientId!, args.FederatedToken!, args.TenantId!);
+                    break;
+                case "managedidentity":
+                    credential = FabricAuthenticationHelper.CreateManagedIdentityCredential(args.ClientId);
+                    break;
+                case "azurecli":
+                    credential = FabricAuthenticationHelper.CreateAzureCliCredential(args.TenantId);
+                    break;
+                default:
+                    throw new ArgumentException($"Unsupported authentication method: {args.AuthMethod}");
+            }
+
+            _tokenProvider = new CachingTokenProvider(credential);
+            await _tokenProvider.GetTokenAsync(AuthenticationHelper.FabricScopes).ConfigureAwait(false);
+            FabInspector.Core.Part.ContextService.HttpClient = _httpClient;
+            FabInspector.Core.Part.ContextService.TokenProvider = _tokenProvider;
+        }
+
+        /// <summary>
+        /// Core inspection runner that creates a file system and runs inspection without output.
+        /// Shared between RunSingleThreadedAsync and RunAndReturnResultsAsync.
+        /// </summary>
+        private static async Task<IEnumerable<TestResult>?> RunSingleThreadedCoreAsync(InspectionRules rules, IEnumerable<JsonLogicOperatorRegistry> registries)
+        {
+            FabricRemoteFileSystem? remoteFs = null;
+
+            try
+            {
+                var fileSystem = await CreateFileSystemAsync().ConfigureAwait(false);
+                remoteFs = SubscribeToProgressEvents(fileSystem);
+
+                var testResults = await RunInspectionAsync(rules, registries, fileSystem).ConfigureAwait(false);
+                return FilterResults(testResults);
+            }
+            catch (Exception e)
+            {
+                OnMessageIssued(MessageTypeEnum.Error, e.Message);
+            }
+            finally
+            {
+                UnsubscribeFromProgressEvents(remoteFs);
+            }
+
+            return Enumerable.Empty<TestResult>();
+        }
+
         public static async Task Run(Args args, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
             // Authenticate based on auth method
             if (args.AuthMethod != "local")
             {
-                TokenCredential credential;
-                switch (args.AuthMethod.ToLower())
-                {
-                    case "interactive":
-                        credential = FabricAuthenticationHelper.CreateInteractiveCredential(
-                            args.ClientId,
-                            args.TenantId
-                        );
-                        break;
-
-                    case "clientsecret":
-                        credential = FabricAuthenticationHelper.CreateClientSecretCredential(
-                            args.ClientId!,
-                            args.ClientSecret!,
-                            args.TenantId!
-                        );
-                        break;
-
-                    case "certificate":
-                        credential = FabricAuthenticationHelper.CreateCertificateCredential(
-                            args.ClientId!,
-                            args.TenantId!,
-                            args.CertificatePath!,
-                            args.CertificatePassword
-                        );
-                        break;
-
-                    case "federatedtoken":
-                        credential = FabricAuthenticationHelper.CreateFederatedTokenCredential(
-                            args.ClientId!,
-                            args.FederatedToken!,
-                            args.TenantId!
-                        );
-                        break;
-
-                    case "managedidentity":
-                        credential = FabricAuthenticationHelper.CreateManagedIdentityCredential(
-                            args.ClientId
-                        );
-                        break;
-
-                    case "azurecli":
-                        credential = FabricAuthenticationHelper.CreateAzureCliCredential(
-                            args.TenantId
-                        );
-                        break;
-
-                    default:
-                        throw new ArgumentException($"Unsupported authentication method: {args.AuthMethod}");
-                }
-
-                _tokenProvider = new CachingTokenProvider(credential);
-
-                // Warm the token cache for the primary API scope and configure the shared context
-                await _tokenProvider.GetTokenAsync(AuthenticationHelper.FabricScopes).ConfigureAwait(false);
-                FabInspector.Core.Part.ContextService.HttpClient = _httpClient;
-                FabInspector.Core.Part.ContextService.TokenProvider = _tokenProvider;
+                await AuthenticateAsync(args).ConfigureAwait(false);
             }
 
             try
@@ -332,26 +380,7 @@ namespace FabInspector.ClientLibrary
 
         private static async Task<IEnumerable<TestResult>?> RunSingleThreadedAsync(InspectionRules rules, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
-            FabricRemoteFileSystem? remoteFs = null;
-
-            try
-            {
-                var fileSystem = await CreateFileSystemAsync().ConfigureAwait(false);
-                remoteFs = SubscribeToProgressEvents(fileSystem);
-
-                var testResults = await RunInspectionAsync(rules, registries, fileSystem).ConfigureAwait(false);
-                return FilterResults(testResults);
-            }
-            catch (Exception e)
-            {
-                OnMessageIssued(MessageTypeEnum.Error, e.Message);
-            }
-            finally
-            {
-                UnsubscribeFromProgressEvents(remoteFs);
-            }
-
-            return Enumerable.Empty<TestResult>();
+            return await RunSingleThreadedCoreAsync(rules, registries).ConfigureAwait(false);
         }
 
         private static async Task OutputResultsAsync(IEnumerable<TestResult> testResults, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
