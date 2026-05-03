@@ -362,35 +362,33 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /.editorconfig
-/PBIXInspectorCLI/PBIXInspector.pbitool.json
-/PBIXInspectorCLI/Properties/launchSettings.json
-/PBIXInspectorCLI/Files/pbip/.gitignore
-/PBIXInspectorTests/Files/pbip/.gitignore
-/PBIXInspectorCLI/Properties/PublishProfiles/FolderProfile.pubxml
-/PBIXInspectorWinLibrary/Files/pbip/Inventory sample - fails.Dataset/.pbi/localSettings.json
-/PBIXInspectorWinLibrary/Files/pbip/Inventory sample - fails.Report/.pbi/localSettings.json
-/PBIXInspectorWinForm/Files/pbip/Inventory sample - fails.Dataset/.pbi
-/PBIXInspectorWinForm/Files/pbip/Inventory sample - fails.Report/.pbi
+/FabInspector.CLI/PBIXInspector.pbitool.json
+/FabInspector.CLI/Properties/launchSettings.json
+/FabInspector.CLI/Files/pbip/.gitignore
+/FabInspector.Tests/Files/pbip/.gitignore
+/FabInspector.CLI/Properties/PublishProfiles/FolderProfile.pubxml
+/FabInspector.WinForm/Files/pbip/Inventory sample - fails.Dataset/.pbi
+/FabInspector.WinForm/Files/pbip/Inventory sample - fails.Report/.pbi
 /DocsExamples/ReportExample/PBI Inspector Reporting.Dataset/.pbi
 /DocsExamples/ReportExample/PBI Inspector Reporting.Report/.pbi
-/PBIXInspectorWinForm/Files/pbip/Inventory sample.Dataset/.pbi
-/PBIXInspectorWinForm/Files/pbip/Inventory sample.Report/.pbi
-/PBIRInspectorTests/Files/pbip/Inventory-sample-fails.Report/.pbi/localSettings.json
-/PBIRInspectorTests/Files/pbip/Inventory sample.SemanticModel/.pbi/cache.abf
-/PBIRInspectorTests/Files/pbip/Inventory sample.SemanticModel/.pbi/editorSettings.json
-/PBIRInspectorTests/Files/pbip/Inventory sample.SemanticModel/.pbi/localSettings.json
-/PBIRInspectorTests/Files/pbip/Inventory sample.Report/.pbi/localSettings.json
-/PBIRInspectorTests/Files/pbip/Example-rules-fails.SemanticModel/.pbi/cache.abf
-/PBIRInspectorTests/Files/pbip/Example-rules-fails.SemanticModel/.pbi/editorSettings.json
-/PBIRInspectorTests/Files/pbip/Example-rules-fails.SemanticModel/.pbi/localSettings.json
-/PBIRInspectorTests/Files/pbip/Example-rules-fails.Report/.pbi/localSettings.json
-/PBIRInspectorTests/Files/pbip/Inventory-sample-fails.SemanticModel/.pbi/cache.abf
-/PBIRInspectorTests/Files/pbip/Inventory-sample-fails.SemanticModel/.pbi/editorSettings.json
-/PBIRInspectorTests/Files/pbip/Inventory-sample-fails.SemanticModel/.pbi/localSettings.json
-/PBIRInspectorTests/Files/pbip/Example-rules-passes.Report/.pbi/localSettings.json
-/PBIRInspectorTests/Files/pbip/Example-rules-passes.SemanticModel/.pbi/cache.abf
-/PBIRInspectorTests/Files/pbip/Example-rules-passes.SemanticModel/.pbi/editorSettings.json
-/PBIRInspectorTests/Files/pbip/Example-rules-passes.SemanticModel/.pbi/localSettings.json
+/FabInspector.WinForm/Files/pbip/Inventory sample.Dataset/.pbi
+/FabInspector.WinForm/Files/pbip/Inventory sample.Report/.pbi
+/FabInspector.Tests/Files/pbip/Inventory-sample-fails.Report/.pbi/localSettings.json
+/FabInspector.Tests/Files/pbip/Inventory sample.SemanticModel/.pbi/cache.abf
+/FabInspector.Tests/Files/pbip/Inventory sample.SemanticModel/.pbi/editorSettings.json
+/FabInspector.Tests/Files/pbip/Inventory sample.SemanticModel/.pbi/localSettings.json
+/FabInspector.Tests/Files/pbip/Inventory sample.Report/.pbi/localSettings.json
+/FabInspector.Tests/Files/pbip/Example-rules-fails.SemanticModel/.pbi/cache.abf
+/FabInspector.Tests/Files/pbip/Example-rules-fails.SemanticModel/.pbi/editorSettings.json
+/FabInspector.Tests/Files/pbip/Example-rules-fails.SemanticModel/.pbi/localSettings.json
+/FabInspector.Tests/Files/pbip/Example-rules-fails.Report/.pbi/localSettings.json
+/FabInspector.Tests/Files/pbip/Inventory-sample-fails.SemanticModel/.pbi/cache.abf
+/FabInspector.Tests/Files/pbip/Inventory-sample-fails.SemanticModel/.pbi/editorSettings.json
+/FabInspector.Tests/Files/pbip/Inventory-sample-fails.SemanticModel/.pbi/localSettings.json
+/FabInspector.Tests/Files/pbip/Example-rules-passes.Report/.pbi/localSettings.json
+/FabInspector.Tests/Files/pbip/Example-rules-passes.SemanticModel/.pbi/cache.abf
+/FabInspector.Tests/Files/pbip/Example-rules-passes.SemanticModel/.pbi/editorSettings.json
+/FabInspector.Tests/Files/pbip/Example-rules-passes.SemanticModel/.pbi/localSettings.json
 FILE_SYSTEM_ABSTRACTION_SUMMARY.md
 DocsExamples/FabricFileSystem-Implementation-Summary.md
 DocsExamples/FabricFileSystem-README.md

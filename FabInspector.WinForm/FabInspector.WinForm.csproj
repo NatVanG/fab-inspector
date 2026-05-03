@@ -13,9 +13,9 @@
     <VersionPrefix>3.0.0</VersionPrefix>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>pbiinspector.png</PackageIcon>
-    <PackageProjectUrl>https://github.com/NatVanG/PBIRInspector</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/NatVanG/fab-inspector</PackageProjectUrl>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <RepositoryUrl>https://github.com/NatVanG/PBIRInspector</RepositoryUrl>
+    <RepositoryUrl>https://github.com/NatVanG/fab-inspector</RepositoryUrl>
     <ApplicationIcon>pbiinspector.ico</ApplicationIcon>
   </PropertyGroup>
 
