@@ -177,8 +177,8 @@ flowchart TB
     subgraph Inputs
       A1[Fabric items: Local folder]
       A2[Fabric items: Workspace items]
-      A3["Fabric REST API\n(apiget, dfsget, scannerapi)"]
-      A4["Power BI REST API & DAX\n(apiget, daxquery)"]
+      A3["Fabric REST API\n(apiget, dfsget, scannerapi operators)"]
+      A4["Power BI REST API\n(apiget, daxquery, scannerapi operators)"]
       B1[Rules: Local JSON]
       B2[Rules: OneLake JSON]
     end
