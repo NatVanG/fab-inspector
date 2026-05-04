@@ -1,6 +1,6 @@
-[![CodeQL](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/github-code-scanning/codeql)
-[![PBIRInspector Tests](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/tests.yml/badge.svg)](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/tests.yml)
-[![Build and Publish Docker Image](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/NatVanG/PBI-InspectorV2/actions/workflows/docker-publish.yml)
+[![CodeQL](https://github.com/NatVanG/fab-inspector/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/NatVanG/fab-inspector/actions/workflows/github-code-scanning/codeql)
+[![PBIRInspector Tests](https://github.com/NatVanG/fab-inspector/actions/workflows/tests.yml/badge.svg)](https://github.com/NatVanG/fab-inspector/actions/workflows/tests.yml)
+[![Build and Publish Docker Image](https://github.com/NatVanG/fab-inspector/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/NatVanG/fab-inspector/actions/workflows/docker-publish.yml)
 # Fab Inspector
 
 ## Deterministic rules-based testing for Microsoft Fabric in the age of AI
@@ -44,7 +44,7 @@ This is a community project that is not supported by Microsoft.
 
 Fab Inspector is a deterministic validator for Microsoft Fabric deployments. It lets teams codify quality expectations as JSON rules, run those rules against local files or published workspace items, and produce repeatable pass/fail results that are easy to automate.
 
-In practice, Fab Inspector acts like a unit test runner for Fabric artifacts. Instead of asserting behavior in application code, you assert metadata contracts: naming conventions, report design guardrails, CopyJob and pipeline settings, Lakehouse definitions, and even API-derived checks via built-in operators. The result is policy-as-code for Fabric solutions, with outputs that fit both developer feedback loops and enterprise pipelines.
+In practice, Fab Inspector acts like a unit test runner for Fabric artifacts. Instead of asserting behavior in application code, you assert metadata contracts: naming conventions, report design guardrails, CopyJob and DataPipeline settings and even API-derived checks via built-in operators. The result is policy-as-code for Fabric solutions, with outputs that fit both developer feedback loops and enterprise pipelines.
 
 Rules are expressed as declarative JSON rather than imperative scripts or custom code. This has practical advantages over alternatives such as PowerShell scripts, Python notebooks, or hard-coded validation logic:
 
@@ -54,11 +54,12 @@ Rules are expressed as declarative JSON rather than imperative scripts or custom
 - **Portable** — the same JSON rules file runs locally on a developer's machine, in Azure DevOps pipelines, and in GitHub Actions with no modification.
 - **AI-friendly** — the declarative structure is easy for language models to generate, review, and explain, making rules a natural artefact in agentic workflows.
 
-Fab Inspector is designed with agentic development workflows in mind. AI agents can generate or refactor Fabric items quickly, but speed and non-deterministic outputs increase the need for reliable validation gates. Fab Inspector provides that gate by:
+Fab Inspector is designed with agentic development workflows in mind. AI agents can generate or refactor Fabric items quickly, but speed and non-deterministic outputs increase the need for reliable validation gates. Fab Inspector provides such gates by:
 
 - validating agent-produced artifacts before merge or deployment
 - enforcing team standards consistently across item types
 - surfacing actionable failures in Console, HTML, JSON, Azure DevOps, or GitHub formats
+- optionally logging validation results as JSON to Fabric OneLake for post-hoc reporting
 - enabling fast local checks and scalable CI/CD quality controls with the same rule model
 
 Whether you are authoring rules locally, running checks in pull requests, or validating an entire Fabric workspace, Fab Inspector helps teams move faster with confidence by making quality requirements explicit, testable, and automatable.
@@ -69,15 +70,15 @@ Fab Inspector supports local, workspace, and OneLake-based validation workflows.
 
 | Scenario | Fabric items source | Rules source | Test results output targets | Auth method |
 |---|---|---|---|---|
-| 1. Local-only | Local folder | Local JSON | Console, HTML, JSON, PNG | `local` |
-| 2. CI/CD checkout | Git checkout on build agent | Local JSON in repo or pipeline workspace | ADO/GitHub logs, JSON/HTML pipeline artifacts | `local` or `federatedtoken` (GitHub OIDC) |
-| 3. Workspace-scoped | All items in a Fabric workspace | Local or OneLake JSON | Console, local or OneLake JSON/HTML | `interactive`, `azurecli`, [`clientsecret`](#handling-client-secrets-safely), `certificate`, `federatedtoken`, or `managedidentity` |
-| 4. Item-scoped workspace | Single item in a Fabric workspace | Local or OneLake JSON | Console, local or OneLake JSON/HTML | `interactive`, `azurecli`, [`clientsecret`](#handling-client-secrets-safely), `certificate`, `federatedtoken`, or `managedidentity` |
-| 5. Hybrid | Mix: local items, workspace items, and/or REST API responses | Local or OneLake JSON | Any combination of console, local files, logs, and OneLake JSON | Depends on selected remote resources |
+| 1. Local-only | Local folder | Local | Console, HTML, JSON | `local` |
+| 2. CI/CD checkout | Git checkout on build agent | Local in repo | GitHub logs, JSON stored in OneLake | `local` or `federatedtoken` (GitHub OIDC) |
+| 3. Workspace-scoped | All/some items in a Fabric workspace | Local or OneLake | Console or JSON stored in OneLake | `interactive`, `azurecli`, [`clientsecret`](#handling-client-secrets-safely), `certificate`, `federatedtoken`, or `managedidentity` |
+| 4. Item-scoped workspace | Single item in a Fabric workspace | Local or OneLake | Console or JSON stored in OneLake | `interactive`, `azurecli`, [`clientsecret`](#handling-client-secrets-safely), `certificate`, `federatedtoken`, or `managedidentity` |
+
 
 ### 1. Local Fabric item definitions + local rules + local output
 
-Use this when developing rules or validating item definitions on your machine before committing code. Supports all output formats: `Console`, `JSON`, `HTML`, and `PNG`.
+Use this when developing rules or validating item definitions on your machine before committing code. Output formats: `Console`, `JSON`, `HTML`.
 
 ```mermaid
 flowchart LR
@@ -90,12 +91,12 @@ flowchart LR
 Typical command:
 
 ```bash
-fab-inspector -fabricitem "C:\FabricProject" -rules "C:\Rules\MyRules.json" -output "C:\FabResults" -formats "JSON,HTML"
+fab-inspector -fabricitem "C:\FabricProject" -rules "C:\Rules\MyRules.json" -output "C:\FabResults" -formats "Console,JSON"
 ```
 
 ### 2. Fabric item definitions in source control + local rules in CI/CD
 
-Use this when a pipeline checks out a repository and runs quality gates as part of pull request or deployment validation. The `-formats ADO` or `-formats GitHub` option emits native CI log commands. Use `-parallel true` to split rules across available CPU cores for faster runs (local auth only).
+Use this when a pipeline checks out a repository and runs quality gates as part of pull request or deployment validation. The `-formats ADO` or `-formats GitHub` option emits native CI log commands.
 
 An easy way to run Fab Inspector on a GitHub Ubuntu runner is via the published `fab-inspector` Docker image — see the [example GitHub Actions workflow](https://github.com/NatVanG/fab-inspector-cicd-example/blob/main/.github/workflows/fab-inspector.yml).
 
@@ -111,12 +112,6 @@ Typical command (Azure DevOps):
 
 ```bash
 fab-inspector -fabricitem "./FabricProject" -rules "./Rules/ci-rules.json" -formats "ADO"
-```
-
-GitHub Actions with federated token (OIDC) authentication, validating against a Fabric workspace in the pipeline:
-
-```bash
-fab-inspector -fabricworkspace "<workspace-guid>" -rules "./Rules/ci-rules.json" -authmethod federatedtoken -clientid "<client-id>" -tenantid "<tenant-id>" -federatedtoken "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" -formats "GitHub"
 ```
 
 ### 3. Workspace-scoped: all items in a Fabric workspace
@@ -135,6 +130,12 @@ Typical command (interactive auth):
 
 ```bash
 fab-inspector -fabricworkspace "<workspace-guid>" -rules ".\Files\Base-rules.json" -authmethod interactive -formats "JSON,HTML"
+```
+
+GitHub Actions with federated token (OIDC) authentication, validating against a Fabric workspace in the pipeline:
+
+```bash
+fab-inspector -fabricworkspace "<workspace-guid>" -rules "./Rules/ci-rules.json" -authmethod federatedtoken -clientid "<client-id>" -tenantid "<tenant-id>" -federatedtoken "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" -formats "GitHub"
 ```
 
 With OneLake-hosted rules and results using [client secret authentication](#handling-client-secrets-safely):
@@ -167,9 +168,9 @@ CI/CD pipeline using [client secret authentication](#handling-client-secrets-saf
 fab-inspector -fabricworkspace "<workspace-guid>" -fabricitem "<item-guid>" -rules ".\Files\Base-rules.json" -authmethod clientsecret -clientid "<client-id>" -tenantid "<tenant-id>" -clientsecret "<secret>" -formats "ADO"
 ```
 
-### 5. Hybrid pattern (any combination)
+### 5. Hybrid pattern
 
-Inputs and outputs are independent, so you can mix local and remote sources as needed. Rules can call the Power BI and Fabric REST APIs, the OneLake DFS endpoint, or execute DAX queries directly from within rule logic using the [`apiget`](DocsExamples/FabInspector-Operators.md#apiget), [`dfsget`](DocsExamples/FabInspector-Operators.md#dfsget), [`daxquery`](DocsExamples/FabInspector-Operators.md#daxquery), and [`scannerapi`](DocsExamples/FabInspector-Operators.md#scannerapi) operators. Use `-parallel true` to split rules across CPU cores when using local auth (not supported with remote auth methods).
+Rules can call the Power BI/Fabric admin scanner API, the Power BI and Fabric REST APIs' GET methods, request JSON files from the OneLake DFS endpoint, or execute DAX queries directly from within rule logic using the [`apiget`](DocsExamples/FabInspector-Operators.md#apiget), [`dfsget`](DocsExamples/FabInspector-Operators.md#dfsget), [`daxquery`](DocsExamples/FabInspector-Operators.md#daxquery), and [`scannerapi`](DocsExamples/FabInspector-Operators.md#scannerapi) operators.
 
 ```mermaid
 flowchart TB
@@ -186,7 +187,7 @@ flowchart TB
 
     subgraph Outputs
       D1[Console]
-      D2[Local JSON/HTML/PNG]
+      D2[Local JSON/HTML]
       D3[OneLake JSON]
       D4[ADO or GitHub logs]
     end
@@ -209,19 +210,18 @@ Example combinations:
 2. Workspace items + local rules + GitHub annotations.
 3. Workspace items + OneLake rules + OneLake JSON output.
 4. Workspace items + OneLake rules (including REST API and DAX calls via operators) + OneLake JSON output.
-5. Local items + parallel rule execution (`-parallel true`) + JSON output for fast validation during development.
 
 This flexibility lets teams start local, then progressively adopt CI/CD, workspace-scoped inspection, and API-driven rules without changing the core rule model.
 
 ## Thanks :pray:
 
-Thanks to [Michael Kovalsky](https://github.com/m-kovalsky) of [Semantic Link Labs](https://github.com/microsoft/semantic-link-labs) fame and [Rui Romano](https://github.com/ruiromano) for their feedback on this project. Thanks also to [Luke Young](https://www.linkedin.com/in/luke-young-2301/) for creating the original PBI Inspector logo and this new V2 version. 
+Thanks to [Michael Kovalsky](https://github.com/m-kovalsky) of [Semantic Link Labs](https://github.com/microsoft/semantic-link-labs) fame and [Rui Romano](https://github.com/ruiromano) for their feedback on the first iteration of this project. Thanks also to [Luke Young](https://www.linkedin.com/in/luke-young-2301/) for creating the original PBI Inspector logo and the new Fab Inspector version. 
 
-Special thanks also to [David Mitchell](https://www.linkedin.com/in/davidmitchell85) for his unwavering support and advocacy of PBI Inspector. Check out [David's Microsoft blog post and tooling](https://www.microsoft.com/en-us/microsoft-fabric/blog/2024/12/02/automate-your-migration-to-microsoft-fabric-capacities/) for automating the migration of workspaces from Power BI Premium to Microsoft Fabric capacities.
+Special thanks also to [David Mitchell](https://www.linkedin.com/in/davidmitchell85) for his unwavering support and advocacy of Fab Inspector. Check out [David's Microsoft blog post and tooling](https://www.microsoft.com/en-us/microsoft-fabric/blog/2024/12/02/automate-your-migration-to-microsoft-fabric-capacities/) for automating the migration of workspaces from Power BI Premium to Microsoft Fabric capacities.
 
 ## Bugs :beetle:
 
-Please report issues [here](https://github.com/NatVanG/PBI-InspectorV2/issues).
+Please report issues [here](https://github.com/NatVanG/fab-inspector/issues).
 
 ## Breaking changes :boom:
 **PBI Inspector v2.0.0**: To support the new enhanced report format (PBIR), a new "part" custom command has been introduced which helps to navigate to or iterate over the new metadata file format's parts such as "Pages", "Visuals", "Bookmarks" etc. Rules defined against the new format are not backward compatible with the older PBIR-legacy format and vice versa.
@@ -254,11 +254,11 @@ The `-parallel` option is now available with the CLI only as an experimental fea
 
 ## <a id="releases"></a>Releases
 
-See releases for the Windows application and Command Line interface (CLI) at: https://github.com/NatVanG/PBI-InspectorV2/releases.
+See releases for the Windows application and Command Line interface (CLI) at: https://github.com/NatVanG/fab-inspector/releases.
 
 ## <a id="baserulesoverview"></a>Base rules
 
-While Fab Inspector supports custom rules, it also includes the following base rules defined at https://github.com/NatVanG/PBI-InspectorV2/blob/main/Rules/Base-rules.json. Currently the base rules only test the visual layer of Power BI reports as opposed to other Fabric CI/CD items. Some base rules allow for user parameters as shown below:
+While Fab Inspector supports custom rules, it also includes the following base rules defined at https://github.com/NatVanG/fab-inspector/blob/main/Rules/Base-rules.json. Currently the base rules only test the visual layer of Power BI reports as opposed to other Fabric CI/CD items. Some base rules allow for user parameters as shown below:
 
 1. Remove custom visuals which are not used in the report (no user parameters)
 2. Reduce the number of visible visuals on the page (set parameter ```paramMaxVisualsPerPage``` to the maximum number of allowed visible visuals on the page)
@@ -272,7 +272,7 @@ While Fab Inspector supports custom rules, it also includes the following base r
 10. Ensure pages do not scroll vertically (no user parameters)
 11. Ensure alternativeText has been defined for all visuals (disabled by default, no user parameters)
 
-To modify parameters, save a local copy of the Base-rules.json file at https://github.com/NatVanG/PBI-InspectorV2/blob/main/Rules/Base-rules.json and point Fab Inspector to the new file.
+To modify parameters, save a local copy of the Base-rules.json file at https://github.com/NatVanG/fab-inspector/blob/main/Rules/Base-rules.json and point Fab Inspector to the new file.
 
 To disable a rule, edit the rule's json to specify ```"disabled": true```. At runtime Fab Inspector will ignore any disabled rule.
 
@@ -355,7 +355,7 @@ All command line parameters are as follows:
 
 - Run "Base-rules.json" rule definitions against PBI report file at "Sales.Report and return results in Json and HTML formats:
 
-``` fab-inspector -fabricitem "C:\Files\Sales.Report" -rules ".\Files\Base-rules.json" -output "C:\Files\TestRun" -formats "JSON,HTML"```
+``` fab-inspector -fabricitem "C:\Files\Sales.Report" -rules ".\Files\Base-rules.json" -output "C:\Files\TestRun" -formats "Console,JSON"```
 
 - Run "Base-rules.json" rule definitions against PBI report file at "Sales.Report and return results to the console only:
 
@@ -377,11 +377,11 @@ All command line parameters are as follows:
 
 - Run rules against all items in a Fabric workspace (workspace-scoped access) using interactive authentication:
 
-``` fab-inspector -fabricworkspace "12345678-1234-1234-1234-123456789abc" -rules ".\Files\Base-rules.json" -authmethod interactive -formats "JSON,HTML"```
+``` fab-inspector -fabricworkspace "12345678-1234-1234-1234-123456789abc" -rules ".\Files\Base-rules.json" -authmethod interactive -formats "Console,JSON"```
 
 - Run rules against all items in a Fabric workspace using Azure CLI authentication after `az login`:
 
-``` fab-inspector -fabricworkspace "12345678-1234-1234-1234-123456789abc" -rules ".\Files\Base-rules.json" -authmethod azurecli -formats "JSON,HTML"```
+``` fab-inspector -fabricworkspace "12345678-1234-1234-1234-123456789abc" -rules ".\Files\Base-rules.json" -authmethod azurecli -formats "Console"```
 
 - Run rules against a specific item in a Fabric workspace (item-scoped access) using interactive authentication:
 
@@ -425,7 +425,7 @@ For a tutorial on how to run the Fab Inspector CLI (aka Fab Inspector) as part o
 
 ## <a id="customerruleguide"></a>Custom Rules Guide
 
-:pencil: This is a high-level guide to custom rules for a deeper explanation of rules and operators see the [Fab Inspector wiki](https://github.com/NatVanG/PBI-InspectorV2/wiki). For a quick-reference of all available operators see:
+:pencil: This is a high-level guide to custom rules for a deeper explanation of rules and operators see the [Fab Inspector wiki](https://github.com/NatVanG/fab-inspector/wiki). For a quick-reference of all available operators see:
 - [Ric Operators](DocsExamples/Ric-Operators.md) — navigation, data transformation, string, set, date/time, and file-system operators
 - [FabInspector Operators](DocsExamples/FabInspector-Operators.md) — REST API (`apiget`, `dfsget`, `daxquery`, `scannerapi`) and layout (`rectoverlap`) operators
 
@@ -737,7 +737,7 @@ Check out the Fab Inspector VS Code extension at https://github.com/NatVanG/fab-
 
 ## <a id="wiki"></a>Wiki
 
-For an in-depth understanding of Fab Inspector rules and operators see the [Fab Inspector wiki](https://github.com/NatVanG/PBI-InspectorV2/wiki).
+For an in-depth understanding of Fab Inspector rules and operators see the [Fab Inspector wiki](https://github.com/NatVanG/fab-inspector/wiki).
 
 ## <a id="knownissues"></a>Known issues
 
@@ -750,4 +750,4 @@ For an in-depth understanding of Fab Inspector rules and operators see the [Fab 
 
 ## <a id="reportanissue"></a>Report an issue
 
-Please report issues at https://github.com/NatVanG/PBI-InspectorV2/issues.
+Please report issues at https://github.com/NatVanG/fab-inspector/issues.
