@@ -9,10 +9,25 @@ namespace FabInspector.ClientLibrary.Utils
         public static void DisplayHelp()
         {
             var helpText = @"
-PBIRInspector CLI - Power BI / Fabric Inspector Command Line Tool
+FabInspector CLI - Power BI / Fabric Inspector Command Line Tool
 
 USAGE:
-  PBIRInspectorCLI.exe -fabricitem <path> -rules <path> [options]
+  fab-inspector -fabricitem <path> -rules <path> [options]
+  fab-inspector serve
+
+MCP SERVER MODE:
+  serve                           Start as an MCP (Model Context Protocol) server over stdio.
+                                  Exposes CLI functionality as MCP tools for AI assistants.
+                                  
+                                  VS Code / Claude Desktop configuration example:
+                                  {
+                                    ""mcpServers"": {
+                                      ""fab-inspector"": {
+                                        ""command"": ""fab-inspector"",
+                                        ""args"": [""serve""]
+                                      }
+                                    }
+                                  }
 
 REQUIRED PARAMETERS:
   -fabricitem <path>|<guid>       Path to local folder containing one or more Fabric item definition or, if supplied with -fabricworkspace, Fabric item ID (guid).
@@ -73,34 +88,34 @@ AUTHENTICATION PARAMETERS (use -authmethod):
 
 EXAMPLES:
   # Local analysis with console output
-  PBIRInspectorCLI.exe -pbip report.pbip -rules rules.json -formats CONSOLE
+  fab-inspector -pbip report.pbip -rules rules.json -formats CONSOLE
   
   # Generate HTML output
-  PBIRInspectorCLI.exe -fabricitem report.pbip -rules rules.json -output results -formats HTML
+  fab-inspector -fabricitem report.pbip -rules rules.json -output results -formats HTML
   
   # Analyze Fabric workspace with client secret authentication, output to OneLake in JSON format
-  PBIRInspectorCLI.exe -fabricworkspace a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6 -rules rules.json ^
+  fab-inspector -fabricworkspace a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6 -rules rules.json ^
     -authmethod clientsecret -tenantid tenant-id -clientid app-id -clientsecret app-secret ^
     -output https://myorg.dfs.core.windows.net/results/ -formats JSON
 
   # Analyze Fabric workspace with client secret authentication, output to Azure DevOps logging commands (as part of a CI/CD pipeline)
-  PBIRInspectorCLI.exe -fabricworkspace a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6 -rules rules.json ^
+  fab-inspector -fabricworkspace a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6 -rules rules.json ^
     -authmethod clientsecret -tenantid tenant-id -clientid app-id -clientsecret app-secret ^
     -formats ADO
   
   # Analyze specific Fabric item in workspace
-  PBIRInspectorCLI.exe -fabricworkspace workspace-guid -fabricitem item-guid -rules rules.json ^
+  fab-inspector -fabricworkspace workspace-guid -fabricitem item-guid -rules rules.json ^
     -authmethod interactive
 
   # Developer flow: analyze Fabric workspace using Azure CLI credentials (after 'az login')
-  PBIRInspectorCLI.exe -fabricworkspace workspace-guid -rules rules.json ^
+  fab-inspector -fabricworkspace workspace-guid -rules rules.json ^
     -authmethod azurecli
 
   # Developer flow with tenant pinning
-  PBIRInspectorCLI.exe -fabricworkspace workspace-guid -rules rules.json ^
+  fab-inspector -fabricworkspace workspace-guid -rules rules.json ^
     -authmethod azurecli -tenantid my-tenant-id
 
-For more information, visit: https://github.com/NatVanG/PBI-InspectorV2
+For more information, visit: https://github.com/NatVanG/fab-inspector
 ";
             Console.WriteLine(helpText);
         }
