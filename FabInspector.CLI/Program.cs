@@ -226,8 +226,8 @@ internal partial class Program
             return string.Concat(Constants.ADOInformationTemplate, FormatStructuredMessageBody(itemPath, message));
         }
 
-        string msgType = messageType.ToString().ToLowerInvariant();
-        string messageTypeFormat = string.Format(Constants.ADOLogIssueTemplate, msgType, itemPath);
+        string messageTypeString = messageType.ToString().ToLowerInvariant();
+        string messageTypeFormat = string.Format(Constants.ADOLogIssueTemplate, messageTypeString, itemPath);
         return string.Concat(messageTypeFormat, message);
     }
 

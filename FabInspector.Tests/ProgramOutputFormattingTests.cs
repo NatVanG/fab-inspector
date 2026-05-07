@@ -15,7 +15,7 @@ public class ProgramOutputFormattingTests
     [SetUp]
     public void SetUp()
     {
-        var cliAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(_ => _.GetName().Name == "FabInspector.CLI")
+        var cliAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(assembly => assembly.GetName().Name == "FabInspector.CLI")
             ?? Assembly.Load("FabInspector.CLI");
 
         _programType = cliAssembly.GetType("Program")!;
