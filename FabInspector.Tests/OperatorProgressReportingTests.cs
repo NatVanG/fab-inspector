@@ -137,7 +137,20 @@ public class OperatorProgressReportingTests
         Assert.That(result.Messages, Has.Some.Contains("Completed workspace scan 'scan-123'"));
     }
 
-    private (List<TestResult> TestResults, List<string> Messages) RunInspection(string fileName, string logic, JsonNode expected)
+    [Test]
+    public void Inspection_RuleWithInfoLogType_ProducesInformationResult()
+    {
+        var result = RunInspection(
+            "logtype-info.json",
+            "{\"==\":[1,2]}",
+            JsonValue.Create(true)!,
+            "info");
+
+        Assert.That(result.TestResults.Single().Pass, Is.False);
+        Assert.That(result.TestResults.Single().LogType, Is.EqualTo(MessageTypeEnum.Information));
+    }
+
+    private (List<TestResult> TestResults, List<string> Messages) RunInspection(string fileName, string logic, JsonNode expected, string logType = "warning")
     {
         var tempFilePath = CreateTempJsonFile(fileName);
         var fileSystem = new FabricLocalFileSystem(tempFilePath);
@@ -152,7 +165,7 @@ public class OperatorProgressReportingTests
                     Name = "Progress Test",
                     Description = "Progress test",
                     Disabled = false,
-                    LogType = "warning",
+                    LogType = logType,
                     Part = string.Empty,
                     Test = new Test
                     {

@@ -62,13 +62,31 @@ namespace FabInspector.Tests.Output
         }
 
         [Test]
+        public async Task WriteAsync_FailingInfoResult_UsesInformationType()
+        {
+            var results = new List<TestResult>
+            {
+                new() { RuleName = "R1", Message = "info", Pass = false, LogType = MessageTypeEnum.Information }
+            };
+
+            var itemMessages = new List<(string ItemPath, MessageTypeEnum Type, string Message)>();
+            var context = CreateContext(results, onItemMessage: (path, type, msg) => itemMessages.Add((path, type, msg)));
+
+            var writer = new ConsoleResultWriter();
+            await writer.WriteAsync(context);
+
+            Assert.That(itemMessages[0].Type, Is.EqualTo(MessageTypeEnum.Information));
+        }
+
+        [Test]
         public async Task WriteAsync_WithResults_EmitsSummaryWithCounts()
         {
             var results = new List<TestResult>
             {
+                new() { RuleName = "R0", Message = "ok", Pass = true, LogType = MessageTypeEnum.Error },
                 new() { RuleName = "R1", Message = "e1", Pass = false, LogType = MessageTypeEnum.Error },
                 new() { RuleName = "R2", Message = "w1", Pass = false, LogType = MessageTypeEnum.Warning },
-                new() { RuleName = "R3", Message = "w2", Pass = false, LogType = MessageTypeEnum.Warning },
+                new() { RuleName = "R3", Message = "i1", Pass = false, LogType = MessageTypeEnum.Information },
             };
 
             var messages = new List<(MessageTypeEnum Type, string Message)>();
@@ -79,7 +97,8 @@ namespace FabInspector.Tests.Output
 
             var summary = messages.FirstOrDefault(m => m.Message.Contains("Test run summary"));
             Assert.That(summary.Message, Does.Contain("1 errors"));
-            Assert.That(summary.Message, Does.Contain("2 warnings"));
+            Assert.That(summary.Message, Does.Contain("1 warnings"));
+            Assert.That(summary.Message, Does.Contain("2 info"));
         }
 
         [Test]

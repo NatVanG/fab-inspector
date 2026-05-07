@@ -162,7 +162,7 @@ internal partial class Program
         else
         {
             //Console and ADO/GitHub outputs
-            if ((!_parsedArgs.ADOOutput && !_parsedArgs.GITHUBOutput) || ((_parsedArgs.ADOOutput || _parsedArgs.GITHUBOutput) && (e.MessageType == MessageTypeEnum.Error || e.MessageType == MessageTypeEnum.Warning)))
+            if ((!_parsedArgs.ADOOutput && !_parsedArgs.GITHUBOutput) || ((_parsedArgs.ADOOutput || _parsedArgs.GITHUBOutput) && ShouldEmitStructuredMessage(e.MessageType)))
             {
                 SafeWriteLine(FormatConsoleMessage(e.ItemPath ?? string.Empty, e.MessageType, e.Message));
             }
@@ -198,12 +198,59 @@ internal partial class Program
 
     private static String FormatConsoleMessage(string itemPath, MessageTypeEnum messageType, string message)
     {
-        string template = _parsedArgs.ADOOutput ? Constants.ADOLogIssueTemplate : _parsedArgs.GITHUBOutput ? Constants.GitHubMsgTemplate : Constants.ConsoleMsgTemplate;
-        string msgType = _parsedArgs.ADOOutput || _parsedArgs.GITHUBOutput ? messageType.ToString().ToLower() : messageType.ToString();
-        string msgSeparator = _parsedArgs.ADOOutput || _parsedArgs.GITHUBOutput ? "" : ": ";
-        string messageTypeFormat = string.Format(template, msgType, itemPath);
+        if (_parsedArgs.ADOOutput)
+        {
+            return FormatAzureDevOpsMessage(itemPath, messageType, message);
+        }
 
-        return string.Concat(messageTypeFormat, msgSeparator, message);
+        if (_parsedArgs.GITHUBOutput)
+        {
+            return FormatGitHubMessage(itemPath, messageType, message);
+        }
+
+        string messageTypeFormat = string.Format(Constants.ConsoleMsgTemplate, messageType, itemPath);
+        return string.Concat(messageTypeFormat, ": ", message);
+    }
+
+    private static bool ShouldEmitStructuredMessage(MessageTypeEnum messageType)
+    {
+        return messageType == MessageTypeEnum.Error
+            || messageType == MessageTypeEnum.Warning
+            || messageType == MessageTypeEnum.Information;
+    }
+
+    private static string FormatAzureDevOpsMessage(string itemPath, MessageTypeEnum messageType, string message)
+    {
+        if (messageType == MessageTypeEnum.Information)
+        {
+            return string.Concat(Constants.ADOInformationTemplate, FormatStructuredMessageBody(itemPath, message));
+        }
+
+        string msgType = messageType.ToString().ToLowerInvariant();
+        string messageTypeFormat = string.Format(Constants.ADOLogIssueTemplate, msgType, itemPath);
+        return string.Concat(messageTypeFormat, message);
+    }
+
+    private static string FormatGitHubMessage(string itemPath, MessageTypeEnum messageType, string message)
+    {
+        string msgType = messageType == MessageTypeEnum.Information
+            ? "notice"
+            : messageType.ToString().ToLowerInvariant();
+
+        if (string.IsNullOrWhiteSpace(itemPath))
+        {
+            return string.Concat("::", msgType, ":: ", message);
+        }
+
+        string messageTypeFormat = string.Format(Constants.GitHubMsgTemplate, msgType, itemPath);
+        return string.Concat(messageTypeFormat, message);
+    }
+
+    private static string FormatStructuredMessageBody(string itemPath, string message)
+    {
+        return string.IsNullOrWhiteSpace(itemPath)
+            ? message
+            : string.Concat(itemPath, ": ", message);
     }
 
     private static void Welcome()

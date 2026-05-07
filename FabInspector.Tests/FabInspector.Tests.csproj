@@ -49,6 +49,7 @@
     <ProjectReference Include="..\FabInspector.Core\FabInspector.Core.csproj" />
     <ProjectReference Include="..\FabInspector.WinImageLibrary\FabInspector.WinImageLibrary.csproj" />
     <ProjectReference Include="..\FabInspector.ClientLibrary\FabInspector.ClientLibrary.csproj" />
+    <ProjectReference Include="..\FabInspector.CLI\FabInspector.CLI.csproj" />
   </ItemGroup>
 
 

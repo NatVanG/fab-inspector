@@ -20,6 +20,7 @@ namespace FabInspector.ClientLibrary
         public const string FabInspectorTemp = "FabInspectorTemp32536";
         public const string PNGOutputDir = "PBIInspectorPNG";
         public const string ADOLogIssueTemplate = "##vso[task.logissue type={0};sourcepath={1};linenumber=0;columnnumber=0;]"; //warning|error
+        public const string ADOInformationTemplate = "##[command]";
         public const string ADOCompleteTemplate = "##vso[task.complete result={0};]DONE";//Failed|SucceededWithIssues|Succeeded
         public const string GitHubMsgTemplate = "::{0} file={1},line=0,col=0:: "; //warning|error
         public const string ConsoleMsgTemplate = "{0} {1}"; //messageType, itempath
