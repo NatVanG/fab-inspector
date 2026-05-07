@@ -152,6 +152,10 @@ namespace FabInspector.Core
                         case "warning":
                             logType = MessageTypeEnum.Warning;
                             break;
+                        case "info":
+                        case "information":
+                            logType = MessageTypeEnum.Information;
+                            break;
                         default:
                             logType = MessageTypeEnum.Warning;
                             break;

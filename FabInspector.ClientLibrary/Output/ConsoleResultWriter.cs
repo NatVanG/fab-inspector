@@ -8,16 +8,16 @@ namespace FabInspector.ClientLibrary.Output
         {
             foreach (var result in context.TestResults)
             {
-                //TODO: use Test log type json property instead
-                var msgType = result.Pass ? MessageTypeEnum.Information : result.LogType;
+                var msgType = GetOutputMessageType(result);
                 context.OnItemMessage(result.ItemPath ?? string.Empty, msgType, result.Message);
             }
 
             if (context.TestResults.Any())
             {
-                context.OnMessage(MessageTypeEnum.Information, string.Format("Test run summary: {0} errors, {1} warnings.",
-                    context.TestResults.Count(_ => _.LogType == MessageTypeEnum.Error),
-                    context.TestResults.Count(_ => _.LogType == MessageTypeEnum.Warning)));
+                context.OnMessage(MessageTypeEnum.Information, string.Format("Test run summary: {0} errors, {1} warnings, {2} info.",
+                    context.TestResults.Count(_ => GetOutputMessageType(_) == MessageTypeEnum.Error),
+                    context.TestResults.Count(_ => GetOutputMessageType(_) == MessageTypeEnum.Warning),
+                    context.TestResults.Count(_ => GetOutputMessageType(_) == MessageTypeEnum.Information)));
             }
             else
             {
@@ -25,6 +25,11 @@ namespace FabInspector.ClientLibrary.Output
             }
 
             return Task.CompletedTask;
+        }
+
+        private static MessageTypeEnum GetOutputMessageType(TestResult result)
+        {
+            return result.Pass ? MessageTypeEnum.Information : result.LogType;
         }
     }
 }
