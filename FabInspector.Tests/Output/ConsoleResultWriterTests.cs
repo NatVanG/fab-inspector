@@ -97,6 +97,7 @@ namespace FabInspector.Tests.Output
 
             var summary = messages.FirstOrDefault(m => m.Message.Contains("Test run summary"));
             Assert.That(summary.Message, Does.Contain("1 errors"));
+            Assert.That(summary.Message, Does.Not.Contain("2 errors"));
             Assert.That(summary.Message, Does.Contain("1 warnings"));
             Assert.That(summary.Message, Does.Contain("2 info"));
         }
