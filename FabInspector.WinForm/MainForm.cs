@@ -70,6 +70,7 @@ namespace FabInspector.WinForm
             new IJsonLogicOperator[] {
                 new RectangleOverlapOperator(),
                 new DaxQueryOperator(),
+                new SqlQueryOperator(),
                 new ApiGetOperator(),
                 new DfsGetOperator(),
                 new ScannerApiOperator()}));
