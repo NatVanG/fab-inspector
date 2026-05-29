@@ -104,6 +104,7 @@
                                 <option value="true">Pass</option>
                                 <option value="false">Fail</option>
                             </select>
+                            <div id="filterPassNotice" class="form-text d-none">Pass filter is unavailable because Verbose is false. Only test failures are displayed.</div>
                         </div>
                     </form>
 
@@ -362,6 +363,10 @@
 
         const allResults = Array.isArray(testRunData.Results) ? testRunData.Results : [];
 
+        function isVerboseEnabled() {
+            return parseBoolean(testRunData.Verbose) === true;
+        }
+
         function normalizeText(value) {
             if (value == null) {
                 return "";
@@ -397,14 +402,28 @@
         }
 
         function getActiveFilters() {
+            const passFilterDisabled = $("#filterPass").prop("disabled");
+
             return {
                 ruleName: normalizeText($("#filterRuleName").val()),
                 logType: $("#filterLogType").val(),
                 ruleItemType: normalizeText($("#filterRuleItemType").val()),
                 itemPath: normalizeText($("#filterItemPath").val()),
                 parentDisplayName: normalizeText($("#filterParentDisplayName").val()),
-                pass: $("#filterPass").val()
+                pass: passFilterDisabled ? "any" : $("#filterPass").val()
             };
+        }
+
+        function configurePassFilterForVerboseMode() {
+            const verboseEnabled = isVerboseEnabled();
+            const disablePassFilter = !verboseEnabled;
+
+            $("#filterPass").prop("disabled", disablePassFilter);
+            $("#filterPassNotice").toggleClass("d-none", !disablePassFilter);
+
+            if (disablePassFilter) {
+                $("#filterPass").val("false");
+            }
         }
 
         function matchLogType(item, filterLogType) {
@@ -477,6 +496,7 @@
 
         // Initial render
         $("#headerContent").json2html(testRunData, testRunHeaderTemplate);
+        configurePassFilterForVerboseMode();
         applyFilters();
 
         // Wire up filter interactions
