@@ -1,12 +1,8 @@
 using Json.Logic;
 using Json.More;
-using Microsoft.VisualBasic;
 using FabInspector.Core;
 using FabInspector.Core.Part;
 using System.Diagnostics;
-using System.Net;
-using System.Net.Http;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
@@ -17,7 +13,6 @@ namespace FabInspector.Operators;
 /// <summary>
 /// Handles the `apiget` operation.
 /// Requires <see cref="ContextService.HttpClient"/>
-/// Does not currently support continuation tokens or pagination, so is best suited for API calls that return a single page of results.
 /// </summary>
 [Operator("apiget")]
 [JsonConverter(typeof(ApiGetJsonConverter))]
@@ -25,6 +20,7 @@ public class ApiGetRule : Json.Logic.Rule
 {
     private const string PowerBIApiBaseUrl = "https://api.powerbi.com/v1.0/myorg";
     private const string FabricApiBaseUrl = "https://api.fabric.microsoft.com/v1";
+    private const int MaxPaginationPages = 1000;
 
     internal Json.Logic.Rule UrlTemplate { get; }
     internal List<Json.Logic.Rule>? UrlParameters { get; }
@@ -105,24 +101,80 @@ public class ApiGetRule : Json.Logic.Rule
         var progressTarget = GetProgressTarget(resolvedUrl);
         ContextService.ReportOperatorProgress("apiget", $"Starting GET request to {hostService} endpoint '{progressTarget}'.");
 
-        var pbiRequest = AuthenticationHelper.CreateAuthenticatedRequestAsync(
-            HttpMethod.Get,
-            resolvedUrl,
-            tokenProvider,
-            hostService.Equals("PBI", StringComparison.InvariantCultureIgnoreCase) ? AuthenticationHelper.PowerBIScopes : AuthenticationHelper.FabricScopes).ConfigureAwait(false).GetAwaiter().GetResult();
+        var visitedUrls = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
+        var allValueItems = new JsonArray();
+        JsonObject? firstPageObject = null;
+        JsonNode? lastPageNode = null;
 
-        var response = ContextService.HttpClient.SendAsync(pbiRequest).ConfigureAwait(false).GetAwaiter().GetResult();
+        var nextUrl = resolvedUrl;
+        var pageNumber = 0;
 
-        if (!response.IsSuccessStatusCode)
+        while (!string.IsNullOrWhiteSpace(nextUrl))
         {
-            var errorContent = response.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
-            ContextService.ReportOperatorProgress("apiget", $"GET request to '{progressTarget}' failed with status {(int)response.StatusCode} {response.StatusCode} after {stopwatch.ElapsedMilliseconds} ms.");
-            throw new HttpRequestException($"API Get request failed ({response.StatusCode}): {errorContent}");
+            pageNumber++;
+            if (pageNumber > MaxPaginationPages)
+            {
+                throw new JsonLogicException($"The apiget rule exceeded the maximum pagination page limit ({MaxPaginationPages}).");
+            }
+
+            if (!visitedUrls.Add(nextUrl))
+            {
+                throw new JsonLogicException($"The apiget rule detected a pagination loop at URL '{nextUrl}'.");
+            }
+
+            if (pageNumber > 1)
+            {
+                ContextService.ReportOperatorProgress("apiget", $"Fetching continuation page {pageNumber} for '{progressTarget}'.");
+            }
+
+            var request = AuthenticationHelper.CreateAuthenticatedRequestAsync(
+                HttpMethod.Get,
+                nextUrl,
+                tokenProvider,
+                hostService.Equals("PBI", StringComparison.InvariantCultureIgnoreCase) ? AuthenticationHelper.PowerBIScopes : AuthenticationHelper.FabricScopes).ConfigureAwait(false).GetAwaiter().GetResult();
+
+            var response = httpClient.SendAsync(request).ConfigureAwait(false).GetAwaiter().GetResult();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = response.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+                ContextService.ReportOperatorProgress("apiget", $"GET request to '{progressTarget}' failed with status {(int)response.StatusCode} {response.StatusCode} after {stopwatch.ElapsedMilliseconds} ms.");
+                throw new HttpRequestException($"API Get request failed ({response.StatusCode}): {errorContent}");
+            }
+
+            var resultJson = response.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
+            var pageNode = JsonNode.Parse(resultJson);
+            lastPageNode = pageNode;
+
+            if (pageNode is JsonObject pageObject)
+            {
+                firstPageObject ??= pageObject.DeepClone().AsObject();
+
+                if (pageObject["value"] is JsonArray valueArray)
+                {
+                    foreach (var item in valueArray)
+                    {
+                        allValueItems.Add(item?.DeepClone());
+                    }
+                }
+            }
+
+            var continuation = ResolveContinuationUrl(response, pageNode, nextUrl);
+            nextUrl = continuation;
         }
 
-        var resultJson = response.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
         ContextService.ReportOperatorProgress("apiget", $"Completed GET request to '{progressTarget}' in {stopwatch.ElapsedMilliseconds} ms.");
-        return JsonNode.Parse(resultJson);
+
+        if (firstPageObject != null && allValueItems.Count > 0)
+        {
+            firstPageObject["value"] = allValueItems;
+            firstPageObject.Remove("continuationToken");
+            firstPageObject.Remove("continuationUri");
+            firstPageObject.Remove("@odata.nextLink");
+            return firstPageObject;
+        }
+
+        return lastPageNode;
     }
 
     private static string GetProgressTarget(string resolvedUrl)
@@ -130,6 +182,93 @@ public class ApiGetRule : Json.Logic.Rule
         return Uri.TryCreate(resolvedUrl, UriKind.Absolute, out var uri)
             ? uri.GetLeftPart(UriPartial.Path)
             : resolvedUrl;
+    }
+
+    private static string? ResolveContinuationUrl(HttpResponseMessage response, JsonNode? pageNode, string currentUrl)
+    {
+        if (TryGetHeaderValue(response, "x-ms-continuationuri", out var continuationUriFromHeader) ||
+            TryGetHeaderValue(response, "continuationuri", out continuationUriFromHeader))
+        {
+            return continuationUriFromHeader;
+        }
+
+        if (TryGetHeaderValue(response, "x-ms-continuationtoken", out var continuationTokenFromHeader) ||
+            TryGetHeaderValue(response, "continuationtoken", out continuationTokenFromHeader))
+        {
+            return UpsertQueryParameter(currentUrl, "continuationToken", continuationTokenFromHeader);
+        }
+
+        if (pageNode is not JsonObject pageObject)
+        {
+            return null;
+        }
+
+        var continuationUri = pageObject["continuationUri"]?.GetValue<string>();
+        if (!string.IsNullOrWhiteSpace(continuationUri))
+        {
+            return continuationUri;
+        }
+
+        var odataNextLink = pageObject["@odata.nextLink"]?.GetValue<string>();
+        if (!string.IsNullOrWhiteSpace(odataNextLink))
+        {
+            return odataNextLink;
+        }
+
+        var continuationToken = pageObject["continuationToken"]?.GetValue<string>();
+        if (!string.IsNullOrWhiteSpace(continuationToken))
+        {
+            return UpsertQueryParameter(currentUrl, "continuationToken", continuationToken);
+        }
+
+        return null;
+    }
+
+    private static bool TryGetHeaderValue(HttpResponseMessage response, string headerName, out string value)
+    {
+        value = string.Empty;
+        if (!response.Headers.TryGetValues(headerName, out var values))
+        {
+            return false;
+        }
+
+        value = values.FirstOrDefault() ?? string.Empty;
+        return !string.IsNullOrWhiteSpace(value);
+    }
+
+    private static string UpsertQueryParameter(string url, string parameterName, string parameterValue)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            var separator = url.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+            return $"{url}{separator}{Uri.EscapeDataString(parameterName)}={Uri.EscapeDataString(parameterValue)}";
+        }
+
+        var queryParameters = new List<string>();
+        var query = uri.Query.TrimStart('?');
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            foreach (var pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var equalsIndex = pair.IndexOf('=');
+                var key = equalsIndex >= 0 ? pair[..equalsIndex] : pair;
+                if (key.Equals(parameterName, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    continue;
+                }
+
+                queryParameters.Add(pair);
+            }
+        }
+
+        queryParameters.Add($"{Uri.EscapeDataString(parameterName)}={Uri.EscapeDataString(parameterValue)}");
+
+        var builder = new UriBuilder(uri)
+        {
+            Query = string.Join("&", queryParameters)
+        };
+
+        return builder.Uri.ToString();
     }
 }
 

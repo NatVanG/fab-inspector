@@ -89,6 +89,40 @@ public class OperatorProgressReportingTests
     }
 
     [Test]
+    public void ApiGet_PaginatesUsingFabricContinuationToken()
+    {
+        ContextService.HttpClient = CreateHttpClient(
+            CreateJsonResponse(HttpStatusCode.OK, "{\"value\":[{\"id\":1}],\"continuationToken\":\"token-page-2\"}"),
+            CreateJsonResponse(HttpStatusCode.OK, "{\"value\":[{\"id\":2}]}"));
+        ContextService.TokenProvider = new CachingTokenProvider(new FakeTokenCredential());
+
+        var result = RunInspection(
+            "api-get-pagination-fabric.json",
+            "{\"apiget\":[\"https://api.fabric.microsoft.com/v1/workspaces\"]}",
+            JsonNode.Parse("{\"value\":[{\"id\":1},{\"id\":2}]}")!);
+
+        Assert.That(result.TestResults.Single().Pass, Is.True);
+        Assert.That(result.Messages, Has.Some.Contains("continuation page 2"));
+    }
+
+    [Test]
+    public void ApiGet_PaginatesUsingPowerBiODataNextLink()
+    {
+        ContextService.HttpClient = CreateHttpClient(
+            CreateJsonResponse(HttpStatusCode.OK, "{\"value\":[{\"id\":\"A\"}],\"@odata.nextLink\":\"https://api.powerbi.com/v1.0/myorg/groups?$skiptoken=abc123\"}"),
+            CreateJsonResponse(HttpStatusCode.OK, "{\"value\":[{\"id\":\"B\"}]}"));
+        ContextService.TokenProvider = new CachingTokenProvider(new FakeTokenCredential());
+
+        var result = RunInspection(
+            "api-get-pagination-pbi.json",
+            "{\"apiget\":[\"https://api.powerbi.com/v1.0/myorg/groups\"]}",
+            JsonNode.Parse("{\"value\":[{\"id\":\"A\"},{\"id\":\"B\"}]}")!);
+
+        Assert.That(result.TestResults.Single().Pass, Is.True);
+        Assert.That(result.Messages, Has.Some.Contains("continuation page 2"));
+    }
+
+    [Test]
     public void DaxQuery_EmitsProgressMessagesThroughInspector()
     {
         ContextService.HttpClient = CreateHttpClient(
