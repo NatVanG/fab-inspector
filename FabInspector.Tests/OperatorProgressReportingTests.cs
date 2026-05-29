@@ -123,6 +123,47 @@ public class OperatorProgressReportingTests
     }
 
     [Test]
+    public void ApiGet_PrefersContinuationUriOverContinuationToken()
+    {
+        var firstResponse = CreateJsonResponse(
+            HttpStatusCode.OK,
+            "{\"value\":[{\"id\":1}],\"continuationUri\":\"https://api.fabric.microsoft.com/v1/workspaces?continuationToken=uri-token\"}");
+        firstResponse.Headers.Add("x-ms-continuationtoken", "header-token");
+
+        ContextService.HttpClient = CreateHttpClient(
+            out var handler,
+            firstResponse,
+            CreateJsonResponse(HttpStatusCode.OK, "{\"value\":[{\"id\":2}]}")
+        );
+        ContextService.TokenProvider = new CachingTokenProvider(new FakeTokenCredential());
+
+        var result = RunInspection(
+            "api-get-continuation-uri-precedence.json",
+            "{\"apiget\":[\"https://api.fabric.microsoft.com/v1/workspaces\"]}",
+            JsonNode.Parse("{\"value\":[{\"id\":1},{\"id\":2}]}")!);
+
+        Assert.That(result.TestResults.Single().Pass, Is.True);
+        Assert.That(handler.RequestedUris.Count, Is.EqualTo(2));
+        Assert.That(handler.RequestedUris[1], Is.EqualTo("https://api.fabric.microsoft.com/v1/workspaces?continuationToken=uri-token"));
+    }
+
+    [Test]
+    public void ApiGet_ReturnsLastPageWhenValueArrayIsAbsent()
+    {
+        ContextService.HttpClient = CreateHttpClient(
+            CreateJsonResponse(HttpStatusCode.OK, "{\"continuationToken\":\"token-page-2\",\"meta\":\"first\"}"),
+            CreateJsonResponse(HttpStatusCode.OK, "{\"meta\":\"second\"}"));
+        ContextService.TokenProvider = new CachingTokenProvider(new FakeTokenCredential());
+
+        var result = RunInspection(
+            "api-get-no-value-array-pagination.json",
+            "{\"apiget\":[\"https://api.fabric.microsoft.com/v1/workspaces\"]}",
+            JsonNode.Parse("{\"meta\":\"second\"}")!);
+
+        Assert.That(result.TestResults.Single().Pass, Is.True);
+    }
+
+    [Test]
     public void DaxQuery_EmitsProgressMessagesThroughInspector()
     {
         ContextService.HttpClient = CreateHttpClient(
@@ -219,6 +260,12 @@ public class OperatorProgressReportingTests
         return new HttpClient(new QueueHttpMessageHandler(responses));
     }
 
+    private static HttpClient CreateHttpClient(out QueueHttpMessageHandler handler, params HttpResponseMessage[] responses)
+    {
+        handler = new QueueHttpMessageHandler(responses);
+        return new HttpClient(handler);
+    }
+
     private static HttpResponseMessage CreateJsonResponse(HttpStatusCode statusCode, string json)
     {
         return new HttpResponseMessage(statusCode)
@@ -230,6 +277,7 @@ public class OperatorProgressReportingTests
     private sealed class QueueHttpMessageHandler : HttpMessageHandler
     {
         private readonly Queue<HttpResponseMessage> _responses;
+        public List<string> RequestedUris { get; } = [];
 
         public QueueHttpMessageHandler(IEnumerable<HttpResponseMessage> responses)
         {
@@ -238,6 +286,8 @@ public class OperatorProgressReportingTests
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            RequestedUris.Add(request.RequestUri?.ToString() ?? string.Empty);
+
             if (_responses.Count == 0)
             {
                 throw new InvalidOperationException($"No mock response configured for request '{request.RequestUri}'.");
