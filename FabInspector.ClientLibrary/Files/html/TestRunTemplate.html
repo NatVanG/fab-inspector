@@ -26,8 +26,19 @@
             -moz-user-select: none;
             user-select: none;
         }
+
+        .filter-grid {
+            display: grid;
+            gap: 0.75rem;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        @media (max-width: 991.98px) {
+            .filter-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
-    f
 </head>
 <body class="bg-body-tertiary">
 
@@ -39,14 +50,72 @@
             </div>
         </div>
 
-        <!-- Header -->
-        <div id="header" class="my-3 p-3 bg-body rounded shadow-sm">
-            <h6 class="border-bottom pb-2 mb-0">Header</h6>
+        <div class="row g-3">
+            <!-- Header -->
+            <div class="col-12 col-lg-7">
+                <div id="header" class="my-3 p-3 bg-body rounded shadow-sm h-100">
+                    <h6 class="border-bottom pb-2 mb-0">Header</h6>
+                    <div id="headerContent"></div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="col-12 col-lg-5">
+                <div id="filters" class="my-3 p-3 bg-body rounded shadow-sm h-100">
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                        <h6 class="mb-0">Filters</h6>
+                        <button id="clearFilters" type="button" class="btn btn-sm btn-outline-secondary">Clear</button>
+                    </div>
+
+                    <form id="resultFilters" class="filter-grid" autocomplete="off">
+                        <div>
+                            <label for="filterRuleName" class="form-label small mb-1">Rule Name</label>
+                            <input id="filterRuleName" name="ruleName" type="search" class="form-control form-control-sm" placeholder="Contains...">
+                        </div>
+
+                        <div>
+                            <label for="filterLogType" class="form-label small mb-1">Log Type</label>
+                            <select id="filterLogType" name="logType" class="form-select form-select-sm">
+                                <option value="any" selected>Any</option>
+                                <option value="warning">Warning</option>
+                                <option value="error">Error</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="filterRuleItemType" class="form-label small mb-1">Rule Item Type</label>
+                            <input id="filterRuleItemType" name="ruleItemType" type="search" class="form-control form-control-sm" placeholder="Contains...">
+                        </div>
+
+                        <div>
+                            <label for="filterItemPath" class="form-label small mb-1">Item Path</label>
+                            <input id="filterItemPath" name="itemPath" type="search" class="form-control form-control-sm" placeholder="Contains...">
+                        </div>
+
+                        <div>
+                            <label for="filterParentDisplayName" class="form-label small mb-1">Parent Display Name</label>
+                            <input id="filterParentDisplayName" name="parentDisplayName" type="search" class="form-control form-control-sm" placeholder="Contains...">
+                        </div>
+
+                        <div>
+                            <label for="filterPass" class="form-label small mb-1">Pass</label>
+                            <select id="filterPass" name="pass" class="form-select form-select-sm">
+                                <option value="any" selected>Any</option>
+                                <option value="true">Pass</option>
+                                <option value="false">Fail</option>
+                            </select>
+                        </div>
+                    </form>
+
+                    <div class="small text-body-secondary pt-3" id="filterSummary"></div>
+                </div>
+            </div>
         </div>
 
         <!-- Results -->
         <div id="results" class="my-3 p-3 bg-body rounded shadow-sm">
             <h6 class="border-bottom pb-2 mb-0">Results</h6>
+            <div id="resultsList"></div>
         </div>
     </main>
 
@@ -291,10 +360,128 @@
                 }], "obj": function () { return (this.Results) }
         };
 
-        //render
-        $("#header").json2html(testRunData, testRunHeaderTemplate);
+        const allResults = Array.isArray(testRunData.Results) ? testRunData.Results : [];
 
-        $("#results").json2html(testRunData, testRunResultTemplate);
+        function normalizeText(value) {
+            if (value == null) {
+                return "";
+            }
+
+            return String(value).toLowerCase().trim();
+        }
+
+        function parseBoolean(value) {
+            if (typeof value === "boolean") {
+                return value;
+            }
+
+            const text = normalizeText(value);
+
+            if (text === "true" || text === "1" || text === "yes") {
+                return true;
+            }
+
+            if (text === "false" || text === "0" || text === "no") {
+                return false;
+            }
+
+            return null;
+        }
+
+        function matchesContains(sourceValue, expectedValue) {
+            if (!expectedValue) {
+                return true;
+            }
+
+            return normalizeText(sourceValue).includes(expectedValue);
+        }
+
+        function getActiveFilters() {
+            return {
+                ruleName: normalizeText($("#filterRuleName").val()),
+                logType: $("#filterLogType").val(),
+                ruleItemType: normalizeText($("#filterRuleItemType").val()),
+                itemPath: normalizeText($("#filterItemPath").val()),
+                parentDisplayName: normalizeText($("#filterParentDisplayName").val()),
+                pass: $("#filterPass").val()
+            };
+        }
+
+        function matchLogType(item, filterLogType) {
+            if (filterLogType === "any") {
+                return true;
+            }
+
+            const normalizedLogType = normalizeText(item.LogType);
+            const isWarning = item.LogType === 1 || normalizedLogType === "1" || normalizedLogType === "warning";
+            const isError = item.LogType === 2 || normalizedLogType === "2" || normalizedLogType === "error";
+
+            if (filterLogType === "warning") {
+                return isWarning;
+            }
+
+            if (filterLogType === "error") {
+                return isError;
+            }
+
+            return true;
+        }
+
+        function matchPass(item, filterPass) {
+            if (filterPass === "any") {
+                return true;
+            }
+
+            const passValue = parseBoolean(item.Pass);
+
+            if (filterPass === "true") {
+                return passValue === true;
+            }
+
+            if (filterPass === "false") {
+                return passValue === false;
+            }
+
+            return true;
+        }
+
+        function renderResults(results) {
+            const dataForResults = Object.assign({}, testRunData, { Results: results });
+            $("#resultsList").empty().json2html(dataForResults, testRunResultTemplate);
+        }
+
+        function updateSummary(filteredCount, totalCount) {
+            $("#filterSummary").text("Showing " + filteredCount + " of " + totalCount + " results.");
+        }
+
+        function applyFilters() {
+            const filters = getActiveFilters();
+
+            const filteredResults = allResults.filter(function (item) {
+                return matchesContains(item.RuleName, filters.ruleName)
+                    && matchLogType(item, filters.logType)
+                    && matchesContains(item.RuleItemType, filters.ruleItemType)
+                    && matchesContains(item.ItemPath, filters.itemPath)
+                    && matchesContains(item.ParentDisplayName, filters.parentDisplayName)
+                    && matchPass(item, filters.pass);
+            });
+
+            renderResults(filteredResults);
+            updateSummary(filteredResults.length, allResults.length);
+        }
+
+        function clearFilters() {
+            $("#resultFilters")[0].reset();
+            applyFilters();
+        }
+
+        // Initial render
+        $("#headerContent").json2html(testRunData, testRunHeaderTemplate);
+        applyFilters();
+
+        // Wire up filter interactions
+        $("#resultFilters").on("input change", "input, select", applyFilters);
+        $("#clearFilters").on("click", clearFilters);
     </script>
 </body>
 </html>
