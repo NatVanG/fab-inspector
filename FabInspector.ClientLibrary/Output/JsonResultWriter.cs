@@ -24,6 +24,7 @@ namespace FabInspector.ClientLibrary.Output
                 CompletionTime = DateTime.Now,
                 TestedFilePath = context.TestedFilePath,
                 RulesFilePath = context.RulesFilePath,
+                RulesCatalogPath = context.RulesCatalogPath,
                 Verbose = context.Verbose,
                 Results = context.TestResults
             };

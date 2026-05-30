@@ -135,28 +135,14 @@ namespace FabInspector.ClientLibrary
 
             SetPartContext();
 
-            var rules = await Task.Run(() => DeserialiseRulesFromPath(args.RulesFilePath ?? string.Empty)).ConfigureAwait(false);
-
-            IEnumerable<TestResult> testResults;
-            if (args.Parallel)
-            {
-                var ruleBuckets = ChunkInspectionRules(rules);
-                var tasks = ruleBuckets.Select(async bucket => await RunSingleThreadedCoreAsync(bucket, registries).ConfigureAwait(false));
-                var allResults = await Task.WhenAll(tasks).ConfigureAwait(false);
-                testResults = allResults.SelectMany(r => r ?? Enumerable.Empty<TestResult>()).OrderBy(r => r.RuleId);
-            }
-            else
-            {
-                testResults = await RunSingleThreadedCoreAsync(rules, registries).ConfigureAwait(false) ?? Enumerable.Empty<TestResult>();
-            }
-
-            testResults = FilterResults(testResults);
+            var testResults = await ExecuteRuleSetsAsync(args, registries).ConfigureAwait(false);
 
             return new TestRun
             {
                 CompletionTime = DateTime.UtcNow,
                 TestedFilePath = args.FabricItem,
                 RulesFilePath = args.RulesFilePath,
+                RulesCatalogPath = args.RulesCatalogPath,
                 Verbose = args.Verbose,
                 Results = testResults
             };
@@ -225,6 +211,8 @@ namespace FabInspector.ClientLibrary
 
         public static async Task Run(Args args, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
+            _args = args;
+
             // Authenticate based on auth method
             if (args.AuthMethod != "local")
             {
@@ -251,14 +239,12 @@ namespace FabInspector.ClientLibrary
         public static async Task RunSingleThreadedAsync(Args args, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
             _args = args;
-            IEnumerable<TestResult>? testResults = null;
             
             OnMessageIssued(MessageTypeEnum.Information, string.Concat("Test run started at (UTC): ", DateTime.Now.ToUniversalTime()));
 
             SetPartContext();
 
-            var rules = await Task.Run(() => DeserialiseRulesFromPath(args.RulesFilePath ?? string.Empty)).ConfigureAwait(false);
-            testResults = await RunSingleThreadedAsync(rules, registries).ConfigureAwait(false);
+            var testResults = await ExecuteRuleSetsAsync(args, registries).ConfigureAwait(false);
 
             if (testResults != null && testResults.Any())
             {
@@ -275,27 +261,80 @@ namespace FabInspector.ClientLibrary
         {
             _args = args;
 
-            SetPartContext();
-
-            var rules = await Task.Run(() => DeserialiseRulesFromPath(args.RulesFilePath ?? string.Empty)).ConfigureAwait(false);
-            var ruleBuckets = ChunkInspectionRules(rules);
-            var globalResults = new ConcurrentBag<TestResult>();
-
             OnMessageIssued(MessageTypeEnum.Information, string.Concat("Parallel test run started at (UTC): ", DateTime.Now.ToUniversalTime()));
 
-            var tasks = ruleBuckets.Select(async bucket => await RunSingleThreadedAsync(bucket, registries).ConfigureAwait(false));
-            var allResults = await Task.WhenAll(tasks).ConfigureAwait(false);
+            SetPartContext();
 
-            foreach (var localResults in allResults)
+            var testResults = await ExecuteRuleSetsAsync(args, registries).ConfigureAwait(false);
+            await OutputResultsAsync(testResults, pageRenderer, registries).ConfigureAwait(false);
+            OnMessageIssued(MessageTypeEnum.Complete, string.Concat("Test run completed at (UTC): ", DateTime.Now.ToUniversalTime()));
+        }
+
+        private static async Task<IEnumerable<TestResult>> ExecuteRuleSetsAsync(Args args, IEnumerable<JsonLogicOperatorRegistry> registries)
+        {
+            var resolvedRuleSets = await ResolveRuleSetsAsync(args).ConfigureAwait(false);
+            var combinedResults = new List<TestResult>();
+
+            foreach (var ruleSet in resolvedRuleSets)
             {
-                foreach (var result in localResults ?? Enumerable.Empty<TestResult>())
+                try
                 {
-                    globalResults.Add(result);
+                    OnMessageIssued(MessageTypeEnum.Information, $"Running ruleset '{ruleSet.Name}' from '{ruleSet.SourcePath}'.");
+                    var currentResults = await ExecuteSingleRuleSetAsync(ruleSet, registries, args.Parallel).ConfigureAwait(false);
+                    combinedResults.AddRange(currentResults);
+                }
+                catch (Exception ex) when (!string.IsNullOrWhiteSpace(args.RulesCatalogPath))
+                {
+                    OnMessageIssued(MessageTypeEnum.Error, $"Failed to execute ruleset '{ruleSet.Name}' from '{ruleSet.SourcePath}'. {ex.Message}");
                 }
             }
 
-            await OutputResultsAsync(globalResults.ToList().OrderBy(_ => _.RuleId), pageRenderer, registries).ConfigureAwait(false);
-            OnMessageIssued(MessageTypeEnum.Complete, string.Concat("Test run completed at (UTC): ", DateTime.Now.ToUniversalTime()));
+            return combinedResults.OrderBy(_ => _.RuleId).ToList();
+        }
+
+        private static async Task<IReadOnlyList<ResolvedRuleSet>> ResolveRuleSetsAsync(Args args)
+        {
+            if (!string.IsNullOrWhiteSpace(args.RulesCatalogPath))
+            {
+                var reader = new RulesCatalogReader(_tokenProvider, _httpClient,
+                    onProgress: msg => OnMessageIssued(MessageTypeEnum.Information, msg));
+                return await reader.ReadResolvedRuleSetsAsync(args.RulesCatalogPath).ConfigureAwait(false);
+            }
+
+            var rules = await Task.Run(() => DeserialiseRulesFromPath(args.RulesFilePath ?? string.Empty)).ConfigureAwait(false);
+            return new List<ResolvedRuleSet>
+            {
+                new ResolvedRuleSet
+                {
+                    Name = "Rules",
+                    SourcePath = args.RulesFilePath ?? string.Empty,
+                    Rules = rules
+                }
+            };
+        }
+
+        private static async Task<IEnumerable<TestResult>> ExecuteSingleRuleSetAsync(ResolvedRuleSet ruleSet, IEnumerable<JsonLogicOperatorRegistry> registries, bool parallel)
+        {
+            IEnumerable<TestResult> results;
+
+            if (parallel)
+            {
+                var ruleBuckets = ChunkInspectionRules(ruleSet.Rules);
+                var tasks = ruleBuckets.Select(async bucket => await RunSingleThreadedAsync(bucket, registries).ConfigureAwait(false));
+                var allResults = await Task.WhenAll(tasks).ConfigureAwait(false);
+                results = allResults.SelectMany(r => r ?? Enumerable.Empty<TestResult>());
+            }
+            else
+            {
+                results = await RunSingleThreadedAsync(ruleSet.Rules, registries).ConfigureAwait(false) ?? Enumerable.Empty<TestResult>();
+            }
+
+            return results.Select(result =>
+            {
+                result.RuleSetName = ruleSet.Name;
+                result.RuleSetPath = ruleSet.SourcePath;
+                return result;
+            });
         }
 
         private static void SetPartContext()

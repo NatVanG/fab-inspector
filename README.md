@@ -75,6 +75,10 @@ Fab Inspector supports local, workspace, and OneLake-based validation workflows.
 | 3. Workspace-scoped | All/some items in a Fabric workspace | Local or OneLake | Console or JSON stored in OneLake | `interactive`, `azurecli`, [`clientsecret`](#handling-client-secrets-safely), `certificate`, `federatedtoken`, or `managedidentity` |
 | 4. Item-scoped workspace | Single item in a Fabric workspace | Local or OneLake | Console or JSON stored in OneLake | `interactive`, `azurecli`, [`clientsecret`](#handling-client-secrets-safely), `certificate`, `federatedtoken`, or `managedidentity` |
 
+Rules input can be provided either as a single rules file (`-rules`) or as a rules catalog (`-rulescatalog`) that references multiple rulesets. The two options are mutually exclusive.
+
+Rules catalog examples are available at [DocsExamples/Example-RulesCatalog.json](DocsExamples/Example-RulesCatalog.json).
+
 
 ### 1. Local Fabric item definitions + local rules + local output
 

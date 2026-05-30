@@ -947,6 +947,44 @@ namespace FabInspector.Tests
                 && parsedArgs.ADOOutput);
         }
 
+        [Test]
+        public void TestCLIArgsUtilsSuccess_RulesCatalogOption()
+        {
+            string[] args = "-fabricitem fabricitempath -rulescatalog catalogPath.json".Split(" ");
+            var parsedArgs = ArgsUtils.ParseArgs(args);
+
+            Assert.That(parsedArgs.RulesCatalogPath.Equals("catalogPath.json", StringComparison.OrdinalIgnoreCase)
+                && string.IsNullOrEmpty(parsedArgs.RulesFilePath));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_RulesAndRulesCatalogTogether()
+        {
+            string[] args = "-fabricitem fabricitempath -rules rulesPath -rulescatalog catalogPath.json".Split(" ");
+
+            var ex = Assert.Throws<ArgumentNullException>(() => ArgsUtils.ParseArgs(args));
+            Assert.That(ex.Message.Contains("Exactly one of -rules or -rulescatalog must be defined"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_NoRulesOrRulesCatalog()
+        {
+            string[] args = "-fabricitem fabricitempath".Split(" ");
+
+            var ex = Assert.Throws<ArgumentNullException>(() => ArgsUtils.ParseArgs(args));
+            Assert.That(ex.Message.Contains("Exactly one of -rules or -rulescatalog must be defined"));
+        }
+
+        [Test]
+        public void TestCLIArgsUtilsThrows_OneLakeRulesCatalogWithLocalAuth()
+        {
+            string oneLakeCatalogUrl = "https://onelake.dfs.fabric.microsoft.com/MyWorkspace/MyLakehouse.Lakehouse/Files/rules-catalog.json";
+            string[] args = $"-fabricitem fabricitempath -rulescatalog {oneLakeCatalogUrl}".Split(" ");
+
+            var ex = Assert.Throws<ArgumentException>(() => ArgsUtils.ParseArgs(args));
+            Assert.That(ex.Message.Contains("OneLake rules catalog URL requires authentication"));
+        }
+
     }
 }
 

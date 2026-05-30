@@ -6,7 +6,7 @@ namespace FabInspector.ClientLibrary.Utils
 {
     internal static class OneLakeRulesFileDownloader
     {
-        private const string RequiredUrlPrefix = "https://onelake.dfs.fabric.microsoft.com";
+        public const string RequiredUrlPrefix = "https://onelake.dfs.fabric.microsoft.com";
 
         public static bool IsOneLakeDfsUrl(string? path)
         {
