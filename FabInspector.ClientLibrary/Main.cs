@@ -289,7 +289,7 @@ namespace FabInspector.ClientLibrary
                 }
             }
 
-            return combinedResults.OrderBy(_ => _.RuleId).ToList();
+            return combinedResults;
         }
 
         private static async Task<IReadOnlyList<ResolvedRuleSet>> ResolveRuleSetsAsync(Args args)
