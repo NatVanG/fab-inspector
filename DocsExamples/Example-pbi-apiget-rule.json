@@ -10,7 +10,7 @@
         {
           "apiget": "https://api.powerbi.com/v1.0/myorg/groups/{context-fabricworkspace}/reports"
         },
-        [5000]
+        []
       ]
     }
   ]

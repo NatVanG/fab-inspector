@@ -17,7 +17,7 @@ FabInspector operators extend the [JSON Logic](https://json-everything.net/json-
 
 ## Contents
 
-- [REST API Operators](#rest-api-operators): `apiget`, `dfsget`, `daxquery`, `scannerapi`
+- [REST API Operators](#rest-api-operators): `apiget`, `dfsget`, `daxquery`, `sqlquery`, `scannerapi`
 - [Layout & Geometry](#layout--geometry): `rectoverlap`
 
 ---
@@ -129,6 +129,48 @@ Executes a DAX query against a published Power BI semantic model via the [Power 
 ```
 
 See also: [Example-daxquery-rule.json](Example-daxquery-rule.json), [Example-daxquery-rule2.json](Example-daxquery-rule2.json), [Example-daxquery-rule3.json](Example-daxquery-rule3.json), [Example-daxquery-rule4.json](Example-daxquery-rule4.json)
+
+---
+
+### `sqlquery`
+
+Executes a T-SQL query against a Fabric Lakehouse SQL endpoint and returns the parsed JSON payload.
+Fab Inspector first resolves the SQL endpoint from the Lakehouse REST API (`GET /v1/workspaces/{workspaceId}/lakehouses/{lakehouseId}`), then executes the query with ADO.NET.
+
+If your query does not include `FOR JSON`, Fab Inspector automatically appends `FOR JSON PATH`.
+
+For safety, `sqlquery` only allows single SELECT-style queries and rejects SQL comments (`--`, `/* */`) and semicolons. It also blocks schema-changing statements (`CREATE`, `ALTER`, `DROP`).
+
+**Two forms:**
+
+| Form | When to use |
+|---|---|
+| Simple string | Uses `{context-fabricworkspace}` and `{context-fabricitem}` |
+| Array | Explicit workspace and lakehouse GUIDs |
+
+| Parameter | Type | Description |
+|---|---|---|
+| query | string | T-SQL query expression |
+| workspaceId | string | Workspace GUID (or omit to use `{context-fabricworkspace}`) |
+| lakehouseId | string | Lakehouse GUID (or omit to use `{context-fabricitem}`) |
+
+**Returns:** Parsed JSON payload from the SQL query result.
+
+```json
+{ "sqlquery": "SELECT TOP (5) [Country] FROM [dbo].[Customers]" }
+```
+
+```json
+{
+  "sqlquery": [
+    "SELECT TOP (5) [Country] FROM [dbo].[Customers] FOR JSON PATH",
+    "f45498e6-9f62-4bbb-bdb6-6d8a7e3a2703",
+    "6a496a15-d00c-4cd6-a731-a3fd79e8fb10"
+  ]
+}
+```
+
+See also: [Example-sqlquery-rule.json](Example-sqlquery-rule.json)
 
 ---
 

@@ -110,6 +110,7 @@ internal partial class Program
         new IJsonLogicOperator[] {
                 new RectangleOverlapOperator(),
                 new DaxQueryOperator(),
+            new SqlQueryOperator(),
                 new ApiGetOperator(),
                 new DfsGetOperator(),
                 new ScannerApiOperator()
@@ -134,7 +135,7 @@ internal partial class Program
                 options.ServerInfo = new()
                 {
                     Name = "fab-inspector",
-                    Version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "3.1.0"
+                    Version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "3.2.0"
                 };
             })
             .WithStdioServerTransport()

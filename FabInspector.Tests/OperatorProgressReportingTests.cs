@@ -89,6 +89,81 @@ public class OperatorProgressReportingTests
     }
 
     [Test]
+    public void ApiGet_PaginatesUsingFabricContinuationToken()
+    {
+        ContextService.HttpClient = CreateHttpClient(
+            CreateJsonResponse(HttpStatusCode.OK, "{\"value\":[{\"id\":1}],\"continuationToken\":\"token-page-2\"}"),
+            CreateJsonResponse(HttpStatusCode.OK, "{\"value\":[{\"id\":2}]}"));
+        ContextService.TokenProvider = new CachingTokenProvider(new FakeTokenCredential());
+
+        var result = RunInspection(
+            "api-get-pagination-fabric.json",
+            "{\"apiget\":[\"https://api.fabric.microsoft.com/v1/workspaces\"]}",
+            JsonNode.Parse("{\"value\":[{\"id\":1},{\"id\":2}]}")!);
+
+        Assert.That(result.TestResults.Single().Pass, Is.True);
+        Assert.That(result.Messages, Has.Some.Contains("continuation page 2"));
+    }
+
+    [Test]
+    public void ApiGet_PaginatesUsingPowerBiODataNextLink()
+    {
+        ContextService.HttpClient = CreateHttpClient(
+            CreateJsonResponse(HttpStatusCode.OK, "{\"value\":[{\"id\":\"A\"}],\"@odata.nextLink\":\"https://api.powerbi.com/v1.0/myorg/groups?$skiptoken=abc123\"}"),
+            CreateJsonResponse(HttpStatusCode.OK, "{\"value\":[{\"id\":\"B\"}]}"));
+        ContextService.TokenProvider = new CachingTokenProvider(new FakeTokenCredential());
+
+        var result = RunInspection(
+            "api-get-pagination-pbi.json",
+            "{\"apiget\":[\"https://api.powerbi.com/v1.0/myorg/groups\"]}",
+            JsonNode.Parse("{\"value\":[{\"id\":\"A\"},{\"id\":\"B\"}]}")!);
+
+        Assert.That(result.TestResults.Single().Pass, Is.True);
+        Assert.That(result.Messages, Has.Some.Contains("continuation page 2"));
+    }
+
+    [Test]
+    public void ApiGet_PrefersContinuationUriOverContinuationToken()
+    {
+        var firstResponse = CreateJsonResponse(
+            HttpStatusCode.OK,
+            "{\"value\":[{\"id\":1}],\"continuationUri\":\"https://api.fabric.microsoft.com/v1/workspaces?continuationToken=uri-token\"}");
+        firstResponse.Headers.Add("x-ms-continuationtoken", "header-token");
+
+        ContextService.HttpClient = CreateHttpClient(
+            out var handler,
+            firstResponse,
+            CreateJsonResponse(HttpStatusCode.OK, "{\"value\":[{\"id\":2}]}")
+        );
+        ContextService.TokenProvider = new CachingTokenProvider(new FakeTokenCredential());
+
+        var result = RunInspection(
+            "api-get-continuation-uri-precedence.json",
+            "{\"apiget\":[\"https://api.fabric.microsoft.com/v1/workspaces\"]}",
+            JsonNode.Parse("{\"value\":[{\"id\":1},{\"id\":2}]}")!);
+
+        Assert.That(result.TestResults.Single().Pass, Is.True);
+        Assert.That(handler.RequestedUris.Count, Is.EqualTo(2));
+        Assert.That(handler.RequestedUris[1], Is.EqualTo("https://api.fabric.microsoft.com/v1/workspaces?continuationToken=uri-token"));
+    }
+
+    [Test]
+    public void ApiGet_ReturnsLastPageWhenValueArrayIsAbsent()
+    {
+        ContextService.HttpClient = CreateHttpClient(
+            CreateJsonResponse(HttpStatusCode.OK, "{\"continuationToken\":\"token-page-2\",\"meta\":\"first\"}"),
+            CreateJsonResponse(HttpStatusCode.OK, "{\"meta\":\"second\"}"));
+        ContextService.TokenProvider = new CachingTokenProvider(new FakeTokenCredential());
+
+        var result = RunInspection(
+            "api-get-no-value-array-pagination.json",
+            "{\"apiget\":[\"https://api.fabric.microsoft.com/v1/workspaces\"]}",
+            JsonNode.Parse("{\"meta\":\"second\"}")!);
+
+        Assert.That(result.TestResults.Single().Pass, Is.True);
+    }
+
+    [Test]
     public void DaxQuery_EmitsProgressMessagesThroughInspector()
     {
         ContextService.HttpClient = CreateHttpClient(
@@ -185,6 +260,12 @@ public class OperatorProgressReportingTests
         return new HttpClient(new QueueHttpMessageHandler(responses));
     }
 
+    private static HttpClient CreateHttpClient(out QueueHttpMessageHandler handler, params HttpResponseMessage[] responses)
+    {
+        handler = new QueueHttpMessageHandler(responses);
+        return new HttpClient(handler);
+    }
+
     private static HttpResponseMessage CreateJsonResponse(HttpStatusCode statusCode, string json)
     {
         return new HttpResponseMessage(statusCode)
@@ -196,6 +277,7 @@ public class OperatorProgressReportingTests
     private sealed class QueueHttpMessageHandler : HttpMessageHandler
     {
         private readonly Queue<HttpResponseMessage> _responses;
+        public List<string> RequestedUris { get; } = [];
 
         public QueueHttpMessageHandler(IEnumerable<HttpResponseMessage> responses)
         {
@@ -204,6 +286,8 @@ public class OperatorProgressReportingTests
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            RequestedUris.Add(request.RequestUri?.ToString() ?? string.Empty);
+
             if (_responses.Count == 0)
             {
                 throw new InvalidOperationException($"No mock response configured for request '{request.RequestUri}'.");

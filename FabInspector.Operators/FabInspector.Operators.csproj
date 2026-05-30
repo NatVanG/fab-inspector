@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="JsonLogic" Version="6.0.2" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
   </ItemGroup>
 
   <ItemGroup>

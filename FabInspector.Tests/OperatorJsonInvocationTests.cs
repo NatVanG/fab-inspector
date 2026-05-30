@@ -51,6 +51,7 @@ namespace FabInspector.Tests
                 new IJsonLogicOperator[] {
                     new RectangleOverlapOperator(),
                     new DaxQueryOperator(),
+                    new SqlQueryOperator(),
                     new ApiGetOperator(),
                     new DfsGetOperator(),
                     new ScannerApiOperator()
@@ -97,6 +98,39 @@ namespace FabInspector.Tests
             
             Assert.That(rule, Is.Not.Null);
             Assert.That(rule, Is.InstanceOf<DaxQueryRule>());
+        }
+
+        [Test]
+        public void SqlQuery_CanBeDeserialized()
+        {
+            var jsonRule = @"{""sqlquery"": [""SELECT TOP (1) [Name] FROM [dbo].[Products]""]}";
+            var rule = JsonSerializer.Deserialize<Rule>(jsonRule, _serializerOptions);
+
+            Assert.That(rule, Is.Not.Null);
+            Assert.That(rule, Is.InstanceOf<SqlQueryRule>());
+        }
+
+        [Test]
+        public void SqlQuery_RejectsSchemaChangingStatements()
+        {
+            var jsonRule = @"{""sqlquery"": [""CREATE TABLE [dbo].[X] ([Id] INT)""]}";
+            var rule = JsonSerializer.Deserialize<Rule>(jsonRule, _serializerOptions);
+
+            Assert.That(rule, Is.Not.Null);
+            Assert.That(() => rule!.Apply(null), Throws.TypeOf<JsonLogicException>());
+        }
+
+        [Test]
+        public void SqlQuery_RejectsSemicolonBatchesAndComments()
+        {
+            var semicolonRule = JsonSerializer.Deserialize<Rule>(@"{""sqlquery"": [""SELECT [Name] FROM [dbo].[Products]; SELECT 1""]}", _serializerOptions);
+            var commentRule = JsonSerializer.Deserialize<Rule>(@"{""sqlquery"": [""SELECT [Name] FROM [dbo].[Products] -- test""]}", _serializerOptions);
+
+            Assert.That(semicolonRule, Is.Not.Null);
+            Assert.That(commentRule, Is.Not.Null);
+
+            Assert.That(() => semicolonRule!.Apply(null), Throws.TypeOf<JsonLogicException>());
+            Assert.That(() => commentRule!.Apply(null), Throws.TypeOf<JsonLogicException>());
         }
 
         [Test]
