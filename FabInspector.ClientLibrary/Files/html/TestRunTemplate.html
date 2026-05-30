@@ -69,6 +69,11 @@
 
                     <form id="resultFilters" class="filter-grid" autocomplete="off">
                         <div>
+                            <label for="filterRuleSetName" class="form-label small mb-1">Ruleset Name</label>
+                            <input id="filterRuleSetName" name="ruleSetName" type="search" class="form-control form-control-sm" placeholder="Contains...">
+                        </div>
+
+                        <div>
                             <label for="filterRuleName" class="form-label small mb-1">Rule Name</label>
                             <input id="filterRuleName" name="ruleName" type="search" class="form-control form-control-sm" placeholder="Contains...">
                         </div>
@@ -104,7 +109,7 @@
                                 <option value="true">Pass</option>
                                 <option value="false">Fail</option>
                             </select>
-                            <div id="filterPassNotice" class="form-text d-none">Pass filter is unavailable because Verbose is false. Only test failures are displayed.</div>
+                            <div id="filterPassNotice" class="form-text d-none">Verbose was set to false so only test failures are displayed.</div>
                         </div>
                     </form>
 
@@ -128,6 +133,20 @@
         const testRunHeaderTemplate = {
             "<>": "div",
             "html": [
+                {
+                    "<>": "div",
+                    "class": "d-flex text-body-secondary pt-3",
+                    "html": [
+                        {
+                            "<>": "p",
+                            "class": function () {
+                                return this.RulesCatalogPath ? "pb-3 mb-0 small lh-sm" : "pb-3 mb-0 small lh-sm d-none";
+                            },
+                            "html": [{ "<>": "strong", "class": "d-block text-gray-dark", "text": "Rules Catalog Path" }, { "text": function () { return this.RulesCatalogPath || ""; } }]
+                        }
+                    ]
+                },
+
                 {
                     "<>": "div",
                     "class": "d-flex text-body-secondary pt-3",
@@ -168,7 +187,20 @@
                         {
                             "<>": "p",
                             "class": "pb-3 mb-0 small lh-sm",
-                            "html": [{ "<>": "strong", "class": "d-block text-gray-dark", "text": "Rules File Path" }, { "text": "${RulesFilePath}" }]
+                            "html": [
+                                {
+                                    "<>": "strong",
+                                    "class": "d-block text-gray-dark",
+                                    "text": function () {
+                                        return this.RulesCatalogPath ? "Rules Catalog File Path" : "Rules File Path";
+                                    }
+                                },
+                                {
+                                    "text": function () {
+                                        return this.RulesCatalogPath || this.RulesFilePath || "";
+                                    }
+                                }
+                            ]
                         }
                     ]
                 },
@@ -237,6 +269,42 @@
                                         {
                                             "<>": "span",
                                             "html": [
+                                                {
+                                                    "<>": "p",
+                                                    "class": function () {
+                                                        return this.RuleSetName ? "pb-3 mb-0 small lh-sm" : "pb-3 mb-0 small lh-sm d-none";
+                                                    },
+                                                    "html": [
+                                                        {
+                                                            "<>": "strong",
+                                                            "class": "d-block text-gray-dark",
+                                                            "text": "Ruleset Name"
+                                                        },
+                                                        {
+                                                            "text": function () {
+                                                                return this.RuleSetName || "";
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "<>": "p",
+                                                    "class": function () {
+                                                        return this.RuleSetPath ? "pb-3 mb-0 small lh-sm" : "pb-3 mb-0 small lh-sm d-none";
+                                                    },
+                                                    "html": [
+                                                        {
+                                                            "<>": "strong",
+                                                            "class": "d-block text-gray-dark",
+                                                            "text": "Ruleset Path"
+                                                        },
+                                                        {
+                                                            "text": function () {
+                                                                return this.RuleSetPath || "";
+                                                            }
+                                                        }
+                                                    ]
+                                                },
                                                 {
                                                     "<>": "p",
                                                     "class": "pb-3 mb-0 small lh-sm",
@@ -405,6 +473,7 @@
             const passFilterDisabled = $("#filterPass").prop("disabled");
 
             return {
+                ruleSetName: normalizeText($("#filterRuleSetName").val()),
                 ruleName: normalizeText($("#filterRuleName").val()),
                 logType: $("#filterLogType").val(),
                 ruleItemType: normalizeText($("#filterRuleItemType").val()),
@@ -477,7 +546,8 @@
             const filters = getActiveFilters();
 
             const filteredResults = allResults.filter(function (item) {
-                return matchesContains(item.RuleName, filters.ruleName)
+                return matchesContains(item.RuleSetName, filters.ruleSetName)
+                    && matchesContains(item.RuleName, filters.ruleName)
                     && matchLogType(item, filters.logType)
                     && matchesContains(item.RuleItemType, filters.ruleItemType)
                     && matchesContains(item.ItemPath, filters.itemPath)

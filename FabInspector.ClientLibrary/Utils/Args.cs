@@ -7,6 +7,8 @@ namespace FabInspector.ClientLibrary.Utils
 
         public string? RulesFilePath { get; set; }
 
+        public string? RulesCatalogPath { get; set; }
+
         public string OutputPath
         {
             set

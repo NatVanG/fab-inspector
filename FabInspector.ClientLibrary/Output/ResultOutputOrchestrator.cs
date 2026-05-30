@@ -66,6 +66,7 @@ namespace FabInspector.ClientLibrary.Output
                     IsOneLakeOutput = isOneLakeOutput,
                     TestedFilePath = BuildTestedFilePath(),
                     RulesFilePath = _args.RulesFilePath,
+                    RulesCatalogPath = _args.RulesCatalogPath,
                     Verbose = _args.Verbose,
                     OverwriteOutput = _args.OverwriteOutput,
                     FabricItem = _args.FabricItem,

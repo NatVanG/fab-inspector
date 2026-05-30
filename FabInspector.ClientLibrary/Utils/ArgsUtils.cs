@@ -13,6 +13,7 @@ FabInspector CLI - Power BI / Fabric Inspector Command Line Tool
 
 USAGE:
   fab-inspector -fabricitem <path> -rules <path> [options]
+  fab-inspector -fabricitem <path> -rulescatalog <path> [options]
   fab-inspector serve
 
 MCP SERVER MODE:
@@ -34,6 +35,8 @@ REQUIRED PARAMETERS:
                                   Legacy behaviour: path to local Power BI report's .pbip file path or .Report folder path also works but is deprecated.
   
   -rules <path>                   Path to rules file (JSON) or OneLake URL to rules file (latter requires authentication)
+  -rulescatalog <path>            Path to rules catalog file (JSON) or OneLake URL to catalog file
+                                  Exactly one of -rules or -rulescatalog must be specified
   
 ALTERNATIVE INPUT OPTIONS (use one of these):
   -pbipreport <path>              Deprecated: Path to Power BI file
@@ -92,6 +95,9 @@ EXAMPLES:
   
   # Generate HTML output
   fab-inspector -fabricitem report.pbip -rules rules.json -output results -formats HTML
+
+  # Run multiple rulesets from a catalog
+  fab-inspector -fabricitem report.pbip -rulescatalog rules-catalog.json -formats JSON
   
   # Analyze Fabric workspace with client secret authentication, output to OneLake in JSON format
   fab-inspector -fabricworkspace a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6 -rules rules.json ^
@@ -122,9 +128,9 @@ For more information, visit: https://github.com/NatVanG/fab-inspector
 
         public static Args ParseArgs(string[] args)
         {
-            const string PBIX = "-pbix", PBIP = "-pbip", PBIPREPORT = "-pbipreport", FABRICITEM = "-fabricitem", FABRICWORKSPACE = "-fabricworkspace", RULES = "-rules", OUTPUT = "-output", FORMATS = "-formats", VERBOSE = "-verbose", PARALLEL = "-parallel", OVERWRITEOUTPUT = "-overwriteoutput", AUTHMETHOD = "-authmethod", TENANTID = "-tenantid", CLIENTID = "-clientid", CLIENTSECRET = "-clientsecret", CERTIFICATEPATH = "-certificatepath", CERTIFICATEPASSWORD = "-certificatepassword", FEDERATEDTOKEN = "-federatedtoken", HELP = "-help";
+            const string PBIX = "-pbix", PBIP = "-pbip", PBIPREPORT = "-pbipreport", FABRICITEM = "-fabricitem", FABRICWORKSPACE = "-fabricworkspace", RULES = "-rules", RULESCATALOG = "-rulescatalog", OUTPUT = "-output", FORMATS = "-formats", VERBOSE = "-verbose", PARALLEL = "-parallel", OVERWRITEOUTPUT = "-overwriteoutput", AUTHMETHOD = "-authmethod", TENANTID = "-tenantid", CLIENTID = "-clientid", CLIENTSECRET = "-clientsecret", CERTIFICATEPATH = "-certificatepath", CERTIFICATEPASSWORD = "-certificatepassword", FEDERATEDTOKEN = "-federatedtoken", HELP = "-help";
             const string FALSE = "false";
-            string[] validOptions = { PBIX, PBIP, PBIPREPORT, FABRICITEM, FABRICWORKSPACE, RULES, OUTPUT, FORMATS, VERBOSE, PARALLEL, OVERWRITEOUTPUT, AUTHMETHOD, TENANTID, CLIENTID, CLIENTSECRET, CERTIFICATEPATH, CERTIFICATEPASSWORD, FEDERATEDTOKEN, HELP };
+            string[] validOptions = { PBIX, PBIP, PBIPREPORT, FABRICITEM, FABRICWORKSPACE, RULES, RULESCATALOG, OUTPUT, FORMATS, VERBOSE, PARALLEL, OVERWRITEOUTPUT, AUTHMETHOD, TENANTID, CLIENTID, CLIENTSECRET, CERTIFICATEPATH, CERTIFICATEPASSWORD, FEDERATEDTOKEN, HELP };
 
             int index = 0;
             int maxindex = args.Length - 2;
@@ -147,10 +153,16 @@ For more information, visit: https://github.com/NatVanG/fab-inspector
             if (dic.ContainsKey(PBIX)) { throw new ArgumentNullException("-pbix option is not currently supported use -pbip instead.");  }
             if (!dic.ContainsKey(PBIPREPORT) && !dic.ContainsKey(PBIP) && !dic.ContainsKey(FABRICITEM) && !dic.ContainsKey(FABRICWORKSPACE)) { throw new ArgumentNullException("-pbipreport, -pbip, -fabricitem, or -fabricworkspace must be defined."); }
 
-            if (!dic.ContainsKey(RULES)) { throw new ArgumentNullException("-rules must be defined"); }
+            var hasRules = dic.ContainsKey(RULES);
+            var hasRulesCatalog = dic.ContainsKey(RULESCATALOG);
+            if (hasRules == hasRulesCatalog)
+            {
+              throw new ArgumentNullException("Exactly one of -rules or -rulescatalog must be defined.");
+            }
 
             var pbiFilePath = dic.ContainsKey(PBIPREPORT) ? dic[PBIPREPORT] : (dic.ContainsKey(PBIP) ? dic[PBIP] : (dic.ContainsKey(FABRICITEM) ? dic[FABRICITEM] : string.Empty));
-            var rulesPath = dic[RULES];
+            var rulesPath = hasRules ? dic[RULES] : string.Empty;
+            var rulesCatalogPath = hasRulesCatalog ? dic[RULESCATALOG] : string.Empty;
             var outputPath = dic.ContainsKey(OUTPUT) ? dic[OUTPUT] : string.Empty;
             var verboseString = dic.ContainsKey(VERBOSE) ? dic[VERBOSE] : FALSE;
             var parallelString = dic.ContainsKey(PARALLEL) ? dic[PARALLEL] : FALSE;
@@ -226,6 +238,11 @@ For more information, visit: https://github.com/NatVanG/fab-inspector
                 throw new ArgumentException("OneLake rules URL requires authentication. Use -authmethod interactive, azurecli, clientsecret, certificate, federatedtoken, or managedidentity.");
             }
 
+            if (OneLakeRulesFileDownloader.IsOneLakeDfsUrl(rulesCatalogPath) && authMethod == "local")
+            {
+              throw new ArgumentException("OneLake rules catalog URL requires authentication. Use -authmethod interactive, azurecli, clientsecret, certificate, federatedtoken, or managedidentity.");
+            }
+
             if (OneLakeOutputUploader.IsOneLakeDfsUrl(outputPath) && authMethod == "local")
             {
                 throw new ArgumentException("OneLake output URL requires authentication. Use -authmethod interactive, azurecli, clientsecret, certificate, federatedtoken, or managedidentity.");
@@ -262,6 +279,7 @@ For more information, visit: https://github.com/NatVanG/fab-inspector
             { 
                 FabricItem = pbiFilePath, 
                 RulesFilePath = rulesPath, 
+                RulesCatalogPath = rulesCatalogPath,
                 OutputPath = outputPath, 
                 FormatsString = formatsString, 
                 VerboseString = verboseString, 

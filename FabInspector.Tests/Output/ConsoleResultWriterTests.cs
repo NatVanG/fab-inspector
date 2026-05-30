@@ -112,6 +112,25 @@ namespace FabInspector.Tests.Output
             Assert.That(itemMessages[0].ItemPath, Is.EqualTo(string.Empty));
         }
 
+        [Test]
+        public async Task WriteAsync_AlwaysPrefixesMessageWithRulesetName()
+        {
+            var results = new List<TestResult>
+            {
+                new() { RuleName = "R1", Message = "first", Pass = false, LogType = MessageTypeEnum.Error, RuleSetName = "Org baseline" },
+                new() { RuleName = "R2", Message = "second", Pass = false, LogType = MessageTypeEnum.Warning, RuleSetName = null }
+            };
+
+            var itemMessages = new List<(string ItemPath, MessageTypeEnum Type, string Message)>();
+            var context = CreateContext(results, onItemMessage: (path, type, msg) => itemMessages.Add((path, type, msg)));
+
+            var writer = new ConsoleResultWriter();
+            await writer.WriteAsync(context);
+
+            Assert.That(itemMessages[0].Message, Is.EqualTo("[Ruleset: Org baseline] first"));
+            Assert.That(itemMessages[1].Message, Is.EqualTo("[Ruleset: Unknown] second"));
+        }
+
         private static OutputContext CreateContext(
             IEnumerable<TestResult> results,
             Action<MessageTypeEnum, string>? onMessage = null,

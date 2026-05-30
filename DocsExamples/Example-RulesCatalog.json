@@ -1,0 +1,29 @@
+{
+  "name": "Enterprise Fabric Rules Catalog",
+  "ruleSets": [
+    {
+      "name": "Community baseline",
+      "type": "url",
+      "path": "https://contoso.github.io/fab-rules/community-rules.json"
+    },
+    {
+      "name": "Org baseline",
+      "type": "onelake",
+      "path": "https://onelake.dfs.fabric.microsoft.com/YourWorkspace/YourLakehouse.Lakehouse/Files/rules/org-baseline.json"
+    },
+    {
+      "name": "Domain rules",
+      "type": "local",
+      "path": "./domain/domain-rules.json"
+    },
+    {
+      "name": "Local overrides",
+      "path": "./local/local-overrides.json"
+    },
+    {
+      "name": "Temporary disabled ruleset",
+      "path": "./local/wip-rules.json",
+      "disabled": true
+    }
+  ]
+}
