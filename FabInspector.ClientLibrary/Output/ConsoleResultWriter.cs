@@ -10,7 +10,9 @@ namespace FabInspector.ClientLibrary.Output
             {
                 //TODO: use Test log type json property instead
                 var msgType = result.Pass ? MessageTypeEnum.Information : result.LogType;
-                context.OnItemMessage(result.ItemPath ?? string.Empty, msgType, result.Message);
+                var ruleSetName = string.IsNullOrWhiteSpace(result.RuleSetName) ? "Unknown" : result.RuleSetName;
+                var message = string.Concat("[Ruleset: ", ruleSetName, "] ", result.Message);
+                context.OnItemMessage(result.ItemPath ?? string.Empty, msgType, message);
             }
 
             if (context.TestResults.Any())
