@@ -3,20 +3,82 @@
   "name": "FabInspector",
   "displayName": "FabInspector",
   "description": "Run FabInspector rule sets against Fabric workspaces and items from inside the Fabric portal.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "FabInspector",
   "iconUrl": "/favicon.png",
   "items": [
     {
       "name": "FabInspectorRuleSet",
       "displayName": "FabInspector rule set",
-      "description": "A FabInspector rule set that can be executed against the current workspace or item.",
+      "description": "A FabInspector rule set (collection of JsonLogic rules) that can be executed against the current workspace or item.",
       "iconUrl": "/favicon.png",
-      "editor": {
-        "path": "/fabric-launch"
+      "editor": { "path": "/fabric-launch/ruleset" },
+      "supportedInMonitoringHub": true,
+      "contextMenuItems": [
+        { "name": "run", "displayName": "Run FabInspector", "handler": { "action": "fabinspector.run.rules" } },
+        { "name": "recentruns" },
+        { "name": "schedule" }
+      ],
+      "itemSettings": {
+        "recentRun": { "useRecentRunsComponent": true },
+        "schedule": { "itemJobType": "FabInspector.RunRules", "refreshType": "Run" }
+      },
+      "itemJobActionConfig": {
+        "registeredActions": {
+          "detail": "fabinspector.job.detail",
+          "cancel": "fabinspector.job.cancel",
+          "retry": "fabinspector.job.retry"
+        }
+      },
+      "jobs": [
+        { "name": "FabInspector.RunRules", "displayName": "Run FabInspector rules" }
+      ],
+      "lifecycleEndpoints": {
+        "onCreateItem":  "/api/workload/items/FabInspectorRuleSet/{workspaceId}/{itemId}",
+        "onUpdateItem":  "/api/workload/items/FabInspectorRuleSet/{workspaceId}/{itemId}",
+        "onDeleteItem":  "/api/workload/items/FabInspectorRuleSet/{workspaceId}/{itemId}",
+        "onRestoreItem": "/api/workload/items/FabInspectorRuleSet/{workspaceId}/{itemId}/restore"
+      }
+    },
+    {
+      "name": "FabInspectorRulesCatalog",
+      "displayName": "FabInspector rules catalog",
+      "description": "A curated catalog that references one or more FabInspector rule set items and can run them as a group against the current workspace.",
+      "iconUrl": "/favicon.png",
+      "editor": { "path": "/fabric-launch/catalog" },
+      "supportedInMonitoringHub": true,
+      "contextMenuItems": [
+        { "name": "run", "displayName": "Run FabInspector (catalog)", "handler": { "action": "fabinspector.run.catalog" } },
+        { "name": "recentruns" },
+        { "name": "schedule" }
+      ],
+      "itemSettings": {
+        "recentRun": { "useRecentRunsComponent": true },
+        "schedule": { "itemJobType": "FabInspector.RunCatalog", "refreshType": "Run" }
+      },
+      "itemJobActionConfig": {
+        "registeredActions": {
+          "detail": "fabinspector.job.detail",
+          "cancel": "fabinspector.job.cancel",
+          "retry": "fabinspector.job.retry"
+        }
+      },
+      "jobs": [
+        { "name": "FabInspector.RunCatalog", "displayName": "Run FabInspector catalog" }
+      ],
+      "lifecycleEndpoints": {
+        "onCreateItem":  "/api/workload/items/FabInspectorRulesCatalog/{workspaceId}/{itemId}",
+        "onUpdateItem":  "/api/workload/items/FabInspectorRulesCatalog/{workspaceId}/{itemId}",
+        "onDeleteItem":  "/api/workload/items/FabInspectorRulesCatalog/{workspaceId}/{itemId}",
+        "onRestoreItem": "/api/workload/items/FabInspectorRulesCatalog/{workspaceId}/{itemId}/restore"
       }
     }
   ],
+  "jobActionEndpoints": {
+    "start":  "/api/workload/jobs/{itemType}/{workspaceId}/{itemId}/{jobType}/{jobInstanceId}",
+    "status": "/api/workload/jobs/{itemType}/{workspaceId}/{itemId}/{jobType}/{jobInstanceId}",
+    "cancel": "/api/workload/jobs/{itemType}/{workspaceId}/{itemId}/{jobType}/{jobInstanceId}/cancel"
+  },
   "scopes": [
     "https://analysis.windows.net/powerbi/api/.default",
     "https://api.fabric.microsoft.com/.default",

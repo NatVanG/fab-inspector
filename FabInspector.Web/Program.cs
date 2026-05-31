@@ -2,6 +2,10 @@ using FabInspector.Core;
 using FabInspector.Web.Auth;
 using FabInspector.Web.Components;
 using FabInspector.Web.Services;
+using FabInspector.Web.Workload.Auth;
+using FabInspector.Web.Workload.Jobs;
+using FabInspector.Web.Workload.Runtime;
+using FabInspector.Web.Workload.Stores;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Identity.Web;
@@ -24,6 +28,21 @@ builder.Services
     .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"))
     .EnableTokenAcquisitionToCallDownstreamApi(initialScopes)
     .AddInMemoryTokenCaches();
+
+// Fabric Extensibility Toolkit lifecycle endpoints authenticate via the
+// SubjectAndAppToken1.0 scheme (delegated subject token + app-only token).
+// Registered as a *second* scheme so the Blazor UI continues to use OIDC.
+builder.Services
+    .AddAuthentication()
+    .AddScheme<SubjectAndAppTokenOptions, SubjectAndAppTokenAuthHandler>(
+        SubjectAndAppTokenAuthHandler.SchemeName,
+        options =>
+        {
+            // Local dev shortcut: allow unauthenticated calls to the workload
+            // endpoints before AAD is registered. Production deployments must
+            // override this in appsettings.
+            options.AllowAnonymousInDevelopment = builder.Environment.IsDevelopment();
+        });
 
 builder.Services.AddAuthorization(options =>
 {
@@ -50,6 +69,15 @@ builder.Services.AddFabInspectorOperators();
 // its own ITokenProvider, even though the underlying engine serialises runs.
 builder.Services.AddScoped<InspectionRunner>();
 
+// Custom Fabric workload item infrastructure (rule set + rules catalog).
+// Stores are singletons — they back the in-process cache of item definitions
+// and job-run records. WorkloadInspectionService and ItemDefinitionResolver are
+// scoped so they pick up the request's InspectionRunner.
+builder.Services.AddSingleton<IItemDefinitionStore, InMemoryItemDefinitionStore>();
+builder.Services.AddSingleton<IJobRunStore, InMemoryJobRunStore>();
+builder.Services.AddScoped<ItemDefinitionResolver>();
+builder.Services.AddScoped<WorkloadInspectionService>();
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
@@ -75,6 +103,8 @@ app.UseAuthorization();
 // the /fabric-launch route.
 app.Use(async (ctx, next) =>
 {
+    // /fabric-launch covers both the legacy landing page and the new editor
+    // routes /fabric-launch/ruleset and /fabric-launch/catalog via StartsWithSegments.
     if (ctx.Request.Path.StartsWithSegments("/fabric-launch"))
     {
         ctx.Response.OnStarting(() =>
