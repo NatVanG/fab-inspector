@@ -1,0 +1,64 @@
+name: Workload CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Workload/**'
+      - 'FabInspector.Web/**'
+      - '.github/workflows/workload-ci.yml'
+  pull_request:
+    paths:
+      - 'Workload/**'
+      - 'FabInspector.Web/**'
+      - '.github/workflows/workload-ci.yml'
+
+jobs:
+  frontend:
+    name: React frontend (build + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Workload
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: Workload/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check + build
+        run: npm run build
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Upload frontend bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: workload-frontend
+          path: build/Frontend
+          if-no-files-found: error
+
+  backend:
+    name: FabInspector.Web (build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore FabInspector.Web/FabInspector.Web.csproj
+
+      - name: Build (Release)
+        run: dotnet build FabInspector.Web/FabInspector.Web.csproj -c Release --no-restore --nologo

@@ -1,6 +1,5 @@
 using FabInspector.Core;
 using FabInspector.Web.Auth;
-using FabInspector.Web.Components;
 using FabInspector.Web.Services;
 using FabInspector.Web.Workload.Auth;
 using FabInspector.Web.Workload.Jobs;
@@ -23,6 +22,10 @@ var initialScopes = new[]
     "https://storage.azure.com/.default"
 };
 
+// Interactive OIDC web-app sign-in is retained so the inspection runner can
+// silently acquire downstream tokens (Power BI / Fabric / OneLake) via the
+// MSAL cache. The React workload UI is hosted out-of-process (Vite dev server
+// or static bundle) — it talks to this backend purely through /api/workload/*.
 builder.Services
     .AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
     .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"))
@@ -31,7 +34,8 @@ builder.Services
 
 // Fabric Extensibility Toolkit lifecycle endpoints authenticate via the
 // SubjectAndAppToken1.0 scheme (delegated subject token + app-only token).
-// Registered as a *second* scheme so the Blazor UI continues to use OIDC.
+// Registered as a *second* scheme so the OIDC web-app scheme stays available
+// for interactive sign-in / sign-out controllers.
 builder.Services
     .AddAuthentication()
     .AddScheme<SubjectAndAppTokenOptions, SubjectAndAppTokenAuthHandler>(
@@ -46,7 +50,10 @@ builder.Services
 
 builder.Services.AddAuthorization(options =>
 {
-    // Require an authenticated user on every page by default.
+    // Controllers opt-in to a specific scheme via their own [Authorize]
+    // attributes (workload endpoints require SubjectAndAppToken; the
+    // MicrosoftIdentity sign-in controllers use OIDC). We still require an
+    // authenticated user on anything that doesn't explicitly opt out.
     options.FallbackPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
         .Build();
@@ -55,18 +62,17 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddControllersWithViews()
     .AddMicrosoftIdentityUI();
 
-// Blazor needs cascading auth state for <AuthorizeView> / <AuthorizeRouteView>.
-builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddHttpContextAccessor();
 
 // Per-request token provider that wraps Microsoft.Identity.Web's ITokenAcquisition.
-builder.Services.AddScoped<ITokenProvider, BlazorTokenProvider>();
+builder.Services.AddScoped<ITokenProvider, DelegatedTokenProvider>();
 
 // Operator catalogue + report renderer (singletons; pure compute, no per-user state).
 builder.Services.AddFabInspectorOperators();
 
-// Inspection orchestration — scoped so each Blazor circuit gets a runner bound to
-// its own ITokenProvider, even though the underlying engine serialises runs.
+// Inspection orchestration — scoped per request so each invocation gets a
+// runner bound to its own ITokenProvider, even though the underlying engine
+// serialises runs.
 builder.Services.AddScoped<InspectionRunner>();
 
 // Custom Fabric workload item infrastructure (rule set + rules catalog).
@@ -78,15 +84,31 @@ builder.Services.AddSingleton<IJobRunStore, InMemoryJobRunStore>();
 builder.Services.AddScoped<ItemDefinitionResolver>();
 builder.Services.AddScoped<WorkloadInspectionService>();
 
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+// CORS for the React workload dev server and any configured production origin.
+// In dev, Vite proxies /api/* through its own port, so the React app sees a
+// same-origin request and this CORS policy is only exercised by tools that
+// hit the backend directly (e.g. the DevGateway preview surface).
+const string ReactCorsPolicy = "FabInspectorReactApp";
+var allowedOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>() ?? new[] { "https://localhost:60006", "http://localhost:60006" };
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(ReactCorsPolicy, policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    app.UseExceptionHandler("/error");
     app.UseHsts();
 }
 
@@ -94,34 +116,11 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
+app.UseCors(ReactCorsPolicy);
+
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Allow the Fabric portal to embed the workload-launch page in an iframe.
-// Browsers honour CSP frame-ancestors and ignore X-Frame-Options when CSP is
-// present, so we both set frame-ancestors and strip any default XFO header on
-// the /fabric-launch route.
-app.Use(async (ctx, next) =>
-{
-    // /fabric-launch covers both the legacy landing page and the new editor
-    // routes /fabric-launch/ruleset and /fabric-launch/catalog via StartsWithSegments.
-    if (ctx.Request.Path.StartsWithSegments("/fabric-launch"))
-    {
-        ctx.Response.OnStarting(() =>
-        {
-            ctx.Response.Headers["Content-Security-Policy"] =
-                "frame-ancestors 'self' https://app.fabric.microsoft.com https://*.fabric.microsoft.com https://app.powerbi.com";
-            ctx.Response.Headers.Remove("X-Frame-Options");
-            return Task.CompletedTask;
-        });
-    }
-    await next();
-});
-
-app.UseAntiforgery();
-
-app.MapControllers(); // exposes /MicrosoftIdentity/Account/SignIn|SignOut
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+app.MapControllers(); // exposes /api/workload/* and /MicrosoftIdentity/Account/SignIn|SignOut
 
 app.Run();

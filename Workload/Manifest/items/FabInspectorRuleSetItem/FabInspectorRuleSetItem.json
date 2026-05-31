@@ -1,0 +1,33 @@
+{
+    "name": "FabInspectorRuleSet",
+    "displayName": "FabInspector rule set",
+    "description": "A FabInspector rule set (collection of JsonLogic rules) that can be executed against the current workspace or item.",
+    "iconUrl": "/assets/favicon.png",
+    "editor": { "path": "/items/ruleset" },
+    "supportedInMonitoringHub": true,
+    "contextMenuItems": [
+        { "name": "run", "displayName": "Run FabInspector", "handler": { "action": "fabinspector.run.rules" } },
+        { "name": "recentruns" },
+        { "name": "schedule" }
+    ],
+    "itemSettings": {
+        "recentRun": { "useRecentRunsComponent": true },
+        "schedule": { "itemJobType": "FabInspector.RunRules", "refreshType": "Run" }
+    },
+    "itemJobActionConfig": {
+        "registeredActions": {
+            "detail": "fabinspector.job.detail",
+            "cancel": "fabinspector.job.cancel",
+            "retry": "fabinspector.job.retry"
+        }
+    },
+    "jobs": [
+        { "name": "FabInspector.RunRules", "displayName": "Run FabInspector rules" }
+    ],
+    "lifecycleEndpoints": {
+        "onCreateItem":  "{{BACKEND_URL}}/api/workload/items/FabInspectorRuleSet/{workspaceId}/{itemId}",
+        "onUpdateItem":  "{{BACKEND_URL}}/api/workload/items/FabInspectorRuleSet/{workspaceId}/{itemId}",
+        "onDeleteItem":  "{{BACKEND_URL}}/api/workload/items/FabInspectorRuleSet/{workspaceId}/{itemId}",
+        "onRestoreItem": "{{BACKEND_URL}}/api/workload/items/FabInspectorRuleSet/{workspaceId}/{itemId}/restore"
+    }
+}

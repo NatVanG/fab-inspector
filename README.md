@@ -18,6 +18,16 @@ This is a community project that is not supported by Microsoft.
 
 :exclamation: When testing Power BI reports, Fab Inspector only supports the new enhanced metadata report format (PBIR). Also PBIX files are not currently supported, only PBIP or "{my-report}.Report" folders.
 
+## Microsoft Fabric workload (preview)
+
+A React + TypeScript frontend for the FabInspector custom Fabric workload lives
+in [`Workload/`](Workload/README.md), built on the
+[Fabric Extensibility Toolkit](https://learn.microsoft.com/en-us/fabric/extensibility-toolkit/extensibility-toolkit-overview)
+and the `@ms-fabric/workload-client` SDK. It talks to the lifecycle / job
+controllers exposed by `FabInspector.Web` over `/api/workload/*`. The previous
+Blazor editor surfaces have been removed — see `Workload/README.md` for setup,
+build, and CI details.
+
 ## <a name="contents"></a>Contents
 
 - [Intro](#intro)

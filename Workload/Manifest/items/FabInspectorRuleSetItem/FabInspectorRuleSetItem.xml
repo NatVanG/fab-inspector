@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ItemManifestConfiguration
+    xmlns="http://schemas.microsoft.com/fabric/workload-manifest"
+    SchemaVersion="2.0"
+    WorkloadName="{{WORKLOAD_NAME}}">
+
+    <Item TypeName="FabInspectorRuleSet">
+        <DisplayName>FabInspector rule set</DisplayName>
+        <Description>A FabInspector rule set (collection of JsonLogic rules) that can be executed against the current workspace or item.</Description>
+        <Editor Path="/items/ruleset" />
+    </Item>
+
+</ItemManifestConfiguration>

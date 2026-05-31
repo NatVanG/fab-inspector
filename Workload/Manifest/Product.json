@@ -1,0 +1,22 @@
+{
+    "$schema": "https://learn.microsoft.com/fabric/extensibility-toolkit/product.schema.json",
+    "name": "{{WORKLOAD_NAME}}",
+    "displayName": "FabInspector",
+    "description": "Run FabInspector rule sets against Fabric workspaces and items from inside the Fabric portal.",
+    "version": "{{WORKLOAD_VERSION}}",
+    "publisher": "FabInspector",
+    "iconUrl": "/assets/favicon.png",
+    "scopes": [
+        "https://analysis.windows.net/powerbi/api/.default",
+        "https://api.fabric.microsoft.com/.default",
+        "https://storage.azure.com/.default"
+    ],
+    "frontend": {
+        "url": "{{FRONTEND_URL}}"
+    },
+    "jobActionEndpoints": {
+        "start": "{{BACKEND_URL}}/api/workload/jobs/{itemType}/{workspaceId}/{itemId}/{jobType}/{jobInstanceId}",
+        "status": "{{BACKEND_URL}}/api/workload/jobs/{itemType}/{workspaceId}/{itemId}/{jobType}/{jobInstanceId}",
+        "cancel": "{{BACKEND_URL}}/api/workload/jobs/{itemType}/{workspaceId}/{itemId}/{jobType}/{jobInstanceId}/cancel"
+    }
+}
