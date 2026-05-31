@@ -19,6 +19,21 @@ namespace FabInspector.Core
         private const string CONTEXTNODE = ".";
         internal const char DRILLCHAR = '>';
 
+        /// <summary>
+        /// No-op token provider used only when the Inspector is invoked without an
+        /// ambient <see cref="Inspection.InspectionContext"/>. Operators that
+        /// genuinely need a token will fail at the API call site with a clear error;
+        /// purely local inspections never invoke <see cref="GetTokenAsync"/>.
+        /// </summary>
+        private sealed class NullTokenProvider : ITokenProvider
+        {
+            public Task<string> GetTokenAsync(string[] scopes, CancellationToken cancellationToken = default)
+                => throw new InvalidOperationException("No ITokenProvider is configured for this inspection run.");
+
+            public Azure.Core.TokenCredential Credential
+                => throw new InvalidOperationException("No ITokenProvider is configured for this inspection run.");
+        }
+
         private readonly InspectionRules _inspectionRules;
         private readonly IEnumerable<JsonLogicOperatorRegistry> _registries;
         private readonly IFabricFileSystem _fileSystem;
@@ -211,34 +226,34 @@ namespace FabInspector.Core
             // The Inspector mutates rule-level fields on this instance during traversal so
             // operators see the current rule's name, the current part, and the part query
             // when they execute. When no parent scope has been pushed (legacy unit-test
-            // path or direct Inspector instantiation), individual rule execution still
-            // works but operators that require run-level state (TokenProvider, HttpClient)
-            // will throw a clear InvalidOperationException.
+            // path or direct Inspector instantiation), create a transient local scope so
+            // the inner loop always has a non-null context to write Part/ItemPath into.
+            // Operators that require run-level state (TokenProvider, HttpClient) will
+            // still throw a clear InvalidOperationException if those slots remain unset.
             var ambient = InspectionContextHolder.Current;
+            IDisposable? localScope = null;
+            if (ambient == null)
+            {
+                ambient = new InspectionContext
+                {
+                    HttpClient = new HttpClient(),
+                    FabricWorkspaceId = string.Empty,
+                    TokenProvider = new NullTokenProvider()
+                };
+                localScope = InspectionContextHolder.PushScope(ambient);
+            }
 
+            try
+            {
             foreach (var rule in rules)
             {
                 var ruleLogType = ConvertRuleLogType(rule.LogType);
 
-                if (ambient != null)
-                {
-                    ambient.PartQuery = partQuery;
-                    ambient.Part = partQuery.RootPart;
-                    ambient.RuleName = rule.Name;
-                    ambient.MessageReporter = new DelegateInspectionMessageReporter(OnMessageIssued);
-                    ambient.ItemPath = null;
-                }
-
-                // ContextService.Current still maintained during transition so any
-                // unmigrated code paths (e.g. legacy tests) continue to read state.
-                // Removed in Phase 5 once ContextService is deleted.
-                ContextService.Current = new PartContext
-                {
-                    PartQuery = partQuery,
-                    Part = partQuery.RootPart,
-                    RuleName = rule.Name,
-                    MessageReporter = new DelegateInspectionMessageReporter(OnMessageIssued)
-                };
+                ambient.PartQuery = partQuery;
+                ambient.Part = partQuery.RootPart;
+                ambient.RuleName = rule.Name;
+                ambient.MessageReporter = new DelegateInspectionMessageReporter(OnMessageIssued);
+                ambient.ItemPath = null;
 
                 OnMessageIssued(MessageTypeEnum.Information, string.Format("Running Rule \"{0}\".", rule.Name));
                 Json.Logic.Rule? jrule = null;
@@ -267,7 +282,7 @@ namespace FabInspector.Core
 
                     if (!string.IsNullOrEmpty(rule.Part))
                     {
-                        var part = partQuery.Invoke(rule.Part, ContextService.Current!.Part);
+                        var part = partQuery.Invoke(rule.Part, ambient.Part!);
 
                         if (part != null && part
                             is List<Part.Part>)
@@ -308,22 +323,14 @@ namespace FabInspector.Core
                         }
                         else
                         {
-                            if (ambient != null)
-                            {
-                                ambient.Part = part;
-                            }
-                            ContextService.Current!.Part = part;
+                            ambient.Part = part;
                             var node = PartUtils.ToJsonNode(part);
                             var newdata = MapRuleDataPointersToValues(node, rule);
 
                             var itemPath = this._fileSystem.GetRelativePath(part.FileSystemPath);
                             //var itemPath = part.FileSystemPath.Substring(part.FileSystemPath.IndexOf(this._fileSystem.RootPath) + this._fileSystem.RootPath.Length);
                             itemPath = string.IsNullOrEmpty(itemPath) ? "root" : itemPath;
-                            if (ambient != null)
-                            {
-                                ambient.ItemPath = itemPath;
-                            }
-                            ContextService.Current!.ItemPath = itemPath;
+                            ambient.ItemPath = itemPath;
                             var parentPageName = part.FileSystemName.ToLowerInvariant().EndsWith("page.json") ? partQuery.PartName(part) : null;
                             var parentPageDisplayName = part.FileSystemName.ToLowerInvariant().EndsWith("page.json") ? partQuery.PartDisplayName(part) ?? partQuery.PartName(part) : "N/A";
 
@@ -385,6 +392,11 @@ namespace FabInspector.Core
                     continue;
                 }
 
+            }
+            }
+            finally
+            {
+                localScope?.Dispose();
             }
         }
 

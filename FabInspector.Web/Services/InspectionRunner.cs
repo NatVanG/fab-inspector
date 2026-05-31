@@ -4,7 +4,6 @@ using FabInspector.ClientLibrary.Output;
 using FabInspector.ClientLibrary.Utils;
 using FabInspector.Core;
 using FabInspector.Core.Output;
-using FabInspector.Core.Part;
 
 namespace FabInspector.Web.Services;
 
@@ -30,19 +29,14 @@ public sealed record InspectionRunResult(
 
 /// <summary>
 /// Orchestrates one Fab Inspector run for the signed-in Blazor user.
-///
-/// IMPORTANT: <see cref="FabInspector.ClientLibrary.Main"/> retains process-wide
-/// static state (<c>_args</c>, <c>_tokenProvider</c>, error/warning counters,
-/// and the <c>WinMessageIssued</c> event). To keep concurrent users from stomping
-/// on each other this service serialises all inspections through a
-/// <see cref="SemaphoreSlim"/>. Removing the gate requires a deeper refactor of
-/// <c>Main.cs</c>.
+/// Constructs a fresh <see cref="InspectionEngine"/> per call and subscribes to
+/// its per-instance <see cref="InspectionEngine.MessageIssued"/> event, so
+/// concurrent users no longer share state through the process-wide
+/// <c>Main.WinMessageIssued</c> event. The legacy serialising semaphore was
+/// removed in Phase 4 of the DI refactor.
 /// </summary>
 public sealed class InspectionRunner
 {
-    // One in-flight inspection at a time, process-wide.
-    private static readonly SemaphoreSlim _gate = new(1, 1);
-
     private readonly ITokenProvider _tokenProvider;
     private readonly IReportPageWireframeRenderer _pageRenderer;
     private readonly IEnumerable<JsonLogicOperatorRegistry> _registries;
@@ -62,7 +56,8 @@ public sealed class InspectionRunner
 
     /// <summary>
     /// Runs an inspection and streams progress lines to <paramref name="progress"/> as
-    /// they are emitted. Awaits the gate first, so concurrent callers queue.
+    /// they are emitted. Safe to call concurrently — each call constructs its own
+    /// <see cref="InspectionEngine"/> instance with isolated per-run state.
     /// </summary>
     public async Task<InspectionRunResult> RunAsync(
         InspectionRequest request,
@@ -78,57 +73,44 @@ public sealed class InspectionRunner
             progress?.TryWrite(line);
         }
 
-        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        var args = new Args
+        {
+            FabricWorkspaceId = request.FabricWorkspaceId,
+            FabricItem = request.FabricItemId ?? string.Empty,
+            RulesFilePath = request.RulesFileUrl,
+            OutputPath = string.Empty,
+            FormatsString = string.Concat(
+                request.JsonOutput ? "JSON" : string.Empty,
+                ",",
+                request.HtmlOutput ? "HTML" : string.Empty),
+            VerboseString = request.Verbose.ToString(),
+            ParallelString = request.Parallel.ToString(),
+            AuthMethod = "external" // sentinel — RunAndReturnResultsAsync overload below ignores this
+        };
+
+        var engine = new InspectionEngine();
+        engine.MessageIssued += Handler;
+
         try
         {
-            var args = new Args
-            {
-                FabricWorkspaceId = request.FabricWorkspaceId,
-                FabricItem = request.FabricItemId ?? string.Empty,
-                RulesFilePath = request.RulesFileUrl,
-                OutputPath = string.Empty,
-                FormatsString = string.Concat(
-                    request.JsonOutput ? "JSON" : string.Empty,
-                    ",",
-                    request.HtmlOutput ? "HTML" : string.Empty),
-                VerboseString = request.Verbose.ToString(),
-                ParallelString = request.Parallel.ToString(),
-                AuthMethod = "external" // sentinel — RunAndReturnResultsAsync overload below ignores this
-            };
+            var testRun = await engine
+                .RunAndReturnResultsAsync(args, _tokenProvider, _pageRenderer, _registries)
+                .ConfigureAwait(false);
 
-            FabInspector.ClientLibrary.Main.WinMessageIssued += Handler;
-
-            // Per-run ambient context for operators that still read ContextService.
-            using var scope = ContextService.BeginScope(
-                _tokenProvider,
-                request.FabricWorkspaceId,
-                request.FabricItemId);
-
-            try
-            {
-                var testRun = await FabInspector.ClientLibrary.Main
-                    .RunAndReturnResultsAsync(args, _tokenProvider, _pageRenderer, _registries)
-                    .ConfigureAwait(false);
-
-                progress?.TryComplete();
-                return new InspectionRunResult(testRun, lines, Failure: null);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Inspection run failed");
-                lines.Add($"[Error] {ex.Message}");
-                progress?.TryWrite($"[Error] {ex.Message}");
-                progress?.TryComplete(ex);
-                return new InspectionRunResult(TestRun: null, lines, Failure: ex);
-            }
-            finally
-            {
-                FabInspector.ClientLibrary.Main.WinMessageIssued -= Handler;
-            }
+            progress?.TryComplete();
+            return new InspectionRunResult(testRun, lines, Failure: null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Inspection run failed");
+            lines.Add($"[Error] {ex.Message}");
+            progress?.TryWrite($"[Error] {ex.Message}");
+            progress?.TryComplete(ex);
+            return new InspectionRunResult(TestRun: null, lines, Failure: ex);
         }
         finally
         {
-            _gate.Release();
+            engine.MessageIssued -= Handler;
         }
     }
 }

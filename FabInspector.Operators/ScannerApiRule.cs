@@ -25,14 +25,14 @@ namespace FabInspector.Operators;
 /// </para>
 /// Parameters (positional array in rule JSON):
 /// <list type="number">
-///   <item><description><b>workspaceIds</b> (required) – a single workspace-ID string, a JSON array of workspace-ID strings, or a comma-separated list. Defaults to <see cref="ContextService.FabricWorkspaceId"/> when omitted or empty.</description></item>
+///   <item><description><b>workspaceIds</b> (required) – a single workspace-ID string, a JSON array of workspace-ID strings, or a comma-separated list. Defaults to <see cref="FabInspector.Core.Inspection.InspectionContext.FabricWorkspaceId"/> when omitted or empty.</description></item>
 ///   <item><description><b>lineage</b> (optional bool) – return lineage info.</description></item>
 ///   <item><description><b>datasourceDetails</b> (optional bool) – return data source details.</description></item>
 ///   <item><description><b>datasetSchema</b> (optional bool) – return dataset schema (tables, columns, measures).</description></item>
 ///   <item><description><b>datasetExpressions</b> (optional bool) – return dataset expressions (DAX / Mashup).</description></item>
 ///   <item><description><b>getArtifactUsers</b> (optional bool) – return user details for Power BI items.</description></item>
 /// </list>
-/// Requires <see cref="ContextService.HttpClient"/> and <see cref="ContextService.TokenProvider"/> to be configured.
+/// Requires <see cref="FabInspector.Core.Inspection.InspectionContext.HttpClient"/> and <see cref="FabInspector.Core.Inspection.InspectionContext.TokenProvider"/> to be configured.
 /// </summary>
 [Operator("scannerapi")]
 [JsonConverter(typeof(ScannerApiJsonConverter))]

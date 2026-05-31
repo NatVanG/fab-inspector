@@ -14,7 +14,7 @@ namespace FabInspector.Operators;
 
 /// <summary>
 /// Handles the `dfsget` operation.
-/// Requires <see cref="ContextService.HttpClient"/>.
+/// Requires <see cref="FabInspector.Core.Inspection.InspectionContext.HttpClient"/>.
 /// Expects an HTTPS OneLake DFS absolute URL as the first parameter.
 /// </summary>
 [Operator("dfsget")]

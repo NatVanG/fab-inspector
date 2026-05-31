@@ -17,8 +17,8 @@ namespace FabInspector.Operators;
 /// Handles the `daxquery` operation.
 /// Executes a DAX query against a Fabric semantic model using the Fabric REST API
 /// and returns the query result as a JSON node.
-/// Requires <see cref="ContextService.HttpClient"/>, <see cref="ContextService.FabricWorkspaceId"/>,
-/// and <see cref="ContextService.FabricItem"/> to be populated before invocation.
+/// Requires <see cref="FabInspector.Core.Inspection.InspectionContext.HttpClient"/>, <see cref="FabInspector.Core.Inspection.InspectionContext.FabricWorkspaceId"/>,
+/// and <see cref="FabInspector.Core.Inspection.InspectionContext.FabricItem"/> to be populated before invocation.
 /// </summary>
 /// TODO: support local model querying through the PBI Desktop debug port?
 [Operator("daxquery")]

@@ -13,7 +13,7 @@ namespace FabInspector.Operators;
 
 /// <summary>
 /// Handles the `apiget` operation.
-/// Requires <see cref="ContextService.HttpClient"/>
+/// Requires <see cref="FabInspector.Core.Inspection.InspectionContext.HttpClient"/>
 /// </summary>
 [Operator("apiget")]
 [JsonConverter(typeof(ApiGetJsonConverter))]

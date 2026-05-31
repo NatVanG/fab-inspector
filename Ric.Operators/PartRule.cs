@@ -1,5 +1,6 @@
 using Json.Logic;
 using Json.More;
+using FabInspector.Core.Inspection;
 using FabInspector.Core.Part;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -38,10 +39,11 @@ public class PartRule : Json.Logic.Rule
         if (input is null) throw new ArgumentException("PartRule input cannot be null");
         var stringInput = input.Stringify();
 
-        var context = ContextService.Current ?? throw new InvalidOperationException("ContextService is not configured.");
-        var contextPartQuery = context.PartQuery;
+        var context = InspectionContextHolder.Require("part");
+        var contextPartQuery = context.PartQuery
+            ?? throw new InvalidOperationException("PartQuery is not set on the ambient InspectionContext for operator 'part'.");
         var contextPart = context.Part;
-		result = PartUtils.ToJsonNode(contextPartQuery.Invoke(stringInput ?? string.Empty, contextPart));
+		result = PartUtils.ToJsonNode(contextPartQuery.Invoke(stringInput ?? string.Empty, contextPart!));
 
         return result;
     }
