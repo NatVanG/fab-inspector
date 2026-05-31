@@ -1,6 +1,7 @@
 using FabInspector.Core;
 using FabInspector.Web.Auth;
 using FabInspector.Web.Services;
+using FabInspector.Web.Workload;
 using FabInspector.Web.Workload.Auth;
 using FabInspector.Web.Workload.Jobs;
 using FabInspector.Web.Workload.Runtime;
@@ -42,10 +43,14 @@ builder.Services
         SubjectAndAppTokenAuthHandler.SchemeName,
         options =>
         {
-            // Local dev shortcut: allow unauthenticated calls to the workload
-            // endpoints before AAD is registered. Production deployments must
-            // override this in appsettings.
-            options.AllowAnonymousInDevelopment = builder.Environment.IsDevelopment();
+            // Cryptographic validation parameters. These MUST be configured in
+            // production (Workload:Auth section in appsettings). The
+            // AllowAnonymousInDevelopment escape hatch is strictly bound to
+            // IsDevelopment() and is logged loudly on every hit so it can be
+            // detected if it leaks into non-Dev environments.
+            builder.Configuration.GetSection("Workload:Auth").Bind(options);
+            options.AllowAnonymousInDevelopment =
+                options.AllowAnonymousInDevelopment && builder.Environment.IsDevelopment();
         });
 
 builder.Services.AddAuthorization(options =>
@@ -59,7 +64,12 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
-builder.Services.AddControllersWithViews()
+builder.Services.AddControllersWithViews(options =>
+{
+    // Map workload exceptions (e.g. ConsentRequiredException) to structured
+    // ErrorResponse payloads expected by the Fabric portal.
+    options.Filters.Add<WorkloadExceptionFilter>();
+})
     .AddMicrosoftIdentityUI();
 
 builder.Services.AddHttpContextAccessor();

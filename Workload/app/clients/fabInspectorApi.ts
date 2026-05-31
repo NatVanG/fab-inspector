@@ -63,19 +63,31 @@ export async function updateItemDefinition(
     }
 }
 
+export interface JobErrorDetails {
+    errorCode: string;
+    message: string;
+    source?: string;
+    isPermanent?: boolean;
+}
+
 export interface JobStatus {
     jobInstanceId: string;
     itemType: string;
     workspaceId: string;
     itemId: string;
     jobType: string;
-    status: "Pending" | "InProgress" | "Succeeded" | "Failed" | "Cancelled" | string;
-    startTime?: string;
-    endTime?: string;
-    failureMessage?: string;
-    passCount?: number;
-    failCount?: number;
-    log?: string[];
+    // Matches the Fabric Workload Jobs Swagger status enum.
+    status: "NotStarted" | "InProgress" | "Succeeded" | "Failed" | "Cancelled" | string;
+    startTimeUtc?: string;
+    endTimeUtc?: string;
+    errorDetails?: JobErrorDetails | null;
+    // Workload-specific extras live under this non-standard envelope so they
+    // don't conflict with the canonical Fabric job-status fields.
+    fabInspector?: {
+        passCount?: number;
+        failCount?: number;
+        log?: string[];
+    };
 }
 
 export async function getJobStatus(
@@ -87,7 +99,7 @@ export async function getJobStatus(
     jobInstanceId: string
 ): Promise<JobStatus | null> {
     const resp = await fetch(
-        `/api/workload/jobs/${encodeURIComponent(itemType)}/${workspaceId}/${itemId}/${encodeURIComponent(jobType)}/${jobInstanceId}`,
+        `/api/workload/jobs/${encodeURIComponent(itemType)}/${workspaceId}/${itemId}/${encodeURIComponent(jobType)}/jobInstances/${jobInstanceId}`,
         { headers: await authHeaders(controller) }
     );
     if (resp.status === 404) return null;

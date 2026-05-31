@@ -8,6 +8,13 @@
         <DisplayName>FabInspector rule set</DisplayName>
         <Description>A FabInspector rule set (collection of JsonLogic rules) that can be executed against the current workspace or item.</Description>
         <Editor Path="/items/ruleset" />
+        <JobScheduler>
+            <OnDemandJobDeduplicateOptions>PerItem</OnDemandJobDeduplicateOptions>
+            <ScheduledJobDeduplicateOptions>PerItem</ScheduledJobDeduplicateOptions>
+            <ItemJobTypes>
+                <ItemJobType Name="FabInspector.FabInspectorRuleSet.RunRules" />
+            </ItemJobTypes>
+        </JobScheduler>
     </Item>
 
 </ItemManifestConfiguration>

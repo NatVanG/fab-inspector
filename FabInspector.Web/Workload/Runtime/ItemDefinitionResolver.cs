@@ -31,9 +31,9 @@ public sealed class ItemDefinitionResolver
     /// </summary>
     public async Task<InspectionRules?> ResolveRuleSetAsync(Guid workspaceId, Guid itemId, CancellationToken ct = default)
     {
-        var envelope = await _store.GetAsync(WorkloadItemTypes.RuleSet, workspaceId, itemId, ct).ConfigureAwait(false);
-        if (envelope?.Definition == null) return null;
-        return DecodeRules(envelope.Definition);
+        var stored = await _store.GetAsync(WorkloadItemTypes.RuleSet, workspaceId, itemId, ct).ConfigureAwait(false);
+        if (stored?.Envelope?.Definition == null) return null;
+        return DecodeRules(stored.Value.Envelope.Definition);
     }
 
     /// <summary>
@@ -44,10 +44,11 @@ public sealed class ItemDefinitionResolver
     /// </summary>
     public async Task<InspectionRules?> ResolveCatalogAsync(Guid workspaceId, Guid itemId, List<string> warnings, CancellationToken ct = default)
     {
-        var envelope = await _store.GetAsync(WorkloadItemTypes.RulesCatalog, workspaceId, itemId, ct).ConfigureAwait(false);
-        if (envelope?.Definition == null) return null;
+        var stored = await _store.GetAsync(WorkloadItemTypes.RulesCatalog, workspaceId, itemId, ct).ConfigureAwait(false);
+        if (stored?.Envelope?.Definition == null) return null;
+        var definition = stored.Value.Envelope.Definition;
 
-        var part = envelope.Definition.Parts
+        var part = definition.Parts
             .FirstOrDefault(p => string.Equals(p.Path, WorkloadItemTypes.Parts.CatalogJson, StringComparison.OrdinalIgnoreCase));
         if (part == null)
         {

@@ -8,6 +8,13 @@
         <DisplayName>FabInspector rules catalog</DisplayName>
         <Description>A curated catalog that references one or more FabInspector rule set items and can run them as a group against the current workspace.</Description>
         <Editor Path="/items/catalog" />
+        <JobScheduler>
+            <OnDemandJobDeduplicateOptions>PerItem</OnDemandJobDeduplicateOptions>
+            <ScheduledJobDeduplicateOptions>PerItem</ScheduledJobDeduplicateOptions>
+            <ItemJobTypes>
+                <ItemJobType Name="FabInspector.FabInspectorRulesCatalog.RunCatalog" />
+            </ItemJobTypes>
+        </JobScheduler>
     </Item>
 
 </ItemManifestConfiguration>

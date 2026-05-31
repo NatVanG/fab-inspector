@@ -6,9 +6,19 @@ public enum JobStatus
 {
     NotStarted,
     InProgress,
-    Completed,
+    // Renamed from "Completed" to match the Fabric Workload Jobs Swagger
+    // (status enum: NotStarted | InProgress | Succeeded | Failed | Cancelled).
+    Succeeded,
     Failed,
     Cancelled
+}
+
+public sealed class JobErrorDetails
+{
+    public string ErrorCode { get; set; } = "Internal";
+    public string Message { get; set; } = string.Empty;
+    public string Source { get; set; } = "FabInspector";
+    public bool IsPermanent { get; set; }
 }
 
 public sealed class JobRunRecord
@@ -20,9 +30,9 @@ public sealed class JobRunRecord
     public required string JobType { get; init; }
 
     public JobStatus Status { get; set; } = JobStatus.NotStarted;
-    public DateTimeOffset StartTime { get; set; } = DateTimeOffset.UtcNow;
-    public DateTimeOffset? EndTime { get; set; }
-    public string? FailureMessage { get; set; }
+    public DateTimeOffset StartTimeUtc { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset? EndTimeUtc { get; set; }
+    public JobErrorDetails? ErrorDetails { get; set; }
     public int PassCount { get; set; }
     public int FailCount { get; set; }
     public List<string> Log { get; } = new();
@@ -61,6 +71,6 @@ internal sealed class InMemoryJobRunStore : IJobRunStore
     public IReadOnlyCollection<JobRunRecord> List(Guid workspaceId, Guid itemId) =>
         _runs.Values
             .Where(r => r.WorkspaceId == workspaceId && r.ItemId == itemId)
-            .OrderByDescending(r => r.StartTime)
+            .OrderByDescending(r => r.StartTimeUtc)
             .ToList();
 }

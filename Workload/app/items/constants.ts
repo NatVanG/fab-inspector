@@ -13,8 +13,10 @@ export const WorkloadParts = {
 } as const;
 
 export const WorkloadJobs = {
-    RunRules: "FabInspector.RunRules",
-    RunCatalog: "FabInspector.RunCatalog"
+    // Convention: {WorkloadName}.{ItemType}.{JobOperation}
+    // Keep in sync with FabInspector.Web/Workload/WorkloadItemTypes.cs (Jobs).
+    RunRules: "FabInspector.FabInspectorRuleSet.RunRules",
+    RunCatalog: "FabInspector.FabInspectorRulesCatalog.RunCatalog"
 } as const;
 
 export type WorkloadItemType = (typeof WorkloadItemTypes)[keyof typeof WorkloadItemTypes];

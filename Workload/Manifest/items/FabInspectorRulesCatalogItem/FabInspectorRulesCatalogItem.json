@@ -12,7 +12,7 @@
     ],
     "itemSettings": {
         "recentRun": { "useRecentRunsComponent": true },
-        "schedule": { "itemJobType": "FabInspector.RunCatalog", "refreshType": "Run" }
+        "schedule": { "itemJobType": "FabInspector.FabInspectorRulesCatalog.RunCatalog", "refreshType": "Run" }
     },
     "itemJobActionConfig": {
         "registeredActions": {
@@ -22,7 +22,7 @@
         }
     },
     "jobs": [
-        { "name": "FabInspector.RunCatalog", "displayName": "Run FabInspector catalog" }
+        { "name": "FabInspector.FabInspectorRulesCatalog.RunCatalog", "displayName": "Run FabInspector catalog" }
     ],
     "lifecycleEndpoints": {
         "onCreateItem":  "{{BACKEND_URL}}/api/workload/items/FabInspectorRulesCatalog/{workspaceId}/{itemId}",

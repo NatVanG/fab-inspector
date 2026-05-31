@@ -12,7 +12,7 @@
     ],
     "itemSettings": {
         "recentRun": { "useRecentRunsComponent": true },
-        "schedule": { "itemJobType": "FabInspector.RunRules", "refreshType": "Run" }
+        "schedule": { "itemJobType": "FabInspector.FabInspectorRuleSet.RunRules", "refreshType": "Run" }
     },
     "itemJobActionConfig": {
         "registeredActions": {
@@ -22,7 +22,7 @@
         }
     },
     "jobs": [
-        { "name": "FabInspector.RunRules", "displayName": "Run FabInspector rules" }
+        { "name": "FabInspector.FabInspectorRuleSet.RunRules", "displayName": "Run FabInspector rules" }
     ],
     "lifecycleEndpoints": {
         "onCreateItem":  "{{BACKEND_URL}}/api/workload/items/FabInspectorRuleSet/{workspaceId}/{itemId}",

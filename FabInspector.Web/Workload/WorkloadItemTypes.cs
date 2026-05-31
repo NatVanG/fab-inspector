@@ -21,7 +21,13 @@ public static class WorkloadItemTypes
 
     public static class Jobs
     {
-        public const string RunRules = "FabInspector.RunRules";
-        public const string RunCatalog = "FabInspector.RunCatalog";
+        // Convention from the Fabric Extensibility Toolkit:
+        //   {WorkloadName}.{ItemType}.{JobOperation}
+        // Keep these values in sync with:
+        //   - Workload/app/items/constants.ts (WorkloadJobs)
+        //   - Workload/Manifest/items/*/*.xml  (<JobScheduler><ItemJobType .../></JobScheduler>)
+        //   - Workload/Manifest/items/*/*.json (itemSettings.schedule.itemJobType, jobs[].name)
+        public const string RunRules = "FabInspector.FabInspectorRuleSet.RunRules";
+        public const string RunCatalog = "FabInspector.FabInspectorRulesCatalog.RunCatalog";
     }
 }

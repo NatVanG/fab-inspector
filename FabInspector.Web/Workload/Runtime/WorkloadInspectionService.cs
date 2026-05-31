@@ -33,7 +33,7 @@ public sealed class WorkloadInspectionService
         var ct = linked.Token;
 
         record.Status = JobStatus.InProgress;
-        record.StartTime = DateTimeOffset.UtcNow;
+        record.StartTimeUtc = DateTimeOffset.UtcNow;
 
         string? tempPath = null;
         try
@@ -70,7 +70,13 @@ public sealed class WorkloadInspectionService
 
             if (result.Failure != null)
             {
-                record.FailureMessage = result.Failure.Message;
+                record.ErrorDetails = new JobErrorDetails
+                {
+                    ErrorCode = "InspectionFailed",
+                    Message = result.Failure.Message,
+                    Source = "FabInspector.Engine",
+                    IsPermanent = true
+                };
                 record.Status = JobStatus.Failed;
             }
             else
@@ -78,7 +84,7 @@ public sealed class WorkloadInspectionService
                 var results = result.TestRun?.Results?.ToList() ?? new();
                 record.PassCount = results.Count(r => r.Pass);
                 record.FailCount = results.Count(r => !r.Pass);
-                record.Status = JobStatus.Completed;
+                record.Status = JobStatus.Succeeded;
             }
             record.Log.AddRange(result.LogLines);
         }
@@ -89,12 +95,18 @@ public sealed class WorkloadInspectionService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Workload inspection job {JobInstanceId} failed", record.JobInstanceId);
-            record.FailureMessage = ex.Message;
+            record.ErrorDetails = new JobErrorDetails
+            {
+                ErrorCode = "Internal",
+                Message = ex.Message,
+                Source = "FabInspector.Workload",
+                IsPermanent = false
+            };
             record.Status = JobStatus.Failed;
         }
         finally
         {
-            record.EndTime = DateTimeOffset.UtcNow;
+            record.EndTimeUtc = DateTimeOffset.UtcNow;
             if (tempPath != null)
             {
                 try { File.Delete(tempPath); } catch { /* best effort */ }
