@@ -2,6 +2,7 @@ using Json.Logic;
 using Json.More;
 using Json.Pointer;
 using FabInspector.Core.Exceptions;
+using FabInspector.Core.Inspection;
 using FabInspector.Core.Output;
 using FabInspector.Core.Part;
 using System.Data;
@@ -70,7 +71,15 @@ namespace FabInspector.Core
                         {
                             foreach (var fabricItem in fabricItems)
                             {
-                                ContextService.FabricItem = string.IsNullOrEmpty(fabricItem.FilePath) ? fabricItem.Id : fabricItem.FilePath; //TODO: improve this logic for setting ContextService.FabricItem
+                                // Mutates the ambient run-scoped context's FabricItem so operators
+                                // (e.g. apiget, daxquery) resolve placeholders against the currently
+                                // iterated item. Falls back to a no-op when no scope is pushed
+                                // (some tests construct Inspector directly without a holder scope).
+                                var ctx = InspectionContextHolder.Current;
+                                if (ctx != null)
+                                {
+                                    ctx.FabricItem = string.IsNullOrEmpty(fabricItem.FilePath) ? fabricItem.Id : fabricItem.FilePath;
+                                }
                                 RunRulesByItemType(testResults, rules, fabricItem.Type, fabricItem.DirectoryPath);
                                 RunDeprecatedRulesByItemType(testResults, rules, fabricItem.Type, fabricItem.DirectoryPath);
                             }
@@ -198,9 +207,31 @@ namespace FabInspector.Core
 
         private void RunRules(List<TestResult> testResults, IEnumerable<Rule> rules, IPartQuery partQuery)
         {
+            // Capture the parent ambient context (pushed by the host's inspection engine).
+            // The Inspector mutates rule-level fields on this instance during traversal so
+            // operators see the current rule's name, the current part, and the part query
+            // when they execute. When no parent scope has been pushed (legacy unit-test
+            // path or direct Inspector instantiation), individual rule execution still
+            // works but operators that require run-level state (TokenProvider, HttpClient)
+            // will throw a clear InvalidOperationException.
+            var ambient = InspectionContextHolder.Current;
+
             foreach (var rule in rules)
             {
                 var ruleLogType = ConvertRuleLogType(rule.LogType);
+
+                if (ambient != null)
+                {
+                    ambient.PartQuery = partQuery;
+                    ambient.Part = partQuery.RootPart;
+                    ambient.RuleName = rule.Name;
+                    ambient.MessageReporter = new DelegateInspectionMessageReporter(OnMessageIssued);
+                    ambient.ItemPath = null;
+                }
+
+                // ContextService.Current still maintained during transition so any
+                // unmigrated code paths (e.g. legacy tests) continue to read state.
+                // Removed in Phase 5 once ContextService is deleted.
                 ContextService.Current = new PartContext
                 {
                     PartQuery = partQuery,
@@ -277,6 +308,10 @@ namespace FabInspector.Core
                         }
                         else
                         {
+                            if (ambient != null)
+                            {
+                                ambient.Part = part;
+                            }
                             ContextService.Current!.Part = part;
                             var node = PartUtils.ToJsonNode(part);
                             var newdata = MapRuleDataPointersToValues(node, rule);
@@ -284,6 +319,10 @@ namespace FabInspector.Core
                             var itemPath = this._fileSystem.GetRelativePath(part.FileSystemPath);
                             //var itemPath = part.FileSystemPath.Substring(part.FileSystemPath.IndexOf(this._fileSystem.RootPath) + this._fileSystem.RootPath.Length);
                             itemPath = string.IsNullOrEmpty(itemPath) ? "root" : itemPath;
+                            if (ambient != null)
+                            {
+                                ambient.ItemPath = itemPath;
+                            }
                             ContextService.Current!.ItemPath = itemPath;
                             var parentPageName = part.FileSystemName.ToLowerInvariant().EndsWith("page.json") ? partQuery.PartName(part) : null;
                             var parentPageDisplayName = part.FileSystemName.ToLowerInvariant().EndsWith("page.json") ? partQuery.PartDisplayName(part) ?? partQuery.PartName(part) : "N/A";

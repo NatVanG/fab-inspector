@@ -1,6 +1,7 @@
 using Json.Logic;
 using Json.More;
 using FabInspector.Core;
+using FabInspector.Core.Inspection;
 using FabInspector.Core.Part;
 using System.Diagnostics;
 using System.Net.Http;
@@ -53,14 +54,13 @@ public class DfsGetRule : Json.Logic.Rule
             throw new JsonLogicException($"The dfsget rule requires an HTTPS OneLake DFS absolute URL. Received: {urlTemplate}");
         }
 
-        var httpClient = ContextService.HttpClient
-            ?? throw new InvalidOperationException("ContextService.HttpClient is not configured. Ensure authentication has been completed before running dfsget rules.");
+        var ctx = InspectionContextHolder.Require("dfsget");
+        var httpClient = ctx.HttpClient;
 
-        var workspaceId = ContextService.FabricWorkspaceId;
-        var itemId = ContextService.FabricItem;
+        var workspaceId = ctx.FabricWorkspaceId;
+        var itemId = ctx.FabricItem;
 
-        var tokenProvider = ContextService.TokenProvider
-            ?? throw new InvalidOperationException("ContextService.TokenProvider is not configured. Ensure authentication has been completed before running dfsget rules.");
+        var tokenProvider = ctx.TokenProvider;
 
         var resolvedUrl = urlTemplate.Replace(Utils.Constants.ContextFabricWorkspace, workspaceId, StringComparison.InvariantCultureIgnoreCase);
         resolvedUrl = resolvedUrl.Replace(Utils.Constants.ContextFabricItem, itemId, StringComparison.InvariantCultureIgnoreCase);
@@ -83,7 +83,7 @@ public class DfsGetRule : Json.Logic.Rule
         }
 
         var progressTarget = GetProgressTarget(resolvedUrl);
-        ContextService.ReportOperatorProgress("dfsget", $"Starting GET request to OneLake DFS endpoint '{progressTarget}'.");
+        InspectionContextHolder.ReportOperatorProgress("dfsget", $"Starting GET request to OneLake DFS endpoint '{progressTarget}'.");
 
         var request = AuthenticationHelper.CreateAuthenticatedRequestAsync(
             HttpMethod.Get,
@@ -96,12 +96,12 @@ public class DfsGetRule : Json.Logic.Rule
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = response.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
-            ContextService.ReportOperatorProgress("dfsget", $"GET request to '{progressTarget}' failed with status {(int)response.StatusCode} {response.StatusCode} after {stopwatch.ElapsedMilliseconds} ms.");
+            InspectionContextHolder.ReportOperatorProgress("dfsget", $"GET request to '{progressTarget}' failed with status {(int)response.StatusCode} {response.StatusCode} after {stopwatch.ElapsedMilliseconds} ms.");
             throw new HttpRequestException($"DFS Get request failed ({response.StatusCode}): {errorContent}");
         }
 
         var responseContent = response.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
-        ContextService.ReportOperatorProgress("dfsget", $"Completed GET request to '{progressTarget}' in {stopwatch.ElapsedMilliseconds} ms.");
+        InspectionContextHolder.ReportOperatorProgress("dfsget", $"Completed GET request to '{progressTarget}' in {stopwatch.ElapsedMilliseconds} ms.");
         return TryParseJsonOrString(responseContent);
     }
 

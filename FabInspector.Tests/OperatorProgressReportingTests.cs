@@ -2,6 +2,7 @@ using Azure.Core;
 using FabInspector.Operators;
 using NUnit.Framework;
 using FabInspector.Core;
+using FabInspector.Core.Inspection;
 using FabInspector.Core.Output;
 using FabInspector.Core.Part;
 using Ric.Operators;
@@ -242,6 +243,21 @@ public class OperatorProgressReportingTests
         var inspector = new Inspector(rules, Registries, fileSystem);
         var messages = new List<string>();
         inspector.MessageIssued += (_, args) => messages.Add(args.Message);
+
+        // Operators now read their HttpClient/TokenProvider/FabricWorkspaceId/FabricItem
+        // from InspectionContextHolder.Current rather than ContextService statics. Tests
+        // still configure the legacy ContextService.* slots (for backwards-compat coverage
+        // and TearDown safety); here we mirror those values into a transient
+        // InspectionContext scope so the migrated operators see the same fixture state.
+        var ambient = new InspectionContext
+        {
+            HttpClient = ContextService.HttpClient ?? new HttpClient(),
+            FabricWorkspaceId = ContextService.FabricWorkspaceId ?? string.Empty,
+            FabricItem = ContextService.FabricItem,
+            TokenProvider = ContextService.TokenProvider ?? new CachingTokenProvider(new FakeTokenCredential())
+        };
+
+        using var holderScope = InspectionContextHolder.PushScope(ambient);
 
         var results = inspector.Inspect();
         return (results, messages);

@@ -3,6 +3,7 @@ using FabInspector.ClientLibrary.Output;
 using FabInspector.ClientLibrary.Utils;
 using FabInspector.Core;
 using FabInspector.Core.Exceptions;
+using FabInspector.Core.Inspection;
 using FabInspector.Core.Output;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -304,6 +305,23 @@ namespace FabInspector.ClientLibrary
 
         private static async Task<IEnumerable<TestResult>> ExecuteRuleSetsAsync(Args args, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
+            // Push the ambient InspectionContext for the duration of this run so that
+            // operators (apiget, daxquery, dfsget, scannerapi, sqlquery) can resolve
+            // the HttpClient, TokenProvider, and Fabric workspace/item via
+            // InspectionContextHolder.Current. The ContextService.* statics set by
+            // SetPartContext/AuthenticateAsync remain in place during the P1
+            // transition for any unmigrated callers; they're removed in Phase 5.
+            var inspectionContext = new InspectionContext
+            {
+                HttpClient = _httpClient,
+                FabricWorkspaceId = args.FabricWorkspaceId ?? string.Empty,
+                FabricItem = args.FabricItem,
+                TokenProvider = _tokenProvider
+                    ?? throw new InvalidOperationException("Token provider has not been configured. Call AuthenticateAsync or use the ITokenProvider overload of RunAndReturnResultsAsync before executing rules.")
+            };
+
+            using var holderScope = InspectionContextHolder.PushScope(inspectionContext);
+
             var resolvedRuleSets = await ResolveRuleSetsAsync(args).ConfigureAwait(false);
             var combinedResults = new List<TestResult>();
 
