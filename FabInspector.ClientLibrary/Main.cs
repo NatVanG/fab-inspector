@@ -148,6 +148,38 @@ namespace FabInspector.ClientLibrary
             };
         }
 
+        /// <summary>
+        /// Overload that accepts a pre-built <see cref="ITokenProvider"/> (e.g. a delegated
+        /// per-user token provider from a Blazor / ASP.NET host). Skips the
+        /// <see cref="FabricAuthenticationHelper"/>-based credential construction entirely
+        /// so the caller controls token lifetime and audience.
+        /// The caller is responsible for opening a <c>ContextService.BeginScope(...)</c>
+        /// around this call to isolate per-user ambient state on concurrent flows.
+        /// </summary>
+        public static async Task<TestRun> RunAndReturnResultsAsync(Args args, ITokenProvider tokenProvider, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
+        {
+            if (tokenProvider == null) throw new ArgumentNullException(nameof(tokenProvider));
+
+            _args = args;
+            _tokenProvider = tokenProvider;
+            FabInspector.Core.Part.ContextService.HttpClient = _httpClient;
+            FabInspector.Core.Part.ContextService.TokenProvider = tokenProvider;
+
+            SetPartContext();
+
+            var testResults = await ExecuteRuleSetsAsync(args, registries).ConfigureAwait(false);
+
+            return new TestRun
+            {
+                CompletionTime = DateTime.UtcNow,
+                TestedFilePath = args.FabricItem,
+                RulesFilePath = args.RulesFilePath,
+                RulesCatalogPath = args.RulesCatalogPath,
+                Verbose = args.Verbose,
+                Results = testResults
+            };
+        }
+
         private static async Task AuthenticateAsync(Args args)
         {
             TokenCredential credential;

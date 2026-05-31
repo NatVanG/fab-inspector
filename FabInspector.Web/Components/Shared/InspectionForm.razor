@@ -1,0 +1,192 @@
+@using System.Text.Json
+@using System.Threading.Channels
+@using FabInspector.Core
+@using FabInspector.Core.Output
+@using FabInspector.Web.Services
+@inject InspectionRunner Runner
+@inject IJSRuntime JS
+@inject ILogger<InspectionForm> Logger
+
+<EditForm Model="_form" OnValidSubmit="RunAsync" FormName="inspection-form">
+    <DataAnnotationsValidator />
+
+    <div class="mb-3">
+        <label class="form-label">Fabric Workspace ID (GUID)</label>
+        <InputText class="form-control" @bind-Value="_form.FabricWorkspaceId"
+                   disabled="@LockHostFields" placeholder="00000000-0000-0000-0000-000000000000" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Fabric Item ID (optional, GUID)</label>
+        <InputText class="form-control" @bind-Value="_form.FabricItemId"
+                   disabled="@LockHostFields" placeholder="Leave empty to inspect all items in the workspace" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Rules file URL (OneLake DFS) or path</label>
+        <InputText class="form-control" @bind-Value="_form.RulesFileUrl"
+                   placeholder="https://onelake.dfs.fabric.microsoft.com/&lt;workspace&gt;/&lt;item&gt;.Lakehouse/Files/rules.json" />
+    </div>
+
+    <div class="mb-3 form-check form-check-inline">
+        <InputCheckbox class="form-check-input" id="cbVerbose" @bind-Value="_form.Verbose" />
+        <label class="form-check-label" for="cbVerbose">Verbose</label>
+    </div>
+    <div class="mb-3 form-check form-check-inline">
+        <InputCheckbox class="form-check-input" id="cbParallel" @bind-Value="_form.Parallel" />
+        <label class="form-check-label" for="cbParallel">Parallel</label>
+    </div>
+    <div class="mb-3 form-check form-check-inline">
+        <InputCheckbox class="form-check-input" id="cbJson" @bind-Value="_form.JsonOutput" />
+        <label class="form-check-label" for="cbJson">JSON output</label>
+    </div>
+    <div class="mb-3 form-check form-check-inline">
+        <InputCheckbox class="form-check-input" id="cbHtml" @bind-Value="_form.HtmlOutput" />
+        <label class="form-check-label" for="cbHtml">HTML output</label>
+    </div>
+
+    <button type="submit" class="btn btn-primary" disabled="@_running">
+        @(_running ? "Running…" : "Run inspection")
+    </button>
+</EditForm>
+
+@if (_logLines.Count > 0)
+{
+    <h3 class="mt-4">Progress</h3>
+    <pre style="max-height:18rem;overflow:auto;background:#1e1e1e;color:#eee;padding:.75rem;border-radius:.25rem;">
+@string.Join('\n', _logLines)
+    </pre>
+}
+
+@if (_failure is not null)
+{
+    <div class="alert alert-danger mt-3">
+        <strong>Run failed:</strong> @_failure.Message
+    </div>
+}
+
+@if (_testRun?.Results is not null)
+{
+    var results = _testRun.Results.ToList();
+    var pass = results.Count(r => r.Pass);
+    var fail = results.Count(r => !r.Pass);
+
+    <h3 class="mt-4">Results</h3>
+    <p>
+        <span class="badge bg-success">@pass passed</span>
+        <span class="badge bg-danger">@fail failed</span>
+        <span class="badge bg-secondary">@results.Count total</span>
+    </p>
+
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th>Rule</th>
+                <th>Status</th>
+                <th>Item</th>
+                <th>Message</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var r in results)
+            {
+                <tr class="@(r.Pass ? "table-success" : "table-danger")">
+                    <td>@r.RuleName</td>
+                    <td>@(r.Pass ? "Pass" : "Fail")</td>
+                    <td>@r.ItemPath</td>
+                    <td>@r.Message</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (_form.JsonOutput)
+    {
+        <button class="btn btn-outline-secondary" @onclick="DownloadJson">Download results JSON</button>
+    }
+}
+
+@code {
+    [Parameter] public string? InitialWorkspaceId { get; set; }
+    [Parameter] public string? InitialItemId { get; set; }
+    [Parameter] public string? InitialRulesFileUrl { get; set; }
+    [Parameter] public bool LockHostFields { get; set; }
+
+    private readonly InspectionFormModel _form = new();
+    private readonly List<string> _logLines = new();
+    private bool _running;
+    private TestRun? _testRun;
+    private Exception? _failure;
+
+    protected override void OnParametersSet()
+    {
+        if (!string.IsNullOrWhiteSpace(InitialWorkspaceId)) _form.FabricWorkspaceId = InitialWorkspaceId;
+        if (!string.IsNullOrWhiteSpace(InitialItemId)) _form.FabricItemId = InitialItemId;
+        if (!string.IsNullOrWhiteSpace(InitialRulesFileUrl)) _form.RulesFileUrl = InitialRulesFileUrl;
+    }
+
+    public sealed class InspectionFormModel
+    {
+        public string FabricWorkspaceId { get; set; } = string.Empty;
+        public string? FabricItemId { get; set; }
+        public string RulesFileUrl { get; set; } = string.Empty;
+        public bool Verbose { get; set; } = true;
+        public bool Parallel { get; set; }
+        public bool JsonOutput { get; set; } = true;
+        public bool HtmlOutput { get; set; }
+    }
+
+    private async Task RunAsync()
+    {
+        if (_running) return;
+
+        _running = true;
+        _logLines.Clear();
+        _testRun = null;
+        _failure = null;
+
+        var channel = Channel.CreateUnbounded<string>(new UnboundedChannelOptions
+        {
+            SingleReader = true,
+            SingleWriter = false
+        });
+
+        var request = new InspectionRequest(
+            _form.FabricWorkspaceId,
+            string.IsNullOrWhiteSpace(_form.FabricItemId) ? null : _form.FabricItemId,
+            _form.RulesFileUrl,
+            _form.Verbose,
+            _form.Parallel,
+            _form.JsonOutput,
+            _form.HtmlOutput);
+
+        var runTask = Runner.RunAsync(request, channel.Writer);
+
+        try
+        {
+            await foreach (var line in channel.Reader.ReadAllAsync())
+            {
+                _logLines.Add(line);
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Progress channel terminated with error");
+        }
+
+        var result = await runTask;
+        _testRun = result.TestRun;
+        _failure = result.Failure;
+        _running = false;
+        StateHasChanged();
+    }
+
+    private async Task DownloadJson()
+    {
+        if (_testRun is null) return;
+        var json = JsonSerializer.Serialize(_testRun, new JsonSerializerOptions { WriteIndented = true });
+        var fileName = $"fab-inspector-results-{DateTime.UtcNow:yyyyMMdd-HHmmss}.json";
+        await JS.InvokeVoidAsync("fabInspector.downloadText", fileName, json);
+    }
+}

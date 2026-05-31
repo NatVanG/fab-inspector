@@ -1,0 +1,16 @@
+@page "/inspect"
+@attribute [Authorize]
+@rendermode InteractiveServer
+@using FabInspector.Web.Components.Shared
+
+<PageTitle>Inspect</PageTitle>
+
+<h1>Run an inspection</h1>
+
+<p>
+    Authenticates as the signed-in Entra ID user. The rules file must be reachable from
+    OneLake DFS (<code>https://onelake.dfs.fabric.microsoft.com/...</code>) or a local path
+    on the server.
+</p>
+
+<InspectionForm />

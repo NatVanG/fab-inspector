@@ -1,0 +1,28 @@
+{
+  "$schema": "https://learn.microsoft.com/fabric/extensibility-toolkit/manifest.schema.json",
+  "name": "FabInspector",
+  "displayName": "FabInspector",
+  "description": "Run FabInspector rule sets against Fabric workspaces and items from inside the Fabric portal.",
+  "version": "0.1.0",
+  "publisher": "FabInspector",
+  "iconUrl": "/favicon.png",
+  "items": [
+    {
+      "name": "FabInspectorRuleSet",
+      "displayName": "FabInspector rule set",
+      "description": "A FabInspector rule set that can be executed against the current workspace or item.",
+      "iconUrl": "/favicon.png",
+      "editor": {
+        "path": "/fabric-launch"
+      }
+    }
+  ],
+  "scopes": [
+    "https://analysis.windows.net/powerbi/api/.default",
+    "https://api.fabric.microsoft.com/.default",
+    "https://storage.azure.com/.default"
+  ],
+  "frontend": {
+    "url": "https://REPLACE-WITH-DEPLOYED-HOST/fabric-launch"
+  }
+}

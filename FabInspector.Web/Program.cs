@@ -1,0 +1,97 @@
+using FabInspector.Core;
+using FabInspector.Web.Auth;
+using FabInspector.Web.Components;
+using FabInspector.Web.Services;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.Identity.Web;
+using Microsoft.Identity.Web.UI;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// All Fabric / Power BI / OneLake scopes that the inspection runner may need to
+// silently acquire after sign-in. Listed up front so MSAL can request them as
+// initial scopes (and so consent is granted once).
+var initialScopes = new[]
+{
+    "https://analysis.windows.net/powerbi/api/.default",
+    "https://api.fabric.microsoft.com/.default",
+    "https://storage.azure.com/.default"
+};
+
+builder.Services
+    .AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
+    .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"))
+    .EnableTokenAcquisitionToCallDownstreamApi(initialScopes)
+    .AddInMemoryTokenCaches();
+
+builder.Services.AddAuthorization(options =>
+{
+    // Require an authenticated user on every page by default.
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
+
+builder.Services.AddControllersWithViews()
+    .AddMicrosoftIdentityUI();
+
+// Blazor needs cascading auth state for <AuthorizeView> / <AuthorizeRouteView>.
+builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddHttpContextAccessor();
+
+// Per-request token provider that wraps Microsoft.Identity.Web's ITokenAcquisition.
+builder.Services.AddScoped<ITokenProvider, BlazorTokenProvider>();
+
+// Operator catalogue + report renderer (singletons; pure compute, no per-user state).
+builder.Services.AddFabInspectorOperators();
+
+// Inspection orchestration — scoped so each Blazor circuit gets a runner bound to
+// its own ITokenProvider, even though the underlying engine serialises runs.
+builder.Services.AddScoped<InspectionRunner>();
+
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Allow the Fabric portal to embed the workload-launch page in an iframe.
+// Browsers honour CSP frame-ancestors and ignore X-Frame-Options when CSP is
+// present, so we both set frame-ancestors and strip any default XFO header on
+// the /fabric-launch route.
+app.Use(async (ctx, next) =>
+{
+    if (ctx.Request.Path.StartsWithSegments("/fabric-launch"))
+    {
+        ctx.Response.OnStarting(() =>
+        {
+            ctx.Response.Headers["Content-Security-Policy"] =
+                "frame-ancestors 'self' https://app.fabric.microsoft.com https://*.fabric.microsoft.com https://app.powerbi.com";
+            ctx.Response.Headers.Remove("X-Frame-Options");
+            return Task.CompletedTask;
+        });
+    }
+    await next();
+});
+
+app.UseAntiforgery();
+
+app.MapControllers(); // exposes /MicrosoftIdentity/Account/SignIn|SignOut
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
+
+app.Run();

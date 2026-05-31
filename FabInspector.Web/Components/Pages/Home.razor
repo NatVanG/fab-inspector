@@ -1,0 +1,20 @@
+﻿@page "/"
+
+<PageTitle>FabInspector</PageTitle>
+
+<h1>FabInspector for the Web</h1>
+
+<p>
+    Run FabInspector rule sets against Microsoft Fabric workspaces and items, signed in as
+    your Entra ID user. Sign in and head to the <a href="inspect">Inspect</a> page to get started.
+</p>
+
+<AuthorizeView>
+    <Authorized>
+        <p class="text-success">You are signed in as <strong>@context.User.Identity?.Name</strong>.</p>
+        <a class="btn btn-primary" href="inspect">Go to Inspect &raquo;</a>
+    </Authorized>
+    <NotAuthorized>
+        <a class="btn btn-primary" href="MicrosoftIdentity/Account/SignIn">Sign in</a>
+    </NotAuthorized>
+</AuthorizeView>
