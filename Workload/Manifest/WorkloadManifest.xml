@@ -12,7 +12,7 @@
 
     <Workload>
         <DisplayName>FabInspector</DisplayName>
-        <Description>Run FabInspector rule sets against Fabric workspaces and items.</Description>
+        <Description>Run Fab Inspector rule sets against Fabric workspaces and items.</Description>
         <Publisher>FabInspector</Publisher>
     </Workload>
 

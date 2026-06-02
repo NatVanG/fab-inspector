@@ -1,3 +1,4 @@
+using Azure.Data.Tables;
 using FabInspector.Core;
 using FabInspector.Web.Auth;
 using FabInspector.Web.Services;
@@ -8,6 +9,7 @@ using FabInspector.Web.Workload.Runtime;
 using FabInspector.Web.Workload.Stores;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Identity.Web;
 using Microsoft.Identity.Web.UI;
 
@@ -86,11 +88,40 @@ builder.Services.AddFabInspectorOperators();
 builder.Services.AddScoped<InspectionRunner>();
 
 // Custom Fabric workload item infrastructure (rule set + rules catalog).
-// Stores are singletons — they back the in-process cache of item definitions
-// and job-run records. WorkloadInspectionService and ItemDefinitionResolver are
-// scoped so they pick up the request's InspectionRunner.
-builder.Services.AddSingleton<IItemDefinitionStore, InMemoryItemDefinitionStore>();
+// Item-definition store is selectable via Workload:Items:Store ("Fabric"
+// — OneLake via Fabric REST API, the production default — or "InMemory",
+// retained for local dev before AAD is wired up). Job-run store remains
+// in-memory until Phase 3 lands the Azure Table implementation.
+builder.Services.AddMemoryCache();
+builder.Services.Configure<FabricItemStoreOptions>(builder.Configuration.GetSection("Workload:Items"));
+
+var itemStoreKind = builder.Configuration["Workload:Items:Store"] ?? "Fabric";
+if (string.Equals(itemStoreKind, "InMemory", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddSingleton<IItemDefinitionStore, InMemoryItemDefinitionStore>();
+}
+else
+{
+    // Scoped: depends on the request-scoped ITokenProvider for OBO exchange.
+    builder.Services.AddScoped<IItemDefinitionStore, FabricItemDefinitionStore>();
+}
 builder.Services.AddSingleton<IJobRunStore, InMemoryJobRunStore>();
+
+// Job-run telemetry store is selectable via Workload:Jobs:Store ("AzureTable"
+// for production durability across instances; "InMemory" for local dev). When
+// AzureTable is selected we also register a TableServiceClient + retention
+// background service.
+builder.Services.Configure<JobRunStoreOptions>(builder.Configuration.GetSection("Workload:Jobs"));
+var jobStoreKind = builder.Configuration["Workload:Jobs:Store"] ?? "InMemory";
+if (string.Equals(jobStoreKind, "AzureTable", StringComparison.OrdinalIgnoreCase))
+{
+    var jobOptions = builder.Configuration.GetSection("Workload:Jobs").Get<JobRunStoreOptions>() ?? new JobRunStoreOptions();
+    builder.Services.AddSingleton(_ => AzureTableJobRunStore.BuildServiceClient(jobOptions));
+    builder.Services.RemoveAll<IJobRunStore>();
+    builder.Services.AddSingleton<IJobRunStore, AzureTableJobRunStore>();
+    builder.Services.AddHostedService<JobRunRetentionService>();
+}
+
 builder.Services.AddScoped<ItemDefinitionResolver>();
 builder.Services.AddScoped<WorkloadInspectionService>();
 

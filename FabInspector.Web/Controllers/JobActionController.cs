@@ -34,7 +34,7 @@ public sealed class JobActionController : ControllerBase
     }
 
     [HttpPost]
-    public IActionResult Start(string itemType, Guid workspaceId, Guid itemId, string jobType, Guid jobInstanceId)
+    public async Task<IActionResult> Start(string itemType, Guid workspaceId, Guid itemId, string jobType, Guid jobInstanceId, CancellationToken ct)
     {
         if (!WorkloadItemTypes.IsKnown(itemType))
             return BadRequest(new ErrorResponse("UnknownItemType", $"Unknown item type '{itemType}'."));
@@ -42,21 +42,22 @@ public sealed class JobActionController : ControllerBase
         if (jobType != WorkloadItemTypes.Jobs.RunRules && jobType != WorkloadItemTypes.Jobs.RunCatalog)
             return BadRequest(new ErrorResponse("UnknownJobType", $"Unknown job type '{jobType}'."));
 
-        if (_runs.Get(jobInstanceId) != null)
+        if (await _runs.GetAsync(jobInstanceId, ct) != null)
             return Conflict(new ErrorResponse("Conflict", $"Job instance {jobInstanceId} already exists."));
 
-        var record = _runs.Create(itemType, workspaceId, itemId, jobType, jobInstanceId);
+        var record = await _runs.CreateAsync(itemType, workspaceId, itemId, jobType, jobInstanceId, ct);
 
-        // Fire and forget; status is polled via GET.
+        // Fire and forget; status is polled via GET. The runner is responsible
+        // for calling _runs.SaveAsync on every observable status transition.
         _ = Task.Run(() => _runner.RunJobAsync(record));
 
         return Accepted(BuildStatusResponse(record));
     }
 
     [HttpGet]
-    public IActionResult GetStatus(Guid jobInstanceId)
+    public async Task<IActionResult> GetStatus(Guid jobInstanceId, CancellationToken ct)
     {
-        var record = _runs.Get(jobInstanceId);
+        var record = await _runs.GetAsync(jobInstanceId, ct);
         if (record == null)
             return NotFound(new ErrorResponse("NotFound", $"Job instance {jobInstanceId} not found."));
 
@@ -64,13 +65,17 @@ public sealed class JobActionController : ControllerBase
     }
 
     [HttpPost("cancel")]
-    public IActionResult Cancel(Guid jobInstanceId)
+    public async Task<IActionResult> Cancel(Guid jobInstanceId, CancellationToken ct)
     {
-        var record = _runs.Get(jobInstanceId);
+        var record = await _runs.GetAsync(jobInstanceId, ct);
         if (record == null)
             return NotFound(new ErrorResponse("NotFound", $"Job instance {jobInstanceId} not found."));
 
         try { record.Cts.Cancel(); } catch (ObjectDisposedException) { }
+        // Persist the cancel intent so a second instance observing the
+        // record from storage sees the in-progress cancel attempt even if
+        // the runner has not yet flipped status to Cancelled.
+        await _runs.SaveAsync(record, ct);
         return Ok(BuildStatusResponse(record));
     }
 

@@ -15,15 +15,18 @@ public sealed class WorkloadInspectionService
 {
     private readonly InspectionRunner _runner;
     private readonly ItemDefinitionResolver _resolver;
+    private readonly IJobRunStore _store;
     private readonly ILogger<WorkloadInspectionService> _logger;
 
     public WorkloadInspectionService(
         InspectionRunner runner,
         ItemDefinitionResolver resolver,
+        IJobRunStore store,
         ILogger<WorkloadInspectionService> logger)
     {
         _runner = runner;
         _resolver = resolver;
+        _store = store;
         _logger = logger;
     }
 
@@ -34,6 +37,10 @@ public sealed class WorkloadInspectionService
 
         record.Status = JobStatus.InProgress;
         record.StartTimeUtc = DateTimeOffset.UtcNow;
+        // Flush the in-progress transition before doing real work so the
+        // status is visible to GET callers from any instance.
+        try { await _store.SaveAsync(record, CancellationToken.None).ConfigureAwait(false); }
+        catch (Exception ex) { _logger.LogWarning(ex, "Failed to persist InProgress transition for {JobInstanceId}", record.JobInstanceId); }
 
         string? tempPath = null;
         try
@@ -111,6 +118,11 @@ public sealed class WorkloadInspectionService
             {
                 try { File.Delete(tempPath); } catch { /* best effort */ }
             }
+            // Always attempt a final flush — even on cancellation/throw — so
+            // the terminal status and any partial log are durable. Swallow
+            // failures here to avoid masking the original exception.
+            try { await _store.SaveAsync(record, CancellationToken.None).ConfigureAwait(false); }
+            catch (Exception ex) { _logger.LogError(ex, "Failed to persist terminal status for {JobInstanceId}", record.JobInstanceId); }
         }
     }
 }
