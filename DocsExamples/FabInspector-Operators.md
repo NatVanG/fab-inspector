@@ -146,13 +146,17 @@ For safety, `sqlquery` only allows single SELECT-style queries and rejects SQL c
 | Form | When to use |
 |---|---|
 | Simple string | Uses `{context-fabricworkspace}` and `{context-fabricitem}` |
-| Array | Explicit workspace and lakehouse GUIDs |
+| Array | Explicit workspace and lakehouse GUIDs, with optional metadata refresh settings |
 
 | Parameter | Type | Description |
 |---|---|---|
 | query | string | T-SQL query expression |
 | workspaceId | string | Workspace GUID (or omit to use `{context-fabricworkspace}`) |
 | lakehouseId | string | Lakehouse GUID (or omit to use `{context-fabricitem}`) |
+| refreshMetadata | boolean | Refresh the Lakehouse SQL endpoint metadata before running the query (optional, default `false`) |
+| recreateTables | boolean | When refreshing metadata, recreate SQL endpoint tables as part of the refresh request (optional, default `false`) |
+
+`recreateTables` is only meaningful when `refreshMetadata` is `true`.
 
 **Returns:** Parsed JSON payload from the SQL query result.
 
@@ -165,12 +169,14 @@ For safety, `sqlquery` only allows single SELECT-style queries and rejects SQL c
   "sqlquery": [
     "SELECT TOP (5) [Country] FROM [dbo].[Customers] FOR JSON PATH",
     "f45498e6-9f62-4bbb-bdb6-6d8a7e3a2703",
-    "6a496a15-d00c-4cd6-a731-a3fd79e8fb10"
+    "6a496a15-d00c-4cd6-a731-a3fd79e8fb10",
+    true,
+    false
   ]
 }
 ```
 
-See also: [Example-sqlquery-rule.json](Example-sqlquery-rule.json)
+See also: [Example-sqlquery-rule.json](Example-sqlquery-rule.json), [Example-sqlquery-wparams-rule.json](Example-sqlquery-wparams-rule.json)
 
 ---
 

@@ -184,7 +184,7 @@ fab-inspector -fabricworkspace "<workspace-guid>" -fabricitem "<item-guid>" -rul
 
 ### 5. Hybrid pattern
 
-Rules can call the Power BI/Fabric admin scanner API, the Power BI and Fabric REST APIs' GET methods, request JSON files from the OneLake DFS endpoint, or execute DAX queries directly from within rule logic using the [`apiget`](DocsExamples/FabInspector-Operators.md#apiget), [`dfsget`](DocsExamples/FabInspector-Operators.md#dfsget), [`daxquery`](DocsExamples/FabInspector-Operators.md#daxquery), and [`scannerapi`](DocsExamples/FabInspector-Operators.md#scannerapi) operators.
+Rules can call the Power BI/Fabric admin scanner API, the Power BI and Fabric REST APIs' GET methods, request JSON files from the OneLake DFS endpoint, or execute DAX and SQL queries directly from within rule logic using the [`apiget`](DocsExamples/FabInspector-Operators.md#apiget), [`dfsget`](DocsExamples/FabInspector-Operators.md#dfsget), [`daxquery`](DocsExamples/FabInspector-Operators.md#daxquery), [`sqlquery`](DocsExamples/FabInspector-Operators.md#sqlquery), and [`scannerapi`](DocsExamples/FabInspector-Operators.md#scannerapi) operators.
 
 ```mermaid
 flowchart TB
@@ -192,7 +192,7 @@ flowchart TB
       A1[Fabric items: Local folder]
       A2[Fabric items: Workspace items]
       A3["Fabric REST API\n(apiget, dfsget, scannerapi operators)"]
-      A4["Power BI REST API\n(apiget, daxquery, scannerapi operators)"]
+      A4["Power BI REST API\n(apiget, daxquery, sqlquery, scannerapi operators)"]
       B1[Rules: Local JSON]
       B2[Rules: OneLake JSON]
     end
@@ -223,7 +223,7 @@ Example combinations:
 1. Local item definitions + OneLake rules + local HTML output.
 2. Workspace items + local rules + GitHub annotations.
 3. Workspace items + OneLake rules + OneLake JSON output.
-4. Workspace items + OneLake rules (including REST API and DAX calls via operators) + OneLake JSON output.
+4. Workspace items + OneLake rules (including REST API, DAX, and SQL calls via operators) + OneLake JSON output.
 
 This flexibility lets teams start local, then progressively adopt CI/CD, workspace-scoped inspection, and API-driven rules without changing the core rule model.
 
@@ -441,7 +441,7 @@ For a tutorial on how to run the Fab Inspector CLI (aka Fab Inspector) as part o
 
 :pencil: This is a high-level guide to custom rules for a deeper explanation of rules and operators see the [Fab Inspector wiki](https://github.com/NatVanG/fab-inspector/wiki). For a quick-reference of all available operators see:
 - [Ric Operators](DocsExamples/Ric-Operators.md) — navigation, data transformation, string, set, date/time, and file-system operators
-- [FabInspector Operators](DocsExamples/FabInspector-Operators.md) — REST API (`apiget`, `dfsget`, `daxquery`, `scannerapi`) and layout (`rectoverlap`) operators
+- [FabInspector Operators](DocsExamples/FabInspector-Operators.md) — REST API (`apiget`, `dfsget`, `daxquery`, `sqlquery`, `scannerapi`) and layout (`rectoverlap`) operators
 
 Custom rules are defined in a JSON file as an array of rule objects as follows:
 
