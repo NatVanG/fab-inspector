@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>{{WORKLOAD_NAME}}</id>
+    <version>{{WORKLOAD_VERSION}}</version>
+    <authors>FabInspector</authors>
+    <owners>FabInspector</owners>
+    <description>A NuGet package that holds the manifests for the {{WORKLOAD_NAME}} workload extension.</description>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+  </metadata>
+
+  <files>
+    <!-- Workload-level manifests -->
+    <file src="{{MANIFEST_FOLDER}}\*.xml" target="BE" />
+    <file src="{{MANIFEST_FOLDER}}\*.json" target="FE" />
+
+    <!-- Frontend static assets -->
+    <file src="{{MANIFEST_FOLDER}}\assets\**" target="FE\assets" />
+
+    <!-- Item manifests -->
+    <file src="{{MANIFEST_FOLDER}}\items\**" target="items" />
+  </files>
+</package>
