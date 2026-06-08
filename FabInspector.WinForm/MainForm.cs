@@ -62,13 +62,13 @@ namespace FabInspector.WinForm
                 new SliceOperator(),
                 new NowOperator(),
                 new DateDiffOperator(),
-                new LetOperator()
+                new LetOperator(),
+                new RectangleOverlapOperator()
             }));
 
             registries.Add(new JsonLogicOperatorRegistry(
             new FabInspectorSerializerContext(),
             new IJsonLogicOperator[] {
-                new RectangleOverlapOperator(),
                 new DaxQueryOperator(),
                 new SqlQueryOperator(),
                 new ApiGetOperator(),

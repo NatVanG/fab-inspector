@@ -444,8 +444,8 @@ For a tutorial on how to run the Fab Inspector CLI (aka Fab Inspector) as part o
 ## <a id="customerruleguide"></a>Custom Rules Guide
 
 :pencil: This is a high-level guide to custom rules for a deeper explanation of rules and operators see the [Fab Inspector wiki](https://github.com/NatVanG/fab-inspector/wiki). For a quick-reference of all available operators see:
-- [Ric Operators](DocsExamples/Ric-Operators.md) — navigation, data transformation, string, set, date/time, and file-system operators
-- [FabInspector Operators](DocsExamples/FabInspector-Operators.md) — REST API (`apiget`, `dfsget`, `daxquery`, `sqlquery`, `scannerapi`) and layout (`rectoverlap`) operators
+- [Ric Operators](DocsExamples/Ric-Operators.md) — navigation, data transformation, string, set, layout/geometry (`rectoverlap`), date/time, and file-system operators
+- [FabInspector Operators](DocsExamples/FabInspector-Operators.md) — REST API (`apiget`, `dfsget`, `daxquery`, `sqlquery`, `scannerapi`) operators
 
 Custom rules are defined in a JSON file as an array of rule objects as follows:
 

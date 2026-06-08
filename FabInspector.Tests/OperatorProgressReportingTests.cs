@@ -38,12 +38,12 @@ public class OperatorProgressReportingTests
                 new StringContainsOperator(),
                 new ToRecordOperator(),
                 new ToStringOperator(),
-                new FromYamlFileOperator()
+                new FromYamlFileOperator(),
+                new RectangleOverlapOperator()
             ]),
         new JsonLogicOperatorRegistry(
             new FabInspectorSerializerContext(),
             [
-                new RectangleOverlapOperator(),
                 new DaxQueryOperator(),
                 new ApiGetOperator(),
                 new ScannerApiOperator()

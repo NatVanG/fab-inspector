@@ -15,6 +15,7 @@ All snippets below show the operator as it appears inside a rule's `test` array.
 - [String Operations](#string-operations): `strcontains`, `strsplit`, `strjoin`, `regexextract`
 - [Array Operations](#array-operations): `slice`
 - [Set Operations](#set-operations): `union`, `intersect`, `diff`, `symdiff`, `equalsets`
+- [Layout & Geometry](#layout--geometry): `rectoverlap`
 - [Date & Time](#date--time): `now`, `datediff`
 - [Type & Null Checks](#type--null-checks): `hasprop`, `isnullorempty`
 - [File System](#file-system): `filesize`, `filetextsearchcount`, `fromyamlfile`
@@ -487,6 +488,43 @@ Returns `true` if both arrays contain exactly the same elements (order-independe
 
 ```json
 { "equalsets": [{ "var": "expected" }, { "var": "actual" }] }
+```
+
+---
+
+## Layout & Geometry
+
+### `rectoverlap`
+
+Detects overlapping rectangles in a list of named rectangular regions. Optionally expands each rectangle by a pixel margin before checking for overlaps. Returns the names of any rectangles that overlap with at least one other.
+
+| Parameter | Type | Description |
+|---|---|---|
+| input | array | Array of rectangle objects, each with integer properties `name`, `x`, `y`, `width`, `height` |
+| margin | number | Pixel amount to expand each rectangle on all sides before the overlap check (optional, default `0`) |
+
+**Returns:** Array of `name` values for rectangles that overlap with at least one other rectangle.
+
+```json
+{
+  "rectoverlap": [
+    {
+      "map": [
+        { "part": "Visuals" },
+        {
+          "torecord": [
+            "name",   { "var": "name" },
+            "x",      { "var": "visual.position.x" },
+            "y",      { "var": "visual.position.y" },
+            "width",  { "var": "visual.position.width" },
+            "height", { "var": "visual.position.height" }
+          ]
+        }
+      ]
+    },
+    5
+  ]
+}
 ```
 
 ---
