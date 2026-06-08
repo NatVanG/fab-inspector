@@ -24,6 +24,8 @@ namespace FabInspector.Core.Part
                         return new CrossItemPartQuery(path, fileSystem);
                     case "report":
                         return new PBIRPartQuery(path, fileSystem);
+                    case "semanticmodel":
+                        return new TMDLPartQuery(path, fileSystem);
                     case "report_deprecated":
                         return new PBIRPartQuery_deprecated(path, fileSystem);
                     default:

@@ -1,0 +1,278 @@
+{
+  "rules": [
+    {
+      "id": "SEMANTICMODEL_DEFINITION_PBISM_VERSION",
+      "name": "Semantic model definition.pbism version",
+      "description": "Use the reserved Definition part name to read definition.pbism and assert the semantic model definition version.",
+      "itemType": "SemanticModel",
+      "disabled": false,
+      "part": "Definition",
+      "test": [
+        {
+          "var": "version"
+        },
+        "4.0"
+      ]
+    },
+    {
+      "id": "SEMANTICMODEL_DATABASE_TMDL_HAS_COMPATIBILITY_LEVEL",
+      "name": "Semantic model database.tmdl declares compatibility level",
+      "description": "Use the reserved Database part name with filetextsearchcount to validate TMDL content using a regular expression.",
+      "itemType": "SemanticModel",
+      "disabled": false,
+      "test": [
+        {
+          ">": [
+            {
+              "filetextsearchcount": [
+                {
+                  "partinfo": "Database"
+                },
+                "compatibilityLevel:\\s*1550"
+              ]
+            },
+            0
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "SEMANTICMODEL_MODEL_TMDL_HAS_CULTURE",
+      "name": "Semantic model model.tmdl declares a culture",
+      "description": "Use the reserved Model part name with filetextsearchcount to ensure the TMDL model file contains a culture declaration.",
+      "itemType": "SemanticModel",
+      "disabled": false,
+      "test": [
+        {
+          ">": [
+            {
+              "filetextsearchcount": [
+                {
+                  "partinfo": "Model"
+                },
+                "culture\\s*:"
+              ]
+            },
+            0
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "SEMANTICMODEL_EXPRESSIONS_TMDL_OPTIONAL",
+      "name": "Semantic model expressions.tmdl is optional",
+      "description": "Use the reserved Expressions part name and allow simple models where definition/expressions.tmdl is absent.",
+      "itemType": "SemanticModel",
+      "disabled": false,
+      "test": [
+        {
+          "isnullorempty": [
+            {
+              "partinfo": "Expressions"
+            }
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "SEMANTICMODEL_RELATIONSHIPS_TMDL_OPTIONAL",
+      "name": "Semantic model relationships.tmdl is optional",
+      "description": "Use the reserved Relationships part name and allow models with no explicit relationships file.",
+      "itemType": "SemanticModel",
+      "disabled": false,
+      "test": [
+        {
+          "isnullorempty": [
+            {
+              "partinfo": "Relationships"
+            }
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "SEMANTICMODEL_DATASOURCES_TMDL_OPTIONAL",
+      "name": "Semantic model dataSources.tmdl is optional",
+      "description": "Use the reserved DataSources part name and allow models that do not materialize definition/dataSources.tmdl.",
+      "itemType": "SemanticModel",
+      "disabled": false,
+      "test": [
+        {
+          "isnullorempty": [
+            {
+              "partinfo": "DataSources"
+            }
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "SEMANTICMODEL_FUNCTIONS_TMDL_OPTIONAL",
+      "name": "Semantic model functions.tmdl is optional",
+      "description": "Use the reserved Functions part name and allow models that do not define DAX user defined functions.",
+      "itemType": "SemanticModel",
+      "disabled": false,
+      "test": [
+        {
+          "isnullorempty": [
+            {
+              "partinfo": "Functions"
+            }
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "SEMANTICMODEL_TABLES_INCLUDE_INVENTORY",
+      "name": "Semantic model tables collection includes Inventory",
+      "description": "Use the reserved Tables part name to inspect the TMDL table files and assert that Inventory.tmdl exists.",
+      "itemType": "SemanticModel",
+      "disabled": false,
+      "test": [
+        {
+          "in": [
+            "Inventory.tmdl",
+            {
+              "query": [
+                {
+                  "partinfo": "Tables"
+                },
+                {
+                  "path": "$[*].filesystemname"
+                }
+              ]
+            }
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "SEMANTICMODEL_TABLES_START_WITH_TABLE_DECLARATION",
+      "name": "Semantic model table files start with a table declaration",
+      "description": "Iterate the reserved Tables part name and use filetextsearchcount with a regular expression against each current .tmdl file.",
+      "itemType": "SemanticModel",
+      "disabled": false,
+      "part": "Tables",
+      "test": [
+        {
+          ">": [
+            {
+              "filetextsearchcount": [
+                {
+                  "query": [
+                    {
+                      "partinfo": ""
+                    },
+                    {
+                      "var": "filesystempath"
+                    }
+                  ]
+                },
+                "^table\\s+"
+              ]
+            },
+            0
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "SEMANTICMODEL_CULTURES_INCLUDE_FR_FR",
+      "name": "Semantic model cultures collection includes fr-FR",
+      "description": "Use the reserved Cultures part name to inspect culture TMDL files and assert that fr-FR.tmdl exists.",
+      "itemType": "SemanticModel",
+      "disabled": false,
+      "test": [
+        {
+          "in": [
+            "fr-FR.tmdl",
+            {
+              "query": [
+                {
+                  "partinfo": "Cultures"
+                },
+                {
+                  "path": "$[*].filesystemname"
+                }
+              ]
+            }
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "SEMANTICMODEL_CULTURES_START_WITH_CULTUREINFO_DECLARATION",
+      "name": "Semantic model culture files start with a cultureInfo declaration",
+      "description": "Iterate the reserved Cultures part name and use filetextsearchcount with a regular expression against each current .tmdl file.",
+      "itemType": "SemanticModel",
+      "disabled": false,
+      "part": "Cultures",
+      "test": [
+        {
+          ">": [
+            {
+              "filetextsearchcount": [
+                {
+                  "query": [
+                    {
+                      "partinfo": ""
+                    },
+                    {
+                      "var": "filesystempath"
+                    }
+                  ]
+                },
+                "^cultureInfo\\s+"
+              ]
+            },
+            0
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "SEMANTICMODEL_ROLES_COLLECTION_EMPTY",
+      "name": "Semantic model roles collection can be empty",
+      "description": "Use the reserved Roles part name to show how to inspect an optional TMDL collection and count its members.",
+      "itemType": "SemanticModel",
+      "disabled": false,
+      "test": [
+        {
+          "count": [
+            {
+              "partinfo": "Roles"
+            }
+          ]
+        },
+        0
+      ]
+    },
+    {
+      "id": "SEMANTICMODEL_PERSPECTIVES_COLLECTION_EMPTY",
+      "name": "Semantic model perspectives collection can be empty",
+      "description": "Use the reserved Perspectives part name to show how to inspect an optional TMDL collection and count its members.",
+      "itemType": "SemanticModel",
+      "disabled": false,
+      "test": [
+        {
+          "count": [
+            {
+              "partinfo": "Perspectives"
+            }
+          ]
+        },
+        0
+      ]
+    }
+  ]
+}
