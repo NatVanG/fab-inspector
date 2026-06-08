@@ -45,6 +45,7 @@ namespace FabInspector.WinForm
             chckUseTempFiles = new CheckBox();
             txtOutputDirPath = new TextBox();
             groupBox2 = new GroupBox();
+            chckParallel = new CheckBox();
             chckVerbose = new CheckBox();
             label4 = new Label();
             chckHTMLOutput = new CheckBox();
@@ -222,6 +223,7 @@ namespace FabInspector.WinForm
             // 
             // groupBox2
             // 
+            groupBox2.Controls.Add(chckParallel);
             groupBox2.Controls.Add(chckVerbose);
             groupBox2.Controls.Add(label4);
             groupBox2.Controls.Add(btnBrowseOutputDir);
@@ -236,6 +238,16 @@ namespace FabInspector.WinForm
             groupBox2.TabIndex = 1;
             groupBox2.TabStop = false;
             groupBox2.Text = "Outputs";
+            // 
+            // chckParallel
+            // 
+            chckParallel.AutoSize = true;
+            chckParallel.Location = new Point(643, 124);
+            chckParallel.Name = "chckParallel";
+            chckParallel.Size = new Size(104, 29);
+            chckParallel.TabIndex = 13;
+            chckParallel.Text = "Parallel";
+            chckParallel.UseVisualStyleBackColor = true;
             // 
             // chckVerbose
             // 
@@ -442,6 +454,7 @@ namespace FabInspector.WinForm
         private OpenFileDialog openRulesFileDialog;
         private FolderBrowserDialog outputFolderBrowserDialog;
         private CheckBox chckVerbose;
+        private CheckBox chckParallel;
         private Label label4;
         private Label lblMessage;
         private LinkLabel lnkHelp;

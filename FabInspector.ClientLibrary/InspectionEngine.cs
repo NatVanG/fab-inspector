@@ -213,25 +213,16 @@ namespace FabInspector.ClientLibrary
             await _tokenProvider.GetTokenAsync(AuthenticationHelper.FabricScopes).ConfigureAwait(false);
         }
 
-        private async Task<IEnumerable<TestResult>?> RunSingleThreadedCoreAsync(InspectionRules rules, IEnumerable<JsonLogicOperatorRegistry> registries)
+        private async Task<IEnumerable<TestResult>?> RunSingleThreadedCoreAsync(InspectionRules rules, IEnumerable<JsonLogicOperatorRegistry> registries, IFabricFileSystem fileSystem)
         {
-            FabricRemoteFileSystem? remoteFs = null;
-
             try
             {
-                var fileSystem = await CreateFileSystemAsync().ConfigureAwait(false);
-                remoteFs = SubscribeToProgressEvents(fileSystem);
-
                 var testResults = await RunInspectionAsync(rules, registries, fileSystem).ConfigureAwait(false);
                 return FilterResults(testResults);
             }
             catch (Exception e)
             {
                 OnMessageIssued(MessageTypeEnum.Error, e.Message);
-            }
-            finally
-            {
-                UnsubscribeFromProgressEvents(remoteFs);
             }
 
             return Enumerable.Empty<TestResult>();
@@ -260,23 +251,46 @@ namespace FabInspector.ClientLibrary
             using var holderScope = InspectionContextHolder.PushScope(inspectionContext);
 
             var resolvedRuleSets = await ResolveRuleSetsAsync(args).ConfigureAwait(false);
+            var fileSystem = await CreateFileSystemAsync().ConfigureAwait(false);
+            fileSystem.ScopedItemTypes = GetScopedItemTypes(resolvedRuleSets);
+            var remoteFs = SubscribeToProgressEvents(fileSystem);
             var combinedResults = new List<TestResult>();
 
-            foreach (var ruleSet in resolvedRuleSets)
+            try
             {
-                try
+                foreach (var ruleSet in resolvedRuleSets)
                 {
-                    OnMessageIssued(MessageTypeEnum.Information, $"Running ruleset '{ruleSet.Name}' from '{ruleSet.SourcePath}'.");
-                    var currentResults = await ExecuteSingleRuleSetAsync(ruleSet, registries, args.Parallel).ConfigureAwait(false);
-                    combinedResults.AddRange(currentResults);
+                    try
+                    {
+                        OnMessageIssued(MessageTypeEnum.Information, $"Running ruleset '{ruleSet.Name}' from '{ruleSet.SourcePath}'.");
+                        var currentResults = await ExecuteSingleRuleSetAsync(ruleSet, registries, args.Parallel, fileSystem).ConfigureAwait(false);
+                        combinedResults.AddRange(currentResults);
+                    }
+                    catch (Exception ex) when (!string.IsNullOrWhiteSpace(args.RulesCatalogPath))
+                    {
+                        OnMessageIssued(MessageTypeEnum.Error, $"Failed to execute ruleset '{ruleSet.Name}' from '{ruleSet.SourcePath}'. {ex.Message}");
+                    }
                 }
-                catch (Exception ex) when (!string.IsNullOrWhiteSpace(args.RulesCatalogPath))
-                {
-                    OnMessageIssued(MessageTypeEnum.Error, $"Failed to execute ruleset '{ruleSet.Name}' from '{ruleSet.SourcePath}'. {ex.Message}");
-                }
+            }
+            finally
+            {
+                UnsubscribeFromProgressEvents(remoteFs);
             }
 
             return combinedResults;
+        }
+
+        internal static IEnumerable<string>? GetScopedItemTypes(IEnumerable<ResolvedRuleSet> resolvedRuleSets)
+        {
+            var scopedItemTypes = resolvedRuleSets
+                .SelectMany(ruleSet => ruleSet.Rules.Rules)
+                .SelectMany(rule => (rule.ItemType ?? string.Empty)
+                    .Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                .Where(itemType => !string.IsNullOrWhiteSpace(itemType))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return scopedItemTypes.Count == 0 ? null : scopedItemTypes;
         }
 
         private async Task<IReadOnlyList<ResolvedRuleSet>> ResolveRuleSetsAsync(Args args)
@@ -300,7 +314,7 @@ namespace FabInspector.ClientLibrary
             };
         }
 
-        private async Task<IEnumerable<TestResult>> ExecuteSingleRuleSetAsync(ResolvedRuleSet ruleSet, IEnumerable<JsonLogicOperatorRegistry> registries, bool parallel)
+        private async Task<IEnumerable<TestResult>> ExecuteSingleRuleSetAsync(ResolvedRuleSet ruleSet, IEnumerable<JsonLogicOperatorRegistry> registries, bool parallel, IFabricFileSystem fileSystem)
         {
             IEnumerable<TestResult> results;
 
@@ -319,14 +333,14 @@ namespace FabInspector.ClientLibrary
                 {
                     var perTaskContext = ambient with { };
                     using var perTaskScope = InspectionContextHolder.PushScope(perTaskContext);
-                    return await RunSingleThreadedAsync(bucket, registries).ConfigureAwait(false);
+                    return await RunSingleThreadedAsync(bucket, registries, fileSystem).ConfigureAwait(false);
                 });
                 var allResults = await Task.WhenAll(tasks).ConfigureAwait(false);
                 results = allResults.SelectMany(r => r ?? Enumerable.Empty<TestResult>());
             }
             else
             {
-                results = await RunSingleThreadedAsync(ruleSet.Rules, registries).ConfigureAwait(false) ?? Enumerable.Empty<TestResult>();
+                results = await RunSingleThreadedAsync(ruleSet.Rules, registries, fileSystem).ConfigureAwait(false) ?? Enumerable.Empty<TestResult>();
             }
 
             return results.Select(result =>
@@ -413,9 +427,9 @@ namespace FabInspector.ClientLibrary
             return results.Where(_ => _args!.Verbose || !_.Pass);
         }
 
-        private async Task<IEnumerable<TestResult>?> RunSingleThreadedAsync(InspectionRules rules, IEnumerable<JsonLogicOperatorRegistry> registries)
+        private async Task<IEnumerable<TestResult>?> RunSingleThreadedAsync(InspectionRules rules, IEnumerable<JsonLogicOperatorRegistry> registries, IFabricFileSystem fileSystem)
         {
-            return await RunSingleThreadedCoreAsync(rules, registries).ConfigureAwait(false);
+            return await RunSingleThreadedCoreAsync(rules, registries, fileSystem).ConfigureAwait(false);
         }
 
         private async Task OutputResultsAsync(IEnumerable<TestResult> testResults, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)

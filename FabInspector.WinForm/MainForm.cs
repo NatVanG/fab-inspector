@@ -249,7 +249,7 @@ namespace FabInspector.WinForm
             var rulesFilePath = this.txtRulesFilePath.Text;
             var outputPath = this.txtOutputDirPath.Text;
             var verbose = this.chckVerbose.Checked;
-            var parallel = false; //todo: implement parallel processing option
+            var parallel = this.chckParallel.Checked;
             var jsonOutput = this.chckJsonOutput.Checked;
             var htmlOutput = this.chckHTMLOutput.Checked;
 

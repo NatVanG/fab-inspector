@@ -38,6 +38,11 @@ namespace FabInspector.Tests
             var partAssembly = typeof(FabInspector.Core.Part.Part).Assembly;
             var queryType = partAssembly.GetType("FabInspector.Core.Part.TMDLPartQuery", throwOnError: true)!;
 
+            Assert.That(queryType.GetMethod("AllTables", BindingFlags.Instance | BindingFlags.Public), Is.Null);
+            Assert.That(queryType.GetMethod("AllCultures", BindingFlags.Instance | BindingFlags.Public), Is.Null);
+            Assert.That(queryType.GetMethod("AllRoles", BindingFlags.Instance | BindingFlags.Public), Is.Null);
+            Assert.That(queryType.GetMethod("AllPerspectives", BindingFlags.Instance | BindingFlags.Public), Is.Null);
+
             var query = Activator.CreateInstance(queryType, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, new object?[] { SemanticModelFixturePath, null }, null);
             Assert.That(query, Is.Not.Null);
 

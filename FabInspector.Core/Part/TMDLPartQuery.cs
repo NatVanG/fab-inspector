@@ -131,11 +131,6 @@ namespace FabInspector.Core.Part
             return q.SingleOrDefault();
         }
 
-        public List<Part> AllTables(Part context)
-        {
-            return Tables(TopParent(context));
-        }
-
         public List<Part> Tables(Part context)
         {
             IEnumerable<Part> q = from p in Part.Flatten(context.PartFileSystemType == PartFileSystemTypeEnum.File ? context.Parent ?? context : context)
@@ -143,11 +138,6 @@ namespace FabInspector.Core.Part
                                   select p;
 
             return q.ToList();
-        }
-
-        public List<Part> AllCultures(Part context)
-        {
-            return Cultures(TopParent(context));
         }
 
         public List<Part> Cultures(Part context)
@@ -159,11 +149,6 @@ namespace FabInspector.Core.Part
             return q.ToList();
         }
 
-        public List<Part> AllRoles(Part context)
-        {
-            return Roles(TopParent(context));
-        }
-
         public List<Part> Roles(Part context)
         {
             IEnumerable<Part> q = from p in Part.Flatten(context.PartFileSystemType == PartFileSystemTypeEnum.File ? context.Parent ?? context : context)
@@ -171,11 +156,6 @@ namespace FabInspector.Core.Part
                                   select p;
 
             return q.ToList();
-        }
-
-        public List<Part> AllPerspectives(Part context)
-        {
-            return Perspectives(TopParent(context));
         }
 
         public List<Part> Perspectives(Part context)

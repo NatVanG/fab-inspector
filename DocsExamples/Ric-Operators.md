@@ -31,7 +31,7 @@ When used as the `part` rule property it acts as an **iterator** — the rule bo
 
 | Parameter | Type | Description |
 |---|---|---|
-| input | string | Regex path using `:` as the folder separator, **or** one of the reserved part abstractions for `Report`: `Report`, `ReportExtensions`, `Pages`, `PagesHeader`, `AllPages`, `Visuals`, `AllVisuals`, `MobileVisuals`, `AllMobileVisuals`, `Bookmarks`, `BookmarksHeader`, `AllBookmarks`; **or** for `SemanticModel`: `Definition`, `Database`, `Expressions`, `Model`, `Relationships`, `DataSources`, `Functions`, `Tables`, `AllTables`, `Cultures`, `AllCultures`, `Roles`, `AllRoles`, `Perspectives`, `AllPerspectives` |
+| input | string | Regex path using `:` as the folder separator, **or** one of the reserved part abstractions for `Report`: `Report`, `ReportExtensions`, `Pages`, `PagesHeader`, `AllPages`, `Visuals`, `AllVisuals`, `MobileVisuals`, `AllMobileVisuals`, `Bookmarks`, `BookmarksHeader`, `AllBookmarks`; **or** for `SemanticModel`: `Definition`, `Database`, `Expressions`, `Model`, `Relationships`, `DataSources`, `Functions`, `Tables`, `Cultures`, `Roles`, `Perspectives` |
 
 **Returns:** Parsed JSON content of the matched file, or an array of items when the path matches multiple files.
 

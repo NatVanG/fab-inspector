@@ -93,6 +93,80 @@ public class DiRefactorTests
     }
 
     [Test]
+    public void Inspector_DoesNotOverwritePreconfiguredScopedItemTypes()
+    {
+        var fileSystem = new FabricLocalFileSystem();
+        fileSystem.ScopedItemTypes = ["json", "report"];
+
+        var rules = new InspectionRules
+        {
+            Rules =
+            [
+                new Rule
+                {
+                    Name = "Rule A",
+                    ItemType = "scannerapi",
+                    Test = new Test
+                    {
+                        Logic = "true",
+                        Expected = true
+                    }
+                }
+            ]
+        };
+
+        _ = new Inspector(rules, Array.Empty<JsonLogicOperatorRegistry>(), fileSystem);
+
+        Assert.That(fileSystem.ScopedItemTypes, Is.EquivalentTo(["json", "report"]));
+    }
+
+    [Test]
+    public void InspectionEngine_GetScopedItemTypes_UnionsRuleTypesAcrossResolvedRuleSets()
+    {
+        var resolvedRuleSets = new[]
+        {
+            new ResolvedRuleSet
+            {
+                Name = "A",
+                SourcePath = "a.json",
+                Rules = new InspectionRules
+                {
+                    Rules =
+                    [
+                        new Rule
+                        {
+                            Name = "Rule 1",
+                            ItemType = "json|report",
+                            Test = new Test { Logic = "true", Expected = true }
+                        }
+                    ]
+                }
+            },
+            new ResolvedRuleSet
+            {
+                Name = "B",
+                SourcePath = "b.json",
+                Rules = new InspectionRules
+                {
+                    Rules =
+                    [
+                        new Rule
+                        {
+                            Name = "Rule 2",
+                            ItemType = "REPORT|scannerapi|json",
+                            Test = new Test { Logic = "true", Expected = true }
+                        }
+                    ]
+                }
+            }
+        };
+
+        var scopedItemTypes = InspectionEngine.GetScopedItemTypes(resolvedRuleSets);
+
+        Assert.That(scopedItemTypes, Is.EquivalentTo(["json", "report", "scannerapi"]));
+    }
+
+    [Test]
     public async Task InspectionEngine_RunAndReturnResultsAsync_IsolatesPerRunStateAcrossConcurrentEngines()
     {
         var registries = new[]

@@ -348,7 +348,11 @@ All command line parameters are as follows:
 ```-verbose true|false```: Optional, false by default. If false then only rule violations are shown; if true then all results are listed.
 
 ```-parallel true|false```: Optional, false by default. If true, rules are split across available processors and run in parallel before results are merged. If false, rules are executed on a single thread.
-- **Note**: Parallel execution is not supported with remote authentication methods (`interactive`, `azurecli`, `clientsecret`, `certificate`, `federatedtoken`, `managedidentity`).
+- **Supported auth methods**: Parallel execution can be used with `local`, `interactive`, `azurecli`, `clientsecret`, `certificate`, `federatedtoken`, and `managedidentity`.
+
+**Warnings when using `-parallel true`:**
+- If rules use `applyPatch`, avoid parallel patching of the same part/file because writes can conflict and become last-writer-wins.
+- Rules that call remote APIs (`apiget`, `dfsget`, `daxquery`, `sqlquery`, `scannerapi`) may hit service throttling/rate limits sooner under parallel fan-out.
 
 ```-output directorypath|onelakeurl```: Optional. Output local directory path or OneLake folder URL. If omitted, a temporary local directory is created. OneLake output requires non-local authentication.
 
@@ -463,7 +467,7 @@ Each rule object has the following properties:
     "logType": "Optional. error|warning(default)",
     "itemType": "[fabricitemtype]. The Fabric item type that the rule applies to as referred to in the item's CI\CD ".platform"" file, e.g. CopyJob, Lakehouse, Report, etc. or specify "*" to define a cross-Fabric items rule or "json" to define a rule that applies to any JSON metadata file.",
     "disabled": true|false(default),
-    "part": "Optional iterator. A Regex expression to match one or more Fabric item file or folder path, for ease of use folder separators are column characters i.e. ':'. If the itemType is Report, file part abstractions i.e. one of Report|ReportExtensions|Pages|PagesHeader|AllPages|Visuals|AllVisuals|MobileVisuals|AllMobileVisuals|Bookmarks|BookmarksHeader|AllBookmarks can be specified instead of a regular expression to match a specific file type. If the itemType is SemanticModel, TMDL part abstractions i.e. one of Definition|Database|Expressions|Model|Relationships|DataSources|Functions|Tables|AllTables|Cultures|AllCultures|Roles|AllRoles|Perspectives|AllPerspectives can be specified instead of a regular expression to match specific TMDL files or folders. If an array of multiple items is returned (such as when specifying "Pages" or "Tables"), the rule will apply to each item iterativey."
+    "part": "Optional iterator. A Regex expression to match one or more Fabric item file or folder path, for ease of use folder separators are column characters i.e. ':'. If the itemType is Report, file part abstractions i.e. one of Report|ReportExtensions|Pages|PagesHeader|AllPages|Visuals|AllVisuals|MobileVisuals|AllMobileVisuals|Bookmarks|BookmarksHeader|AllBookmarks can be specified instead of a regular expression to match a specific file type. If the itemType is SemanticModel, TMDL part abstractions i.e. one of Definition|Database|Expressions|Model|Relationships|DataSources|Functions|Tables|Cultures|Roles|Perspectives can be specified instead of a regular expression to match specific TMDL files or folders. If an array of multiple items is returned (such as when specifying "Pages" or "Tables"), the rule will apply to each item iterativey."
     "test": [
     //test logic
     ,

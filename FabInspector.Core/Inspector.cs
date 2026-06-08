@@ -50,7 +50,6 @@ namespace FabInspector.Core
         {
             if (fileSystem == null) throw new ArgumentNullException(nameof(fileSystem));
             _fileSystem = fileSystem;
-            _fileSystem.ScopedItemTypes = inspectionRules.Rules.SelectMany(_ => _.ItemType.Split("|")).Distinct();
             _inspectionRules = inspectionRules;
             _registries = registries;
             UseRegistries();
