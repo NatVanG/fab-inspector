@@ -237,7 +237,7 @@ For more information, visit: https://github.com/NatVanG/fab-inspector
                 throw new ArgumentException("OneLake rules URL requires authentication. Use -authmethod interactive, azurecli, clientsecret, certificate, federatedtoken, or managedidentity.");
             }
 
-            if (OneLakeRulesFileDownloader.IsOneLakeDfsUrl(rulesCatalogPath) && authMethod == "local")
+            if (RulesCatalogAuthHelper.CatalogContainsEnabledOneLakeRuleSets(rulesCatalogPath) && authMethod == "local")
             {
               throw new ArgumentException("OneLake rules catalog URL requires authentication. Use -authmethod interactive, azurecli, clientsecret, certificate, federatedtoken, or managedidentity.");
             }

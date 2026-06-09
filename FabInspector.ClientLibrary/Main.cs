@@ -33,8 +33,16 @@ namespace FabInspector.ClientLibrary
         public static void IncrementErrorCount() => Interlocked.Increment(ref _errorCount);
         public static void IncrementWarningCount() => Interlocked.Increment(ref _warningCount);
 
-        public static async Task AttendedRun(string fabricWorkspaceId, string fabricItem, string rulesFilePath, string outputPath, bool verbose, bool parallel, bool jsonOutput, bool htmlOutput, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
+        public static async Task AttendedRun(string fabricWorkspaceId, string fabricItem, string rulesFilePath, string rulesCatalogPath, string outputPath, bool verbose, bool parallel, bool jsonOutput, bool htmlOutput, IReportPageWireframeRenderer pageRenderer, IEnumerable<JsonLogicOperatorRegistry> registries)
         {
+            var hasRulesFilePath = !string.IsNullOrWhiteSpace(rulesFilePath);
+            var hasRulesCatalogPath = !string.IsNullOrWhiteSpace(rulesCatalogPath);
+
+            if (hasRulesFilePath == hasRulesCatalogPath)
+            {
+                throw new ArgumentException("Exactly one of rules file path or rules catalog path must be provided.");
+            }
+
             var formatsString = string.Concat(jsonOutput ? "JSON" : string.Empty, ",", htmlOutput ? "HTML" : string.Empty);
             var verboseString = verbose.ToString();
             var parallelString = parallel.ToString();
@@ -42,12 +50,16 @@ namespace FabInspector.ClientLibrary
             string authmethod = "local";
 
             // Determine presence of auth-related args; if any are present, default to interactive auth.
-            if (!string.IsNullOrWhiteSpace(fabricWorkspaceId) || Guid.TryParse(fabricItem, out _) || OneLakeRulesFileDownloader.IsOneLakeDfsUrl(rulesFilePath) || OneLakeOutputUploader.IsOneLakeDfsUrl(outputPath))
+            if (!string.IsNullOrWhiteSpace(fabricWorkspaceId)
+                || Guid.TryParse(fabricItem, out _)
+                || OneLakeRulesFileDownloader.IsOneLakeDfsUrl(rulesFilePath)
+                || RulesCatalogAuthHelper.CatalogContainsEnabledOneLakeRuleSets(rulesCatalogPath)
+                || OneLakeOutputUploader.IsOneLakeDfsUrl(outputPath))
             {
                 authmethod = "interactive";
             }
 
-            var args = new Args { FabricWorkspaceId = fabricWorkspaceId, FabricItem = fabricItem, RulesFilePath = rulesFilePath, OutputPath = outputPath, FormatsString = formatsString, VerboseString = verboseString, ParallelString = parallelString, AuthMethod = authmethod };
+            var args = new Args { FabricWorkspaceId = fabricWorkspaceId, FabricItem = fabricItem, RulesFilePath = rulesFilePath, RulesCatalogPath = rulesCatalogPath, OutputPath = outputPath, FormatsString = formatsString, VerboseString = verboseString, ParallelString = parallelString, AuthMethod = authmethod };
 
             await Run(args, pageRenderer, registries);
         }
