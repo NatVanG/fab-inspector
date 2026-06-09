@@ -144,6 +144,36 @@ namespace FabInspector.Tests
         }
 
         [Test]
+        public void TestCLIArgsUtilsRulesCatalogWithOneLakeRuleSetRequiresAuth()
+        {
+            var tempDir = Path.Combine(Path.GetTempPath(), "fab-inspector-tests", Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(tempDir);
+
+            try
+            {
+                var catalogPath = Path.Combine(tempDir, "rules-catalog.json");
+                File.WriteAllText(catalogPath, @"{
+  ""name"": ""Enterprise Catalog"",
+  ""ruleSets"": [
+    { ""name"": ""Org baseline"", ""type"": ""onelake"", ""path"": ""https://onelake.dfs.fabric.microsoft.com/YourWorkspace/YourLakehouse.Lakehouse/Files/rules/org-baseline.json"" }
+  ]
+}");
+
+                string[] args = $"-pbipreport path -rulescatalog {catalogPath} -authmethod local".Split(" ");
+
+                var ex = Assert.Throws<ArgumentException>(() => ArgsUtils.ParseArgs(args));
+                Assert.That(ex!.Message.Contains("OneLake rules catalog URL requires authentication"));
+            }
+            finally
+            {
+                if (Directory.Exists(tempDir))
+                {
+                    Directory.Delete(tempDir, true);
+                }
+            }
+        }
+
+        [Test]
         public void TestCLIArgsUtilsFormats()
         {
             string[] args = "-pbipreport path -rules rulepath -formats CONSOLE,HTML,PNG,JSON".Split(" ");
@@ -602,42 +632,36 @@ namespace FabInspector.Tests
                 && string.IsNullOrEmpty(parsedArgs.FabricWorkspaceId));
         }
 
-        // Parallel execution with remote auth validation tests (lines 90-94 of ArgsUtils.cs)
+        // Parallel execution with remote auth is supported.
 
         [Test]
-        public void TestCLIArgsUtilsThrows_ParallelWithCertificateAuth()
+        public void TestCLIArgsUtilsSuccess_ParallelWithCertificateAuth()
         {
             string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod certificate -tenantid test-tenant-id -clientid test-client-id -certificatepath /path/to/cert.pem -parallel true".Split(" ");
-            Args? parsedArgs = null;
+            var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            ArgumentException ex = Assert.Throws<ArgumentException>(
-                () => parsedArgs = ArgsUtils.ParseArgs(args));
-            
-            Assert.That(ex.Message.Contains("Parallel execution is not supported when using remote authentication methods"));
+            Assert.That(parsedArgs.AuthMethod.Equals("certificate", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.Parallel);
         }
 
         [Test]
-        public void TestCLIArgsUtilsThrows_ParallelWithInteractiveAuth()
+        public void TestCLIArgsUtilsSuccess_ParallelWithInteractiveAuth()
         {
             string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod interactive -clientid test-client-id -parallel true".Split(" ");
-            Args? parsedArgs = null;
+            var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            ArgumentException ex = Assert.Throws<ArgumentException>(
-                () => parsedArgs = ArgsUtils.ParseArgs(args));
-            
-            Assert.That(ex.Message.Contains("Parallel execution is not supported when using remote authentication methods"));
+            Assert.That(parsedArgs.AuthMethod.Equals("interactive", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.Parallel);
         }
 
         [Test]
-        public void TestCLIArgsUtilsThrows_ParallelWithClientSecretAuth()
+        public void TestCLIArgsUtilsSuccess_ParallelWithClientSecretAuth()
         {
             string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod clientsecret -tenantid test-tenant-id -clientid test-client-id -clientsecret test-secret -parallel true".Split(" ");
-            Args? parsedArgs = null;
+            var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            ArgumentException ex = Assert.Throws<ArgumentException>(
-                () => parsedArgs = ArgsUtils.ParseArgs(args));
-            
-            Assert.That(ex.Message.Contains("Parallel execution is not supported when using remote authentication methods"));
+            Assert.That(parsedArgs.AuthMethod.Equals("clientsecret", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.Parallel);
         }
 
         [Test]
@@ -914,27 +938,23 @@ namespace FabInspector.Tests
         }
 
         [Test]
-        public void TestCLIArgsUtilsThrows_ParallelWithManagedIdentityAuth()
+        public void TestCLIArgsUtilsSuccess_ParallelWithManagedIdentityAuth()
         {
             string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod managedidentity -parallel true".Split(" ");
-            Args? parsedArgs = null;
+            var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            ArgumentException ex = Assert.Throws<ArgumentException>(
-                () => parsedArgs = ArgsUtils.ParseArgs(args));
-
-            Assert.That(ex.Message.Contains("Parallel execution is not supported when using remote authentication methods"));
+            Assert.That(parsedArgs.AuthMethod.Equals("managedidentity", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.Parallel);
         }
 
         [Test]
-        public void TestCLIArgsUtilsThrows_ParallelWithFederatedTokenAuth()
+        public void TestCLIArgsUtilsSuccess_ParallelWithFederatedTokenAuth()
         {
             string[] args = "-fabricitem fabricitempath -rules rulesPath -authmethod federatedtoken -tenantid test-tenant-id -clientid test-client-id -federatedtoken mytoken -parallel true".Split(" ");
-            Args? parsedArgs = null;
+            var parsedArgs = ArgsUtils.ParseArgs(args);
 
-            ArgumentException ex = Assert.Throws<ArgumentException>(
-                () => parsedArgs = ArgsUtils.ParseArgs(args));
-
-            Assert.That(ex.Message.Contains("Parallel execution is not supported when using remote authentication methods"));
+            Assert.That(parsedArgs.AuthMethod.Equals("federatedtoken", StringComparison.OrdinalIgnoreCase)
+                && parsedArgs.Parallel);
         }
 
         [Test]

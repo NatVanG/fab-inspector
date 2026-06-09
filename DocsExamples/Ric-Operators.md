@@ -15,6 +15,7 @@ All snippets below show the operator as it appears inside a rule's `test` array.
 - [String Operations](#string-operations): `strcontains`, `strsplit`, `strjoin`, `regexextract`
 - [Array Operations](#array-operations): `slice`
 - [Set Operations](#set-operations): `union`, `intersect`, `diff`, `symdiff`, `equalsets`
+- [Layout & Geometry](#layout--geometry): `rectoverlap`
 - [Date & Time](#date--time): `now`, `datediff`
 - [Type & Null Checks](#type--null-checks): `hasprop`, `isnullorempty`
 - [File System](#file-system): `filesize`, `filetextsearchcount`, `fromyamlfile`
@@ -31,7 +32,7 @@ When used as the `part` rule property it acts as an **iterator** — the rule bo
 
 | Parameter | Type | Description |
 |---|---|---|
-| input | string | Regex path using `:` as the folder separator, **or** one of the Report part abstractions: `Report`, `ReportExtensions`, `Pages`, `PagesHeader`, `AllPages`, `Visuals`, `AllVisuals`, `MobileVisuals`, `AllMobileVisuals`, `Bookmarks`, `BookmarksHeader`, `AllBookmarks` |
+| input | string | Regex path using `:` as the folder separator, **or** one of the reserved part abstractions for `Report`: `Report`, `ReportExtensions`, `Pages`, `PagesHeader`, `AllPages`, `Visuals`, `AllVisuals`, `MobileVisuals`, `AllMobileVisuals`, `Bookmarks`, `BookmarksHeader`, `AllBookmarks`; **or** for `SemanticModel`: `Definition`, `Database`, `Expressions`, `Model`, `Relationships`, `DataSources`, `Functions`, `Tables`, `Cultures`, `Roles`, `Perspectives` |
 
 **Returns:** Parsed JSON content of the matched file, or an array of items when the path matches multiple files.
 
@@ -487,6 +488,43 @@ Returns `true` if both arrays contain exactly the same elements (order-independe
 
 ```json
 { "equalsets": [{ "var": "expected" }, { "var": "actual" }] }
+```
+
+---
+
+## Layout & Geometry
+
+### `rectoverlap`
+
+Detects overlapping rectangles in a list of named rectangular regions. Optionally expands each rectangle by a pixel margin before checking for overlaps. Returns the names of any rectangles that overlap with at least one other.
+
+| Parameter | Type | Description |
+|---|---|---|
+| input | array | Array of rectangle objects, each with integer properties `name`, `x`, `y`, `width`, `height` |
+| margin | number | Pixel amount to expand each rectangle on all sides before the overlap check (optional, default `0`) |
+
+**Returns:** Array of `name` values for rectangles that overlap with at least one other rectangle.
+
+```json
+{
+  "rectoverlap": [
+    {
+      "map": [
+        { "part": "Visuals" },
+        {
+          "torecord": [
+            "name",   { "var": "name" },
+            "x",      { "var": "visual.position.x" },
+            "y",      { "var": "visual.position.y" },
+            "width",  { "var": "visual.position.width" },
+            "height", { "var": "visual.position.height" }
+          ]
+        }
+      ]
+    },
+    5
+  ]
+}
 ```
 
 ---

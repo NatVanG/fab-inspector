@@ -437,13 +437,14 @@ public class SuiteRunner
                 new StringContainsOperator(),
                 new ToRecordOperator(),
                 new ToStringOperator(),
-                new FromYamlFileOperator()
+                new FromYamlFileOperator(),
+                new RectangleOverlapOperator()
         }));
 
         registries.Add(new JsonLogicOperatorRegistry(
         new FabInspectorSerializerContext(),
         new IJsonLogicOperator[] {
-                new RectangleOverlapOperator()}));
+        }));
 
         services.AddTransient<IEnumerable<JsonLogicOperatorRegistry>>(provider => registries);
         services.AddTransient<IReportPageWireframeRenderer, FabInspector.WinImageLibrary.ReportPageWireframeRenderer>();

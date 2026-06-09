@@ -42,14 +42,14 @@ namespace FabInspector.Tests
                     new ToRecordOperator(),
                     new ToStringOperator(),
                     new FromYamlFileOperator(),
-                    new LetOperator()
+                    new LetOperator(),
+                    new RectangleOverlapOperator()
                 });
             ricRegistry.RegisterAll();
 
             var fabRegistry = new JsonLogicOperatorRegistry(
                 new FabInspectorSerializerContext(),
                 new IJsonLogicOperator[] {
-                    new RectangleOverlapOperator(),
                     new DaxQueryOperator(),
                     new SqlQueryOperator(),
                     new ApiGetOperator(),
@@ -64,7 +64,7 @@ namespace FabInspector.Tests
             };
         }
 
-        #region FabInspector.Operators Tests
+        #region Shared operator tests
 
         [Test]
         public void RectOverlap_CanBeDeserialized()

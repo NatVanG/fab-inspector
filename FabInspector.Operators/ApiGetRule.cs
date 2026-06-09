@@ -1,6 +1,7 @@
 using Json.Logic;
 using Json.More;
 using FabInspector.Core;
+using FabInspector.Core.Inspection;
 using FabInspector.Core.Part;
 using System.Diagnostics;
 using System.Text.Json;
@@ -12,7 +13,7 @@ namespace FabInspector.Operators;
 
 /// <summary>
 /// Handles the `apiget` operation.
-/// Requires <see cref="ContextService.HttpClient"/>
+/// Requires <see cref="FabInspector.Core.Inspection.InspectionContext.HttpClient"/>
 /// </summary>
 [Operator("apiget")]
 [JsonConverter(typeof(ApiGetJsonConverter))]
@@ -53,16 +54,15 @@ public class ApiGetRule : Json.Logic.Rule
         if (string.IsNullOrWhiteSpace(urlTemplate))
             throw new JsonLogicException("The apiget rule requires a non-empty URL template");
 
-        var httpClient = ContextService.HttpClient
-            ?? throw new InvalidOperationException("ContextService.HttpClient is not configured. Ensure authentication has been completed before running pbi-apiget rules.");
-        var tokenProvider = ContextService.TokenProvider
-            ?? throw new InvalidOperationException("ContextService.TokenProvider is not configured. Ensure authentication has been completed before running apiget rules.");
+        var ctx = InspectionContextHolder.Require("apiget");
+        var httpClient = ctx.HttpClient;
+        var tokenProvider = ctx.TokenProvider;
 
         var hostService = ResolveHostService(urlTemplate);
-        var resolvedUrl = ResolveUrl(urlTemplate, parameters, ContextService.FabricWorkspaceId, ContextService.FabricItem);
+        var resolvedUrl = ResolveUrl(urlTemplate, parameters, ctx.FabricWorkspaceId, ctx.FabricItem);
 
         var progressTarget = GetProgressTarget(resolvedUrl);
-        ContextService.ReportOperatorProgress("apiget", $"Starting GET request to {hostService} endpoint '{progressTarget}'.");
+        InspectionContextHolder.ReportOperatorProgress("apiget", $"Starting GET request to {hostService} endpoint '{progressTarget}'.");
 
         var pageAccumulator = ExecutePagedGet(
             httpClient,
@@ -72,7 +72,7 @@ public class ApiGetRule : Json.Logic.Rule
             progressTarget,
             stopwatch);
 
-        ContextService.ReportOperatorProgress("apiget", $"Completed GET request to '{progressTarget}' in {stopwatch.ElapsedMilliseconds} ms.");
+        InspectionContextHolder.ReportOperatorProgress("apiget", $"Completed GET request to '{progressTarget}' in {stopwatch.ElapsedMilliseconds} ms.");
 
         return pageAccumulator.BuildResult();
     }
@@ -161,7 +161,7 @@ public class ApiGetRule : Json.Logic.Rule
 
             if (pageNumber > 1)
             {
-                ContextService.ReportOperatorProgress("apiget", $"Fetching continuation page {pageNumber} for '{progressTarget}'.");
+                InspectionContextHolder.ReportOperatorProgress("apiget", $"Fetching continuation page {pageNumber} for '{progressTarget}'.");
             }
 
             var request = AuthenticationHelper.CreateAuthenticatedRequestAsync(
@@ -177,7 +177,7 @@ public class ApiGetRule : Json.Logic.Rule
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = response.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
-                ContextService.ReportOperatorProgress("apiget", $"GET request to '{progressTarget}' failed with status {(int)response.StatusCode} {response.StatusCode} after {stopwatch.ElapsedMilliseconds} ms.");
+                InspectionContextHolder.ReportOperatorProgress("apiget", $"GET request to '{progressTarget}' failed with status {(int)response.StatusCode} {response.StatusCode} after {stopwatch.ElapsedMilliseconds} ms.");
                 throw new HttpRequestException($"API Get request failed ({response.StatusCode}): {errorContent}");
             }
 

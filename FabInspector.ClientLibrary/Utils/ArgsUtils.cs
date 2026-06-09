@@ -50,7 +50,6 @@ OPTIONAL PARAMETERS:
                                   (default: CONSOLE)
   -verbose <true|false>           Display all results including passes (default: false)
   -parallel <true|false>          Enable parallel rule processing (default: false)
-                                  Note: Not supported with remote authentication
   -overwriteoutput <true|false>   Overwrite existing output (default: false)
 
 AUTHENTICATION PARAMETERS (use -authmethod):
@@ -238,7 +237,7 @@ For more information, visit: https://github.com/NatVanG/fab-inspector
                 throw new ArgumentException("OneLake rules URL requires authentication. Use -authmethod interactive, azurecli, clientsecret, certificate, federatedtoken, or managedidentity.");
             }
 
-            if (OneLakeRulesFileDownloader.IsOneLakeDfsUrl(rulesCatalogPath) && authMethod == "local")
+            if (RulesCatalogAuthHelper.CatalogContainsEnabledOneLakeRuleSets(rulesCatalogPath) && authMethod == "local")
             {
               throw new ArgumentException("OneLake rules catalog URL requires authentication. Use -authmethod interactive, azurecli, clientsecret, certificate, federatedtoken, or managedidentity.");
             }
@@ -246,12 +245,6 @@ For more information, visit: https://github.com/NatVanG/fab-inspector
             if (OneLakeOutputUploader.IsOneLakeDfsUrl(outputPath) && authMethod == "local")
             {
                 throw new ArgumentException("OneLake output URL requires authentication. Use -authmethod interactive, azurecli, clientsecret, certificate, federatedtoken, or managedidentity.");
-            }
-
-            // Validate parallel execution is not enabled with remote auth methods
-            if (authMethod != "local" && bool.TryParse(parallelString, out bool isParallel) && isParallel)
-            {
-                throw new ArgumentException("Parallel execution is not supported when using remote authentication methods (interactive, azurecli, clientsecret, certificate, federatedtoken, managedidentity). Please set -parallel to false (default) when using remote authentication.");
             }
 
             // Validate Fabric workspace access requirements

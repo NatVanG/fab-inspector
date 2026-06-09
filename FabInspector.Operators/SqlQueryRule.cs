@@ -1,4 +1,5 @@
 using FabInspector.Core;
+using FabInspector.Core.Inspection;
 using FabInspector.Core.Part;
 using Json.Logic;
 using Json.More;
@@ -59,14 +60,14 @@ public class SqlQueryRule : Json.Logic.Rule
 
         var workspaceId = WorkspaceId.Apply(data, contextData)?.Stringify();
         workspaceId = workspaceId!.Equals(Utils.Constants.ContextFabricWorkspace, StringComparison.OrdinalIgnoreCase)
-            ? ContextService.FabricWorkspaceId
+            ? InspectionContextHolder.Require("sqlquery").FabricWorkspaceId
             : workspaceId;
         if (string.IsNullOrWhiteSpace(workspaceId) || !Guid.TryParse(workspaceId, out _))
             throw new InvalidOperationException("WorkspaceId is not configured.");
 
         var lakehouseId = FabricItem.Apply(data, contextData)?.Stringify();
         lakehouseId = lakehouseId!.Equals(Utils.Constants.ContextFabricItem, StringComparison.OrdinalIgnoreCase)
-            ? ContextService.FabricItem
+            ? InspectionContextHolder.Require("sqlquery").FabricItem
             : lakehouseId;
         if (string.IsNullOrWhiteSpace(lakehouseId) || !Guid.TryParse(lakehouseId, out _))
             throw new InvalidOperationException("Fabric item must be a Lakehouse ID.");
@@ -74,15 +75,13 @@ public class SqlQueryRule : Json.Logic.Rule
         var refreshMetadata = ResolveOptionalBooleanParameter(RefreshMetadata, "refreshMetadata", data, contextData, defaultValue: false);
         var recreateTables = ResolveOptionalBooleanParameter(RecreateTables, "recreateTables", data, contextData, defaultValue: false);
 
-        var httpClient = ContextService.HttpClient
-            ?? throw new InvalidOperationException("ContextService.HttpClient is not configured. Ensure authentication has been completed before running sqlquery rules.");
-
-        var tokenProvider = ContextService.TokenProvider
-            ?? throw new InvalidOperationException("ContextService.TokenProvider is not configured. Ensure authentication has been completed before running sqlquery rules.");
+        var ctx = InspectionContextHolder.Require("sqlquery");
+        var httpClient = ctx.HttpClient;
+        var tokenProvider = ctx.TokenProvider;
 
         var lakehouseUrl = $"{FabricApiBaseUrl}/workspaces/{Uri.EscapeDataString(workspaceId)}/lakehouses/{Uri.EscapeDataString(lakehouseId)}";
 
-        ContextService.ReportOperatorProgress("sqlquery", $"Resolving SQL endpoint for lakehouse '{lakehouseId}' in workspace '{workspaceId}'.");
+        InspectionContextHolder.ReportOperatorProgress("sqlquery", $"Resolving SQL endpoint for lakehouse '{lakehouseId}' in workspace '{workspaceId}'.");
 
         var metadataRequest = AuthenticationHelper.CreateAuthenticatedRequestAsync(
             HttpMethod.Get,
@@ -108,15 +107,15 @@ public class SqlQueryRule : Json.Logic.Rule
         if (refreshMetadata)
         {
             var sqlEndpointId = ResolveSqlEndpointId(metadataNode);
-            ContextService.ReportOperatorProgress("sqlquery", $"Refreshing SQL endpoint metadata for endpoint '{sqlEndpointId}' (recreateTables={recreateTables.ToString().ToLowerInvariant()}).");
+            InspectionContextHolder.ReportOperatorProgress("sqlquery", $"Refreshing SQL endpoint metadata for endpoint '{sqlEndpointId}' (recreateTables={recreateTables.ToString().ToLowerInvariant()}).");
             RefreshSqlEndpointMetadata(httpClient, tokenProvider, workspaceId, sqlEndpointId, recreateTables);
-            ContextService.ReportOperatorProgress("sqlquery", "SQL endpoint metadata refresh completed.");
+            InspectionContextHolder.ReportOperatorProgress("sqlquery", "SQL endpoint metadata refresh completed.");
         }
 
         var connectionString = BuildConnectionString(endpointConnectionString);
         var queryWithForJson = EnsureForJson(sqlQuery);
 
-        ContextService.ReportOperatorProgress("sqlquery", "Executing SQL query through Lakehouse SQL endpoint.");
+        InspectionContextHolder.ReportOperatorProgress("sqlquery", "Executing SQL query through Lakehouse SQL endpoint.");
 
         try
         {
@@ -139,17 +138,17 @@ public class SqlQueryRule : Json.Logic.Rule
 
             var parsedPayload = JsonNode.Parse(payloadText);
 
-            ContextService.ReportOperatorProgress("sqlquery", $"Completed SQL query execution in {stopwatch.ElapsedMilliseconds} ms.");
+            InspectionContextHolder.ReportOperatorProgress("sqlquery", $"Completed SQL query execution in {stopwatch.ElapsedMilliseconds} ms.");
             return parsedPayload;
         }
         catch (SqlException ex)
         {
-            ContextService.ReportOperatorProgress("sqlquery", $"SQL query execution failed after {stopwatch.ElapsedMilliseconds} ms.");
+            InspectionContextHolder.ReportOperatorProgress("sqlquery", $"SQL query execution failed after {stopwatch.ElapsedMilliseconds} ms.");
             throw new InvalidOperationException($"SQL query execution failed: {ex.Message}", ex);
         }
         catch (JsonException ex)
         {
-            ContextService.ReportOperatorProgress("sqlquery", $"JSON parsing failed after {stopwatch.ElapsedMilliseconds} ms.");
+            InspectionContextHolder.ReportOperatorProgress("sqlquery", $"JSON parsing failed after {stopwatch.ElapsedMilliseconds} ms.");
             throw new InvalidOperationException("The SQL query did not return a valid JSON payload.", ex);
         }
     }

@@ -1,6 +1,7 @@
 using Json.Logic;
 using Json.More;
 using FabInspector.Core;
+using FabInspector.Core.Inspection;
 using FabInspector.Core.Part;
 using System.Diagnostics;
 using System.Text;
@@ -24,14 +25,14 @@ namespace FabInspector.Operators;
 /// </para>
 /// Parameters (positional array in rule JSON):
 /// <list type="number">
-///   <item><description><b>workspaceIds</b> (required) – a single workspace-ID string, a JSON array of workspace-ID strings, or a comma-separated list. Defaults to <see cref="ContextService.FabricWorkspaceId"/> when omitted or empty.</description></item>
+///   <item><description><b>workspaceIds</b> (required) – a single workspace-ID string, a JSON array of workspace-ID strings, or a comma-separated list. Defaults to <see cref="FabInspector.Core.Inspection.InspectionContext.FabricWorkspaceId"/> when omitted or empty.</description></item>
 ///   <item><description><b>lineage</b> (optional bool) – return lineage info.</description></item>
 ///   <item><description><b>datasourceDetails</b> (optional bool) – return data source details.</description></item>
 ///   <item><description><b>datasetSchema</b> (optional bool) – return dataset schema (tables, columns, measures).</description></item>
 ///   <item><description><b>datasetExpressions</b> (optional bool) – return dataset expressions (DAX / Mashup).</description></item>
 ///   <item><description><b>getArtifactUsers</b> (optional bool) – return user details for Power BI items.</description></item>
 /// </list>
-/// Requires <see cref="ContextService.HttpClient"/> and <see cref="ContextService.TokenProvider"/> to be configured.
+/// Requires <see cref="FabInspector.Core.Inspection.InspectionContext.HttpClient"/> and <see cref="FabInspector.Core.Inspection.InspectionContext.TokenProvider"/> to be configured.
 /// </summary>
 [Operator("scannerapi")]
 [JsonConverter(typeof(ScannerApiJsonConverter))]
@@ -74,20 +75,18 @@ public class ScannerApiRule : Json.Logic.Rule
     public override JsonNode? Apply(JsonNode? data, JsonNode? contextData = null)
     {
         var stopwatch = Stopwatch.StartNew();
-        var httpClient = ContextService.HttpClient
-            ?? throw new InvalidOperationException("ContextService.HttpClient is not configured. Ensure authentication has been completed before running scannerapi rules.");
-
-        var tokenProvider = ContextService.TokenProvider
-            ?? throw new InvalidOperationException("ContextService.TokenProvider is not configured. Ensure authentication has been completed before running scannerapi rules.");
+        var ctx = InspectionContextHolder.Require("scannerapi");
+        var httpClient = ctx.HttpClient;
+        var tokenProvider = ctx.TokenProvider;
 
         // --- Resolve workspace IDs ---
         var workspaceIdsNode = WorkspaceIds.Apply(data, contextData);
-        var workspaceIds = ResolveWorkspaceIds(workspaceIdsNode);
+        var workspaceIds = ResolveWorkspaceIds(workspaceIdsNode, ctx.FabricWorkspaceId);
 
         if (workspaceIds.Length == 0)
             throw new JsonLogicException("The scannerapi rule requires at least one workspace ID.");
 
-        ContextService.ReportOperatorProgress("scannerapi", $"Starting workspace scan for {workspaceIds.Length} workspace(s).");
+        InspectionContextHolder.ReportOperatorProgress("scannerapi", $"Starting workspace scan for {workspaceIds.Length} workspace(s).");
 
         // --- Build query string ---
         var queryParams = new List<string>();
@@ -124,7 +123,7 @@ public class ScannerApiRule : Json.Logic.Rule
         var scanResponse = JsonNode.Parse(scanResponseJson);
         var scanId = scanResponse?["id"]?.GetValue<string>()
             ?? throw new HttpRequestException("Scanner API did not return a scan ID in the response.");
-        ContextService.ReportOperatorProgress("scannerapi", $"Scan '{scanId}' accepted. Polling for completion.");
+        InspectionContextHolder.ReportOperatorProgress("scannerapi", $"Scan '{scanId}' accepted. Polling for completion.");
 
         // --- Step 2: Poll for scan status ---
         var statusUrl = string.Format(ScanStatusUrlTemplate, Uri.EscapeDataString(scanId));
@@ -157,13 +156,13 @@ public class ScannerApiRule : Json.Logic.Rule
 
             if (ShouldReportStatus(attemptNumber, status, lastReportedStatus))
             {
-                ContextService.ReportOperatorProgress("scannerapi", $"Polling scan '{scanId}': attempt {attemptNumber}/{MaxPollAttempts}, status '{status ?? "Unknown"}'.");
+                InspectionContextHolder.ReportOperatorProgress("scannerapi", $"Polling scan '{scanId}': attempt {attemptNumber}/{MaxPollAttempts}, status '{status ?? "Unknown"}'.");
                 lastReportedStatus = status;
             }
 
             if (string.Equals(status, "Succeeded", StringComparison.OrdinalIgnoreCase))
             {
-                ContextService.ReportOperatorProgress("scannerapi", $"Scan '{scanId}' succeeded after {attemptNumber} polling attempt(s). Retrieving result.");
+                InspectionContextHolder.ReportOperatorProgress("scannerapi", $"Scan '{scanId}' succeeded after {attemptNumber} polling attempt(s). Retrieving result.");
                 succeeded = true;
                 break;
             }
@@ -171,7 +170,7 @@ public class ScannerApiRule : Json.Logic.Rule
             if (string.Equals(status, "Failed", StringComparison.OrdinalIgnoreCase))
             {
                 var errorMessage = statusNode?["error"]?["message"]?.GetValue<string>() ?? "Unknown error";
-                ContextService.ReportOperatorProgress("scannerapi", $"Scan '{scanId}' failed after {attemptNumber} polling attempt(s).");
+                InspectionContextHolder.ReportOperatorProgress("scannerapi", $"Scan '{scanId}' failed after {attemptNumber} polling attempt(s).");
                 throw new HttpRequestException($"Scanner API scan failed: {errorMessage}");
             }
         }
@@ -197,7 +196,7 @@ public class ScannerApiRule : Json.Logic.Rule
         }
 
         var resultJson = resultResponse.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
-        ContextService.ReportOperatorProgress("scannerapi", $"Completed workspace scan '{scanId}' in {stopwatch.ElapsedMilliseconds} ms.");
+        InspectionContextHolder.ReportOperatorProgress("scannerapi", $"Completed workspace scan '{scanId}' in {stopwatch.ElapsedMilliseconds} ms.");
         return JsonNode.Parse(resultJson);
     }
 
@@ -216,7 +215,7 @@ public class ScannerApiRule : Json.Logic.Rule
         return attemptNumber % 5 == 0;
     }
 
-    private static string[] ResolveWorkspaceIds(JsonNode? node)
+    private static string[] ResolveWorkspaceIds(JsonNode? node, string ambientWorkspaceId)
     {
         if (node is JsonArray arr)
         {
@@ -230,11 +229,10 @@ public class ScannerApiRule : Json.Logic.Rule
         if (string.IsNullOrWhiteSpace(str))
         {
             // Fall back to the current workspace context
-            var contextId = ContextService.FabricWorkspaceId;
-            return string.IsNullOrWhiteSpace(contextId) ? [] : [contextId];
+            return string.IsNullOrWhiteSpace(ambientWorkspaceId) ? [] : [ambientWorkspaceId];
         }
 
-        str = str.Replace(Utils.Constants.ContextFabricWorkspace, ContextService.FabricWorkspaceId ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+        str = str.Replace(Utils.Constants.ContextFabricWorkspace, ambientWorkspaceId ?? string.Empty, StringComparison.OrdinalIgnoreCase);
 
         // Support a single ID or a comma-separated list
         return str.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

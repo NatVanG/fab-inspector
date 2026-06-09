@@ -23,6 +23,23 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
+
+    - name: Derive release version
+      id: version
+      shell: pwsh
+      run: |
+        $tag = '${{ github.ref_name }}'
+        if ($tag -match '^v(?<version>\d+\.\d+\.\d+)-Winform$') {
+          $version = $Matches.version
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "version_prefix=$version" >> $env:GITHUB_OUTPUT
+          "assembly_version=$version.0" >> $env:GITHUB_OUTPUT
+          "file_version=$version.0" >> $env:GITHUB_OUTPUT
+          "informational_version=$version" >> $env:GITHUB_OUTPUT
+        }
+        else {
+          throw "Unsupported tag format: $tag"
+        }
         
     - name: Build Windows x64 WinForm
       run: |
@@ -30,6 +47,11 @@ jobs:
           -c Release `
           -r win-x64 `
           --self-contained true `
+          -p:Version=${{ steps.version.outputs.version }} `
+          -p:VersionPrefix=${{ steps.version.outputs.version_prefix }} `
+          -p:AssemblyVersion=${{ steps.version.outputs.assembly_version }} `
+          -p:FileVersion=${{ steps.version.outputs.file_version }} `
+          -p:InformationalVersion=${{ steps.version.outputs.informational_version }} `
           -p:PublishSingleFile=true `
           -p:PublishReadyToRun=false `
           -p:DebugType=None `

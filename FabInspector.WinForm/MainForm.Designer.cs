@@ -28,8 +28,16 @@ namespace FabInspector.WinForm
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             groupBox1 = new GroupBox();
+            lblInfoRulesCatalog = new Label();
+            lblInfoRulesFile = new Label();
+            lblInfoFabricItem = new Label();
+            lblInfoFabricWorkspace = new Label();
+            btnBrowseRulesCatalogFile = new Button();
+            txtRulesCatalogPath = new TextBox();
+            label6 = new Label();
             txtFabricWorkspaceId = new TextBox();
             label5 = new Label();
             btnBrowseRulesFile = new Button();
@@ -45,14 +53,21 @@ namespace FabInspector.WinForm
             chckUseTempFiles = new CheckBox();
             txtOutputDirPath = new TextBox();
             groupBox2 = new GroupBox();
+            lblInfoOutputOptions = new Label();
+            lblInfoOutputFormats = new Label();
+            lblInfoOutputDirectory = new Label();
+            label7 = new Label();
+            chckParallel = new CheckBox();
             chckVerbose = new CheckBox();
             label4 = new Label();
             chckHTMLOutput = new CheckBox();
             chckJsonOutput = new CheckBox();
             txtConsoleOutput = new TextBox();
+            btnCopyOutput = new Button();
             btnRun = new Button();
             openPBIDesktopFileDialog = new OpenFileDialog();
             openRulesFileDialog = new OpenFileDialog();
+            openRulesCatalogFileDialog = new OpenFileDialog();
             outputFolderBrowserDialog = new FolderBrowserDialog();
             lblMessage = new Label();
             lnkHelp = new LinkLabel();
@@ -61,12 +76,20 @@ namespace FabInspector.WinForm
             lnkLatestRelease = new LinkLabel();
             lnkReportIssue = new LinkLabel();
             chkBlank = new CheckBox();
+            inputToolTip = new ToolTip(components);
             groupBox1.SuspendLayout();
             groupBox2.SuspendLayout();
             SuspendLayout();
             // 
             // groupBox1
             // 
+            groupBox1.Controls.Add(lblInfoRulesCatalog);
+            groupBox1.Controls.Add(lblInfoRulesFile);
+            groupBox1.Controls.Add(lblInfoFabricItem);
+            groupBox1.Controls.Add(lblInfoFabricWorkspace);
+            groupBox1.Controls.Add(btnBrowseRulesCatalogFile);
+            groupBox1.Controls.Add(txtRulesCatalogPath);
+            groupBox1.Controls.Add(label6);
             groupBox1.Controls.Add(chkBlank);
             groupBox1.Controls.Add(txtFabricWorkspaceId);
             groupBox1.Controls.Add(label5);
@@ -80,11 +103,82 @@ namespace FabInspector.WinForm
             groupBox1.Controls.Add(txtFabricItem);
             groupBox1.Location = new Point(31, 63);
             groupBox1.Name = "groupBox1";
-            groupBox1.Size = new Size(933, 243);
+            groupBox1.Size = new Size(933, 295);
             groupBox1.TabIndex = 0;
             groupBox1.TabStop = false;
             groupBox1.Text = "Inputs";
             groupBox1.Enter += groupBox1_Enter;
+            // 
+            // lblInfoRulesCatalog
+            // 
+            lblInfoRulesCatalog.BorderStyle = BorderStyle.None;
+            lblInfoRulesCatalog.Font = new Font("Segoe UI Symbol", 18F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            lblInfoRulesCatalog.Location = new Point(16, 208);
+            lblInfoRulesCatalog.Name = "lblInfoRulesCatalog";
+            lblInfoRulesCatalog.Size = new Size(32, 32);
+            lblInfoRulesCatalog.TabIndex = 20;
+            lblInfoRulesCatalog.Text = "ℹ";
+            lblInfoRulesCatalog.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // lblInfoRulesFile
+            // 
+            lblInfoRulesFile.BorderStyle = BorderStyle.None;
+            lblInfoRulesFile.Font = new Font("Segoe UI Symbol", 18F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            lblInfoRulesFile.Location = new Point(16, 156);
+            lblInfoRulesFile.Name = "lblInfoRulesFile";
+            lblInfoRulesFile.Size = new Size(32, 32);
+            lblInfoRulesFile.TabIndex = 19;
+            lblInfoRulesFile.Text = "ℹ";
+            lblInfoRulesFile.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // lblInfoFabricItem
+            // 
+            lblInfoFabricItem.BorderStyle = BorderStyle.None;
+            lblInfoFabricItem.Font = new Font("Segoe UI Symbol", 18F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            lblInfoFabricItem.Location = new Point(16, 105);
+            lblInfoFabricItem.Name = "lblInfoFabricItem";
+            lblInfoFabricItem.Size = new Size(32, 32);
+            lblInfoFabricItem.TabIndex = 18;
+            lblInfoFabricItem.Text = "ℹ";
+            lblInfoFabricItem.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // lblInfoFabricWorkspace
+            // 
+            lblInfoFabricWorkspace.BorderStyle = BorderStyle.None;
+            lblInfoFabricWorkspace.Font = new Font("Segoe UI Symbol", 18F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            lblInfoFabricWorkspace.Location = new Point(16, 49);
+            lblInfoFabricWorkspace.Name = "lblInfoFabricWorkspace";
+            lblInfoFabricWorkspace.Size = new Size(32, 32);
+            lblInfoFabricWorkspace.TabIndex = 17;
+            lblInfoFabricWorkspace.Text = "ℹ";
+            lblInfoFabricWorkspace.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // btnBrowseRulesCatalogFile
+            // 
+            btnBrowseRulesCatalogFile.Location = new Point(640, 210);
+            btnBrowseRulesCatalogFile.Name = "btnBrowseRulesCatalogFile";
+            btnBrowseRulesCatalogFile.Size = new Size(112, 34);
+            btnBrowseRulesCatalogFile.TabIndex = 16;
+            btnBrowseRulesCatalogFile.Text = "Browse";
+            btnBrowseRulesCatalogFile.UseVisualStyleBackColor = true;
+            btnBrowseRulesCatalogFile.Click += btnBrowseRulesCatalogFile_Click;
+            // 
+            // txtRulesCatalogPath
+            // 
+            txtRulesCatalogPath.Location = new Point(204, 210);
+            txtRulesCatalogPath.Name = "txtRulesCatalogPath";
+            txtRulesCatalogPath.Size = new Size(430, 31);
+            txtRulesCatalogPath.TabIndex = 15;
+            txtRulesCatalogPath.TextChanged += txtRulesCatalogPath_TextChanged;
+            // 
+            // label6
+            // 
+            label6.AutoSize = true;
+            label6.Location = new Point(49, 211);
+            label6.Name = "label6";
+            label6.Size = new Size(108, 25);
+            label6.TabIndex = 14;
+            label6.Text = "Rules catalog";
             // 
             // txtFabricWorkspaceId
             // 
@@ -171,6 +265,7 @@ namespace FabInspector.WinForm
             txtRulesFilePath.Name = "txtRulesFilePath";
             txtRulesFilePath.Size = new Size(430, 31);
             txtRulesFilePath.TabIndex = 1;
+            txtRulesFilePath.TextChanged += txtRulesFilePath_TextChanged;
             // 
             // txtFabricItem
             // 
@@ -193,7 +288,7 @@ namespace FabInspector.WinForm
             // label3
             // 
             label3.AutoSize = true;
-            label3.Location = new Point(28, 37);
+            label3.Location = new Point(49, 37);
             label3.Name = "label3";
             label3.Size = new Size(144, 25);
             label3.TabIndex = 8;
@@ -222,6 +317,11 @@ namespace FabInspector.WinForm
             // 
             // groupBox2
             // 
+            groupBox2.Controls.Add(lblInfoOutputFormats);
+            groupBox2.Controls.Add(lblInfoOutputDirectory);
+            groupBox2.Controls.Add(lblInfoOutputOptions);
+            groupBox2.Controls.Add(label7);
+            groupBox2.Controls.Add(chckParallel);
             groupBox2.Controls.Add(chckVerbose);
             groupBox2.Controls.Add(label4);
             groupBox2.Controls.Add(btnBrowseOutputDir);
@@ -230,17 +330,69 @@ namespace FabInspector.WinForm
             groupBox2.Controls.Add(txtOutputDirPath);
             groupBox2.Controls.Add(label3);
             groupBox2.Controls.Add(chckUseTempFiles);
-            groupBox2.Location = new Point(31, 325);
+            groupBox2.Location = new Point(31, 372);
             groupBox2.Name = "groupBox2";
             groupBox2.Size = new Size(933, 183);
             groupBox2.TabIndex = 1;
             groupBox2.TabStop = false;
             groupBox2.Text = "Outputs";
             // 
+            // lblInfoOutputOptions
+            // 
+            lblInfoOutputOptions.BorderStyle = BorderStyle.None;
+            lblInfoOutputOptions.Font = new Font("Segoe UI Symbol", 18F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            lblInfoOutputOptions.Location = new Point(16, 121);
+            lblInfoOutputOptions.Name = "lblInfoOutputOptions";
+            lblInfoOutputOptions.Size = new Size(32, 32);
+            lblInfoOutputOptions.TabIndex = 16;
+            lblInfoOutputOptions.Text = "ℹ";
+            lblInfoOutputOptions.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // lblInfoOutputFormats
+            // 
+            lblInfoOutputFormats.BorderStyle = BorderStyle.None;
+            lblInfoOutputFormats.Font = new Font("Segoe UI Symbol", 18F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            lblInfoOutputFormats.Location = new Point(16, 92);
+            lblInfoOutputFormats.Name = "lblInfoOutputFormats";
+            lblInfoOutputFormats.Size = new Size(32, 32);
+            lblInfoOutputFormats.TabIndex = 15;
+            lblInfoOutputFormats.Text = "ℹ";
+            lblInfoOutputFormats.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // lblInfoOutputDirectory
+            // 
+            lblInfoOutputDirectory.BorderStyle = BorderStyle.None;
+            lblInfoOutputDirectory.Font = new Font("Segoe UI Symbol", 18F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            lblInfoOutputDirectory.Location = new Point(16, 34);
+            lblInfoOutputDirectory.Name = "lblInfoOutputDirectory";
+            lblInfoOutputDirectory.Size = new Size(32, 32);
+            lblInfoOutputDirectory.TabIndex = 14;
+            lblInfoOutputDirectory.Text = "ℹ";
+            lblInfoOutputDirectory.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // label7
+            // 
+            label7.AutoSize = true;
+            label7.Location = new Point(49, 124);
+            label7.Name = "label7";
+            label7.Size = new Size(124, 25);
+            label7.TabIndex = 17;
+            label7.Text = "Output options";
+            // 
+            // chckParallel
+            // 
+            chckParallel.AutoSize = true;
+            chckParallel.Location = new Point(204, 124);
+            chckParallel.Name = "chckParallel";
+            chckParallel.Size = new Size(104, 29);
+            chckParallel.TabIndex = 13;
+            chckParallel.Text = "Parallel";
+            chckParallel.UseVisualStyleBackColor = true;
+            // 
             // chckVerbose
             // 
             chckVerbose.AutoSize = true;
-            chckVerbose.Location = new Point(768, 124);
+            chckVerbose.Location = new Point(337, 124);
             chckVerbose.Name = "chckVerbose";
             chckVerbose.Size = new Size(102, 29);
             chckVerbose.TabIndex = 2;
@@ -250,7 +402,7 @@ namespace FabInspector.WinForm
             // label4
             // 
             label4.AutoSize = true;
-            label4.Location = new Point(28, 95);
+            label4.Location = new Point(49, 95);
             label4.Name = "label4";
             label4.Size = new Size(136, 25);
             label4.TabIndex = 12;
@@ -281,7 +433,7 @@ namespace FabInspector.WinForm
             // 
             // txtConsoleOutput
             // 
-            txtConsoleOutput.Location = new Point(31, 575);
+            txtConsoleOutput.Location = new Point(31, 622);
             txtConsoleOutput.Multiline = true;
             txtConsoleOutput.Name = "txtConsoleOutput";
             txtConsoleOutput.ReadOnly = true;
@@ -289,9 +441,19 @@ namespace FabInspector.WinForm
             txtConsoleOutput.Size = new Size(933, 112);
             txtConsoleOutput.TabIndex = 2;
             // 
+            // btnCopyOutput
+            // 
+            btnCopyOutput.Location = new Point(31, 582);
+            btnCopyOutput.Name = "btnCopyOutput";
+            btnCopyOutput.Size = new Size(42, 34);
+            btnCopyOutput.TabIndex = 14;
+            btnCopyOutput.Text = "C";
+            btnCopyOutput.UseVisualStyleBackColor = true;
+            btnCopyOutput.Click += btnCopyOutput_Click;
+            // 
             // btnRun
             // 
-            btnRun.Location = new Point(852, 522);
+            btnRun.Location = new Point(852, 569);
             btnRun.Name = "btnRun";
             btnRun.Size = new Size(112, 34);
             btnRun.TabIndex = 3;
@@ -308,6 +470,11 @@ namespace FabInspector.WinForm
             // 
             openRulesFileDialog.Filter = "Json files (*.json)|*.json|All files (*.*)|*.*";
             openRulesFileDialog.FileOk += openRulesFileDialog_FileOk;
+            // 
+            // openRulesCatalogFileDialog
+            // 
+            openRulesCatalogFileDialog.Filter = "Json files (*.json)|*.json|All files (*.*)|*.*";
+            openRulesCatalogFileDialog.FileOk += openRulesCatalogFileDialog_FileOk;
             // 
             // outputFolderBrowserDialog
             // 
@@ -393,13 +560,14 @@ namespace FabInspector.WinForm
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1002, 712);
+            ClientSize = new Size(1002, 757);
             Controls.Add(lnkReportIssue);
             Controls.Add(lnkLatestRelease);
             Controls.Add(lnkAbout);
             Controls.Add(lnkLicense);
             Controls.Add(lnkHelp);
             Controls.Add(lblMessage);
+            Controls.Add(btnCopyOutput);
             Controls.Add(btnRun);
             Controls.Add(txtConsoleOutput);
             Controls.Add(groupBox2);
@@ -442,6 +610,7 @@ namespace FabInspector.WinForm
         private OpenFileDialog openRulesFileDialog;
         private FolderBrowserDialog outputFolderBrowserDialog;
         private CheckBox chckVerbose;
+        private CheckBox chckParallel;
         private Label label4;
         private Label lblMessage;
         private LinkLabel lnkHelp;
@@ -452,5 +621,19 @@ namespace FabInspector.WinForm
         private Label label5;
         private TextBox txtFabricWorkspaceId;
         private CheckBox chkBlank;
+        private Label label6;
+        private TextBox txtRulesCatalogPath;
+        private Button btnBrowseRulesCatalogFile;
+        private OpenFileDialog openRulesCatalogFileDialog;
+        private ToolTip inputToolTip;
+        private Button btnCopyOutput;
+        private Label lblInfoFabricWorkspace;
+        private Label lblInfoFabricItem;
+        private Label lblInfoRulesFile;
+        private Label lblInfoRulesCatalog;
+        private Label lblInfoOutputDirectory;
+        private Label lblInfoOutputFormats;
+        private Label lblInfoOutputOptions;
+        private Label label7;
     }
 }

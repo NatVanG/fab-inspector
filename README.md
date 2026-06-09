@@ -18,6 +18,16 @@ This is a community project that is not supported by Microsoft.
 
 :exclamation: When testing Power BI reports, Fab Inspector only supports the new enhanced metadata report format (PBIR). Also PBIX files are not currently supported, only PBIP or "{my-report}.Report" folders.
 
+## Microsoft Fabric workload (preview)
+
+A React + TypeScript frontend for the FabInspector custom Fabric workload lives
+in [`Workload/`](Workload/README.md), built on the
+[Fabric Extensibility Toolkit](https://learn.microsoft.com/en-us/fabric/extensibility-toolkit/extensibility-toolkit-overview)
+and the `@ms-fabric/workload-client` SDK. It talks to the lifecycle / job
+controllers exposed by `FabInspector.Web` over `/api/workload/*`. The previous
+Blazor editor surfaces have been removed — see `Workload/README.md` for setup,
+build, and CI details.
+
 ## <a name="contents"></a>Contents
 
 - [Intro](#intro)
@@ -174,7 +184,7 @@ fab-inspector -fabricworkspace "<workspace-guid>" -fabricitem "<item-guid>" -rul
 
 ### 5. Hybrid pattern
 
-Rules can call the Power BI/Fabric admin scanner API, the Power BI and Fabric REST APIs' GET methods, request JSON files from the OneLake DFS endpoint, or execute DAX queries directly from within rule logic using the [`apiget`](DocsExamples/FabInspector-Operators.md#apiget), [`dfsget`](DocsExamples/FabInspector-Operators.md#dfsget), [`daxquery`](DocsExamples/FabInspector-Operators.md#daxquery), and [`scannerapi`](DocsExamples/FabInspector-Operators.md#scannerapi) operators.
+Rules can call the Power BI/Fabric admin scanner API, the Power BI and Fabric REST APIs' GET methods, request JSON files from the OneLake DFS endpoint, or execute DAX and SQL queries directly from within rule logic using the [`apiget`](DocsExamples/FabInspector-Operators.md#apiget), [`dfsget`](DocsExamples/FabInspector-Operators.md#dfsget), [`daxquery`](DocsExamples/FabInspector-Operators.md#daxquery), [`sqlquery`](DocsExamples/FabInspector-Operators.md#sqlquery), and [`scannerapi`](DocsExamples/FabInspector-Operators.md#scannerapi) operators.
 
 ```mermaid
 flowchart TB
@@ -182,7 +192,7 @@ flowchart TB
       A1[Fabric items: Local folder]
       A2[Fabric items: Workspace items]
       A3["Fabric REST API\n(apiget, dfsget, scannerapi operators)"]
-      A4["Power BI REST API\n(apiget, daxquery, scannerapi operators)"]
+      A4["Power BI REST API\n(apiget, daxquery, sqlquery, scannerapi operators)"]
       B1[Rules: Local JSON]
       B2[Rules: OneLake JSON]
     end
@@ -213,7 +223,7 @@ Example combinations:
 1. Local item definitions + OneLake rules + local HTML output.
 2. Workspace items + local rules + GitHub annotations.
 3. Workspace items + OneLake rules + OneLake JSON output.
-4. Workspace items + OneLake rules (including REST API and DAX calls via operators) + OneLake JSON output.
+4. Workspace items + OneLake rules (including REST API, DAX, and SQL calls via operators) + OneLake JSON output.
 
 This flexibility lets teams start local, then progressively adopt CI/CD, workspace-scoped inspection, and API-driven rules without changing the core rule model.
 
@@ -338,7 +348,11 @@ All command line parameters are as follows:
 ```-verbose true|false```: Optional, false by default. If false then only rule violations are shown; if true then all results are listed.
 
 ```-parallel true|false```: Optional, false by default. If true, rules are split across available processors and run in parallel before results are merged. If false, rules are executed on a single thread.
-- **Note**: Parallel execution is not supported with remote authentication methods (`interactive`, `azurecli`, `clientsecret`, `certificate`, `federatedtoken`, `managedidentity`).
+- **Supported auth methods**: Parallel execution can be used with `local`, `interactive`, `azurecli`, `clientsecret`, `certificate`, `federatedtoken`, and `managedidentity`.
+
+**Warnings when using `-parallel true`:**
+- If rules use `applyPatch`, avoid parallel patching of the same part/file because writes can conflict and become last-writer-wins.
+- Rules that call remote APIs (`apiget`, `dfsget`, `daxquery`, `sqlquery`, `scannerapi`) may hit service throttling/rate limits sooner under parallel fan-out.
 
 ```-output directorypath|onelakeurl```: Optional. Output local directory path or OneLake folder URL. If omitted, a temporary local directory is created. OneLake output requires non-local authentication.
 
@@ -430,8 +444,8 @@ For a tutorial on how to run the Fab Inspector CLI (aka Fab Inspector) as part o
 ## <a id="customerruleguide"></a>Custom Rules Guide
 
 :pencil: This is a high-level guide to custom rules for a deeper explanation of rules and operators see the [Fab Inspector wiki](https://github.com/NatVanG/fab-inspector/wiki). For a quick-reference of all available operators see:
-- [Ric Operators](DocsExamples/Ric-Operators.md) — navigation, data transformation, string, set, date/time, and file-system operators
-- [FabInspector Operators](DocsExamples/FabInspector-Operators.md) — REST API (`apiget`, `dfsget`, `daxquery`, `scannerapi`) and layout (`rectoverlap`) operators
+- [Ric Operators](DocsExamples/Ric-Operators.md) — navigation, data transformation, string, set, layout/geometry (`rectoverlap`), date/time, and file-system operators
+- [FabInspector Operators](DocsExamples/FabInspector-Operators.md) — REST API (`apiget`, `dfsget`, `daxquery`, `sqlquery`, `scannerapi`) operators
 
 Custom rules are defined in a JSON file as an array of rule objects as follows:
 
@@ -453,7 +467,7 @@ Each rule object has the following properties:
     "logType": "Optional. error|warning(default)",
     "itemType": "[fabricitemtype]. The Fabric item type that the rule applies to as referred to in the item's CI\CD ".platform"" file, e.g. CopyJob, Lakehouse, Report, etc. or specify "*" to define a cross-Fabric items rule or "json" to define a rule that applies to any JSON metadata file.",
     "disabled": true|false(default),
-    "part": "Optional iterator. A Regex expression to match one or more Fabric item file or folder path, for ease of use folder separators are column characters i.e. ':'. If the itemType is Report, file part abstractions i.e. one of Report|ReportExtensions|Pages|PagesHeader|AllPages|Visuals|AllVisuals|MobileVisuals|AllMobileVisuals|Bookmarks|BookmarksHeader|AllBookmarks can be specified instead of a regular expression to match a specific file type. If an array of multiple items is returned (such as when specifying "Pages"), the rule will apply to each item iterativey."
+    "part": "Optional iterator. A Regex expression to match one or more Fabric item file or folder path, for ease of use folder separators are column characters i.e. ':'. If the itemType is Report, file part abstractions i.e. one of Report|ReportExtensions|Pages|PagesHeader|AllPages|Visuals|AllVisuals|MobileVisuals|AllMobileVisuals|Bookmarks|BookmarksHeader|AllBookmarks can be specified instead of a regular expression to match a specific file type. If the itemType is SemanticModel, TMDL part abstractions i.e. one of Definition|Database|Expressions|Model|Relationships|DataSources|Functions|Tables|Cultures|Roles|Perspectives can be specified instead of a regular expression to match specific TMDL files or folders. If an array of multiple items is returned (such as when specifying "Pages" or "Tables"), the rule will apply to each item iterativey."
     "test": [
     //test logic
     ,

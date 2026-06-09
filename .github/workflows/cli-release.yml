@@ -23,6 +23,23 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
+
+    - name: Derive release version
+      id: version
+      shell: bash
+      run: |
+        tag="${GITHUB_REF_NAME}"
+        if [[ "$tag" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+          version="${BASH_REMATCH[1]}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "version_prefix=$version" >> "$GITHUB_OUTPUT"
+          echo "assembly_version=${version}.0" >> "$GITHUB_OUTPUT"
+          echo "file_version=${version}.0" >> "$GITHUB_OUTPUT"
+          echo "informational_version=$version" >> "$GITHUB_OUTPUT"
+        else
+          echo "Unsupported tag format: $tag" >&2
+          exit 1
+        fi
         
     - name: Build Windows x64 CLI
       run: |
@@ -30,6 +47,11 @@ jobs:
           -c Release \
           -r win-x64 \
           --self-contained false \
+          -p:Version=${{ steps.version.outputs.version }} \
+          -p:VersionPrefix=${{ steps.version.outputs.version_prefix }} \
+          -p:AssemblyVersion=${{ steps.version.outputs.assembly_version }} \
+          -p:FileVersion=${{ steps.version.outputs.file_version }} \
+          -p:InformationalVersion=${{ steps.version.outputs.informational_version }} \
           -p:PublishSingleFile=true \
           -p:PublishTrimmed=false \
           -p:DebugType=None \
@@ -43,6 +65,11 @@ jobs:
           -c Release \
           -r linux-x64 \
           --self-contained false \
+          -p:Version=${{ steps.version.outputs.version }} \
+          -p:VersionPrefix=${{ steps.version.outputs.version_prefix }} \
+          -p:AssemblyVersion=${{ steps.version.outputs.assembly_version }} \
+          -p:FileVersion=${{ steps.version.outputs.file_version }} \
+          -p:InformationalVersion=${{ steps.version.outputs.informational_version }} \
           -p:PublishSingleFile=true \
           -p:PublishTrimmed=false \
           -p:DebugType=None \

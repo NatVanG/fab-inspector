@@ -18,7 +18,6 @@ FabInspector operators extend the [JSON Logic](https://json-everything.net/json-
 ## Contents
 
 - [REST API Operators](#rest-api-operators): `apiget`, `dfsget`, `daxquery`, `sqlquery`, `scannerapi`
-- [Layout & Geometry](#layout--geometry): `rectoverlap`
 
 ---
 
@@ -146,13 +145,17 @@ For safety, `sqlquery` only allows single SELECT-style queries and rejects SQL c
 | Form | When to use |
 |---|---|
 | Simple string | Uses `{context-fabricworkspace}` and `{context-fabricitem}` |
-| Array | Explicit workspace and lakehouse GUIDs |
+| Array | Explicit workspace and lakehouse GUIDs, with optional metadata refresh settings |
 
 | Parameter | Type | Description |
 |---|---|---|
 | query | string | T-SQL query expression |
 | workspaceId | string | Workspace GUID (or omit to use `{context-fabricworkspace}`) |
 | lakehouseId | string | Lakehouse GUID (or omit to use `{context-fabricitem}`) |
+| refreshMetadata | boolean | Refresh the Lakehouse SQL endpoint metadata before running the query (optional, default `false`) |
+| recreateTables | boolean | When refreshing metadata, recreate SQL endpoint tables as part of the refresh request (optional, default `false`) |
+
+`recreateTables` is only meaningful when `refreshMetadata` is `true`.
 
 **Returns:** Parsed JSON payload from the SQL query result.
 
@@ -165,12 +168,14 @@ For safety, `sqlquery` only allows single SELECT-style queries and rejects SQL c
   "sqlquery": [
     "SELECT TOP (5) [Country] FROM [dbo].[Customers] FOR JSON PATH",
     "f45498e6-9f62-4bbb-bdb6-6d8a7e3a2703",
-    "6a496a15-d00c-4cd6-a731-a3fd79e8fb10"
+    "6a496a15-d00c-4cd6-a731-a3fd79e8fb10",
+    true,
+    false
   ]
 }
 ```
 
-See also: [Example-sqlquery-rule.json](Example-sqlquery-rule.json)
+See also: [Example-sqlquery-rule.json](Example-sqlquery-rule.json), [Example-sqlquery-wparams-rule.json](Example-sqlquery-wparams-rule.json)
 
 ---
 
@@ -204,43 +209,6 @@ Calls the [Power BI Admin Workspace Info API](https://learn.microsoft.com/en-us/
 ```
 
 See also: [Example-scannerapi-rules.json](Example-scannerapi-rules.json)
-
----
-
-## Layout & Geometry
-
-### `rectoverlap`
-
-Detects overlapping rectangles in a list of named rectangular regions. Optionally expands each rectangle by a pixel margin before checking for overlaps. Returns the names of any rectangles that overlap with at least one other.
-
-| Parameter | Type | Description |
-|---|---|---|
-| input | array | Array of rectangle objects, each with integer properties `name`, `x`, `y`, `width`, `height` |
-| margin | number | Pixel amount to expand each rectangle on all sides before the overlap check (optional, default `0`) |
-
-**Returns:** Array of `name` values for rectangles that overlap with at least one other rectangle.
-
-```json
-{
-  "rectoverlap": [
-    {
-      "map": [
-        { "part": "Visuals" },
-        {
-          "torecord": [
-            "name",   { "var": "name" },
-            "x",      { "var": "visual.position.x" },
-            "y",      { "var": "visual.position.y" },
-            "width",  { "var": "visual.position.width" },
-            "height", { "var": "visual.position.height" }
-          ]
-        }
-      ]
-    },
-    5
-  ]
-}
-```
 
 ---
 

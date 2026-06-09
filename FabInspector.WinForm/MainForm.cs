@@ -11,6 +11,7 @@ namespace FabInspector.WinForm
     {
         IReportPageWireframeRenderer? _pageRenderer = null;
         IEnumerable<JsonLogicOperatorRegistry>? _registries = null;
+        private bool _syncingRulesInputs;
 
         public MainForm()
         {
@@ -62,13 +63,13 @@ namespace FabInspector.WinForm
                 new SliceOperator(),
                 new NowOperator(),
                 new DateDiffOperator(),
-                new LetOperator()
+                new LetOperator(),
+                new RectangleOverlapOperator()
             }));
 
             registries.Add(new JsonLogicOperatorRegistry(
             new FabInspectorSerializerContext(),
             new IJsonLogicOperator[] {
-                new RectangleOverlapOperator(),
                 new DaxQueryOperator(),
                 new SqlQueryOperator(),
                 new ApiGetOperator(),
@@ -116,9 +117,11 @@ namespace FabInspector.WinForm
         {
             txtConsoleOutput.Clear();
             Main.WinMessageIssued += Main_MessageIssued;
+            ConfigureInputTooltips();
             UseSamplePBIFileStateCheck();
             UseBaseRulesCheck();
             UseTempFilesStateCheck();
+            UpdateRulesInputOptions();
             txtFabricItem.Focus();
         }
 
@@ -188,6 +191,11 @@ namespace FabInspector.WinForm
             this.openRulesFileDialog.ShowDialog(this);
         }
 
+        private void btnBrowseRulesCatalogFile_Click(object sender, EventArgs e)
+        {
+            this.openRulesCatalogFileDialog.ShowDialog(this);
+        }
+
         private void btnBrowseOutputDir_Click(object sender, EventArgs e)
         {
             if (this.outputFolderBrowserDialog.ShowDialog(this) == DialogResult.OK)
@@ -215,9 +223,9 @@ namespace FabInspector.WinForm
         private void UseBaseRulesCheck()
         {
             var enabled = !this.chkUseBaseRules.Checked;
-            if (!enabled) { this.txtRulesFilePath.Text = Constants.SampleRulesFilePath; } else { this.txtRulesFilePath.Clear(); }
+            if (!enabled) { SetRulesFilePath(Constants.SampleRulesFilePath); } else { this.txtRulesFilePath.Clear(); }
             this.txtRulesFilePath.Enabled = enabled;
-            this.btnBrowseRulesFile.Enabled = enabled;
+            UpdateRulesInputOptions();
         }
 
         private void chkUseBaseRules_CheckedChanged(object sender, EventArgs e)
@@ -247,15 +255,25 @@ namespace FabInspector.WinForm
             var fabricWorskpaceId = this.txtFabricWorkspaceId.Text;
             var fabricItem = this.txtFabricItem.Text;
             var rulesFilePath = this.txtRulesFilePath.Text;
+            var rulesCatalogPath = this.txtRulesCatalogPath.Text;
             var outputPath = this.txtOutputDirPath.Text;
             var verbose = this.chckVerbose.Checked;
-            var parallel = false; //todo: implement parallel processing option
+            var parallel = this.chckParallel.Checked;
             var jsonOutput = this.chckJsonOutput.Checked;
             var htmlOutput = this.chckHTMLOutput.Checked;
 
+            var hasRulesFilePath = !string.IsNullOrWhiteSpace(rulesFilePath);
+            var hasRulesCatalogPath = !string.IsNullOrWhiteSpace(rulesCatalogPath);
+            if (hasRulesFilePath == hasRulesCatalogPath)
+            {
+                MessageBox.Show(this, "Provide either a Rules file path or a Rules catalog path, but not both.", "Invalid rule source", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                btnRun.Enabled = true;
+                return;
+            }
+
             try
             {
-                await Main.AttendedRun(fabricWorskpaceId, fabricItem, rulesFilePath, outputPath, verbose, parallel, jsonOutput, htmlOutput, _pageRenderer!, _registries!);
+                await Main.AttendedRun(fabricWorskpaceId, fabricItem, rulesFilePath, rulesCatalogPath, outputPath, verbose, parallel, jsonOutput, htmlOutput, _pageRenderer!, _registries!);
             }
             finally
             {
@@ -276,7 +294,12 @@ namespace FabInspector.WinForm
 
         private void openRulesFileDialog_FileOk(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            this.txtRulesFilePath.Text = this.openRulesFileDialog.FileName;
+            SetRulesFilePath(this.openRulesFileDialog.FileName);
+        }
+
+        private void openRulesCatalogFileDialog_FileOk(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            SetRulesCatalogPath(this.openRulesCatalogFileDialog.FileName);
         }
 
         private void outputFolderBrowserDialog_HelpRequest(object sender, EventArgs e)
@@ -359,6 +382,120 @@ namespace FabInspector.WinForm
         private void label5_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void txtRulesFilePath_TextChanged(object sender, EventArgs e)
+        {
+            if (_syncingRulesInputs)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(txtRulesFilePath.Text) && !string.IsNullOrWhiteSpace(txtRulesCatalogPath.Text))
+            {
+                _syncingRulesInputs = true;
+                txtRulesCatalogPath.Clear();
+                _syncingRulesInputs = false;
+            }
+
+            UpdateRulesInputOptions();
+        }
+
+        private void txtRulesCatalogPath_TextChanged(object sender, EventArgs e)
+        {
+            if (_syncingRulesInputs)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(txtRulesCatalogPath.Text) && !string.IsNullOrWhiteSpace(txtRulesFilePath.Text))
+            {
+                _syncingRulesInputs = true;
+                txtRulesFilePath.Clear();
+                _syncingRulesInputs = false;
+            }
+
+            UpdateRulesInputOptions();
+        }
+
+        private void SetRulesFilePath(string path)
+        {
+            _syncingRulesInputs = true;
+            txtRulesFilePath.Text = path;
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                txtRulesCatalogPath.Clear();
+            }
+            _syncingRulesInputs = false;
+            UpdateRulesInputOptions();
+        }
+
+        private void SetRulesCatalogPath(string path)
+        {
+            _syncingRulesInputs = true;
+            txtRulesCatalogPath.Text = path;
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                txtRulesFilePath.Clear();
+            }
+            _syncingRulesInputs = false;
+            UpdateRulesInputOptions();
+        }
+
+        private void UpdateRulesInputOptions()
+        {
+            var hasRulesCatalogPath = !string.IsNullOrWhiteSpace(txtRulesCatalogPath.Text);
+
+            if (hasRulesCatalogPath && chkUseBaseRules.Checked)
+            {
+                chkUseBaseRules.Checked = false;
+            }
+
+            chkUseBaseRules.Enabled = true;
+            btnBrowseRulesFile.Enabled = txtRulesFilePath.Enabled;
+            btnBrowseRulesCatalogFile.Enabled = true;
+        }
+
+        private void ConfigureInputTooltips()
+        {
+            var fabricWorkspaceTip = "Optional Fabric workspace GUID. Required for workspace or item GUID scans.";
+            var fabricItemTip = "Local Fabric item path or item GUID (with workspace ID). Supports PBIP/.Report folder paths.";
+            var rulesFileTip = "Path or OneLake DFS URL to a single rules JSON file.";
+            var rulesCatalogTip = "Path or OneLake DFS URL to a rules catalog JSON that references multiple rulesets.";
+            var outputDirectoryTip = "Optional local output folder or OneLake DFS destination. Leave blank to use temp files.";
+            var outputFormatsTip = "Select one or more result formats to generate, such as JSON and/or HTML.";
+            var outputOptionsTip = "Optional run behavior settings that control execution details such as parallelism and verbose logging.";
+
+            inputToolTip.SetToolTip(lblInfoFabricWorkspace, fabricWorkspaceTip);
+            inputToolTip.SetToolTip(lblInfoFabricItem, fabricItemTip);
+            inputToolTip.SetToolTip(lblInfoRulesFile, rulesFileTip);
+            inputToolTip.SetToolTip(lblInfoRulesCatalog, rulesCatalogTip);
+            inputToolTip.SetToolTip(lblInfoOutputDirectory, outputDirectoryTip);
+            inputToolTip.SetToolTip(lblInfoOutputFormats, outputFormatsTip);
+            inputToolTip.SetToolTip(lblInfoOutputOptions, outputOptionsTip);
+
+            inputToolTip.SetToolTip(txtFabricWorkspaceId, fabricWorkspaceTip);
+            inputToolTip.SetToolTip(txtFabricItem, fabricItemTip);
+            inputToolTip.SetToolTip(txtRulesFilePath, rulesFileTip);
+            inputToolTip.SetToolTip(txtRulesCatalogPath, rulesCatalogTip);
+            inputToolTip.SetToolTip(txtOutputDirPath, outputDirectoryTip);
+            inputToolTip.SetToolTip(chckJsonOutput, outputFormatsTip);
+            inputToolTip.SetToolTip(chckHTMLOutput, outputFormatsTip);
+            inputToolTip.SetToolTip(chckParallel, outputOptionsTip);
+            inputToolTip.SetToolTip(chckVerbose, outputOptionsTip);
+            inputToolTip.SetToolTip(btnCopyOutput, "Copy output text to clipboard.");
+
+            btnCopyOutput.Text = char.ConvertFromUtf32(0x1F4CB);
+        }
+
+        private void btnCopyOutput_Click(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtConsoleOutput.Text))
+            {
+                return;
+            }
+
+            Clipboard.SetText(txtConsoleOutput.Text);
         }
 
         private void chkBlank_CheckedChanged(object sender, EventArgs e)

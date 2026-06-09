@@ -2,8 +2,8 @@ using Azure.Core;
 using FabInspector.Operators;
 using NUnit.Framework;
 using FabInspector.Core;
+using FabInspector.Core.Inspection;
 using FabInspector.Core.Output;
-using FabInspector.Core.Part;
 using Ric.Operators;
 using System.Net;
 using System.Net.Http;
@@ -38,12 +38,12 @@ public class OperatorProgressReportingTests
                 new StringContainsOperator(),
                 new ToRecordOperator(),
                 new ToStringOperator(),
-                new FromYamlFileOperator()
+                new FromYamlFileOperator(),
+                new RectangleOverlapOperator()
             ]),
         new JsonLogicOperatorRegistry(
             new FabInspectorSerializerContext(),
             [
-                new RectangleOverlapOperator(),
                 new DaxQueryOperator(),
                 new ApiGetOperator(),
                 new ScannerApiOperator()
@@ -52,13 +52,22 @@ public class OperatorProgressReportingTests
 
     private readonly List<string> _tempPaths = new();
 
+    // Per-test fixture state populated by individual tests and consumed by RunInspection
+    // when constructing the ambient InspectionContext. Replaces the legacy ContextService.*
+    // static slots that were deleted in Phase 5 of the DI refactor.
+    private HttpClient? _httpClient;
+    private ITokenProvider? _tokenProvider;
+    private string? _fabricWorkspaceId;
+    private string? _fabricItem;
+
     [TearDown]
     public void TearDown()
     {
-        ContextService.HttpClient = null;
-        ContextService.TokenProvider = null;
-        ContextService.FabricWorkspaceId = null;
-        ContextService.FabricItem = null;
+        _httpClient?.Dispose();
+        _httpClient = null;
+        _tokenProvider = null;
+        _fabricWorkspaceId = null;
+        _fabricItem = null;
 
         foreach (var tempPath in _tempPaths)
         {
@@ -74,9 +83,9 @@ public class OperatorProgressReportingTests
     [Test]
     public void ApiGet_EmitsProgressMessagesThroughInspector()
     {
-        ContextService.HttpClient = CreateHttpClient(
+        _httpClient = CreateHttpClient(
             CreateJsonResponse(HttpStatusCode.OK, "{\"value\":[1]}"));
-        ContextService.TokenProvider = new CachingTokenProvider(new FakeTokenCredential());
+        _tokenProvider = new CachingTokenProvider(new FakeTokenCredential());
 
         var result = RunInspection(
             "api-get-progress.json",
@@ -91,10 +100,10 @@ public class OperatorProgressReportingTests
     [Test]
     public void ApiGet_PaginatesUsingFabricContinuationToken()
     {
-        ContextService.HttpClient = CreateHttpClient(
+        _httpClient = CreateHttpClient(
             CreateJsonResponse(HttpStatusCode.OK, "{\"value\":[{\"id\":1}],\"continuationToken\":\"token-page-2\"}"),
             CreateJsonResponse(HttpStatusCode.OK, "{\"value\":[{\"id\":2}]}"));
-        ContextService.TokenProvider = new CachingTokenProvider(new FakeTokenCredential());
+        _tokenProvider = new CachingTokenProvider(new FakeTokenCredential());
 
         var result = RunInspection(
             "api-get-pagination-fabric.json",
@@ -108,10 +117,10 @@ public class OperatorProgressReportingTests
     [Test]
     public void ApiGet_PaginatesUsingPowerBiODataNextLink()
     {
-        ContextService.HttpClient = CreateHttpClient(
+        _httpClient = CreateHttpClient(
             CreateJsonResponse(HttpStatusCode.OK, "{\"value\":[{\"id\":\"A\"}],\"@odata.nextLink\":\"https://api.powerbi.com/v1.0/myorg/groups?$skiptoken=abc123\"}"),
             CreateJsonResponse(HttpStatusCode.OK, "{\"value\":[{\"id\":\"B\"}]}"));
-        ContextService.TokenProvider = new CachingTokenProvider(new FakeTokenCredential());
+        _tokenProvider = new CachingTokenProvider(new FakeTokenCredential());
 
         var result = RunInspection(
             "api-get-pagination-pbi.json",
@@ -130,12 +139,12 @@ public class OperatorProgressReportingTests
             "{\"value\":[{\"id\":1}],\"continuationUri\":\"https://api.fabric.microsoft.com/v1/workspaces?continuationToken=uri-token\"}");
         firstResponse.Headers.Add("x-ms-continuationtoken", "header-token");
 
-        ContextService.HttpClient = CreateHttpClient(
+        _httpClient = CreateHttpClient(
             out var handler,
             firstResponse,
             CreateJsonResponse(HttpStatusCode.OK, "{\"value\":[{\"id\":2}]}")
         );
-        ContextService.TokenProvider = new CachingTokenProvider(new FakeTokenCredential());
+        _tokenProvider = new CachingTokenProvider(new FakeTokenCredential());
 
         var result = RunInspection(
             "api-get-continuation-uri-precedence.json",
@@ -150,10 +159,10 @@ public class OperatorProgressReportingTests
     [Test]
     public void ApiGet_ReturnsLastPageWhenValueArrayIsAbsent()
     {
-        ContextService.HttpClient = CreateHttpClient(
+        _httpClient = CreateHttpClient(
             CreateJsonResponse(HttpStatusCode.OK, "{\"continuationToken\":\"token-page-2\",\"meta\":\"first\"}"),
             CreateJsonResponse(HttpStatusCode.OK, "{\"meta\":\"second\"}"));
-        ContextService.TokenProvider = new CachingTokenProvider(new FakeTokenCredential());
+        _tokenProvider = new CachingTokenProvider(new FakeTokenCredential());
 
         var result = RunInspection(
             "api-get-no-value-array-pagination.json",
@@ -166,11 +175,11 @@ public class OperatorProgressReportingTests
     [Test]
     public void DaxQuery_EmitsProgressMessagesThroughInspector()
     {
-        ContextService.HttpClient = CreateHttpClient(
+        _httpClient = CreateHttpClient(
             CreateJsonResponse(HttpStatusCode.OK, "{\"results\":[{\"tables\":[{\"rows\":[{\"Value\":1}]}]}]}"));
-        ContextService.TokenProvider = new CachingTokenProvider(new FakeTokenCredential());
-        ContextService.FabricWorkspaceId = "11111111-1111-1111-1111-111111111111";
-        ContextService.FabricItem = "22222222-2222-2222-2222-222222222222";
+        _tokenProvider = new CachingTokenProvider(new FakeTokenCredential());
+        _fabricWorkspaceId = "11111111-1111-1111-1111-111111111111";
+        _fabricItem = "22222222-2222-2222-2222-222222222222";
 
         var result = RunInspection(
             "dax-query-progress.json",
@@ -185,7 +194,7 @@ public class OperatorProgressReportingTests
     [Test]
     public void ScannerApi_EmitsBoundedPollingProgressThroughInspector()
     {
-        ContextService.HttpClient = CreateHttpClient(
+        _httpClient = CreateHttpClient(
             CreateJsonResponse(HttpStatusCode.OK, "{\"id\":\"scan-123\"}"),
             CreateJsonResponse(HttpStatusCode.OK, "{\"status\":\"Running\"}"),
             CreateJsonResponse(HttpStatusCode.OK, "{\"status\":\"Running\"}"),
@@ -195,8 +204,8 @@ public class OperatorProgressReportingTests
             CreateJsonResponse(HttpStatusCode.OK, "{\"status\":\"Succeeded\"}"),
             CreateJsonResponse(HttpStatusCode.OK, "{\"workspaces\":[{\"id\":\"ws-1\"}]}")
         );
-        ContextService.TokenProvider = new CachingTokenProvider(new FakeTokenCredential());
-        ContextService.FabricWorkspaceId = "33333333-3333-3333-3333-333333333333";
+        _tokenProvider = new CachingTokenProvider(new FakeTokenCredential());
+        _fabricWorkspaceId = "33333333-3333-3333-3333-333333333333";
 
         var result = RunInspection(
             "scanner-progress.json",
@@ -242,6 +251,19 @@ public class OperatorProgressReportingTests
         var inspector = new Inspector(rules, Registries, fileSystem);
         var messages = new List<string>();
         inspector.MessageIssued += (_, args) => messages.Add(args.Message);
+
+        // Operators read their HttpClient/TokenProvider/FabricWorkspaceId/FabricItem
+        // from InspectionContextHolder.Current. Build the ambient context from the
+        // per-test fixture fields set by the calling test.
+        var ambient = new InspectionContext
+        {
+            HttpClient = _httpClient ?? new HttpClient(),
+            FabricWorkspaceId = _fabricWorkspaceId ?? string.Empty,
+            FabricItem = _fabricItem,
+            TokenProvider = _tokenProvider ?? new CachingTokenProvider(new FakeTokenCredential())
+        };
+
+        using var holderScope = InspectionContextHolder.PushScope(ambient);
 
         var results = inspector.Inspect();
         return (results, messages);

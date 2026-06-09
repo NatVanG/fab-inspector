@@ -1,6 +1,7 @@
 using Json.Logic;
 using Json.More;
 using FabInspector.Core;
+using FabInspector.Core.Inspection;
 using FabInspector.Core.Part;
 using System.Diagnostics;
 using System.Net;
@@ -16,8 +17,8 @@ namespace FabInspector.Operators;
 /// Handles the `daxquery` operation.
 /// Executes a DAX query against a Fabric semantic model using the Fabric REST API
 /// and returns the query result as a JSON node.
-/// Requires <see cref="ContextService.HttpClient"/>, <see cref="ContextService.FabricWorkspaceId"/>,
-/// and <see cref="ContextService.FabricItem"/> to be populated before invocation.
+/// Requires <see cref="FabInspector.Core.Inspection.InspectionContext.HttpClient"/>, <see cref="FabInspector.Core.Inspection.InspectionContext.FabricWorkspaceId"/>,
+/// and <see cref="FabInspector.Core.Inspection.InspectionContext.FabricItem"/> to be populated before invocation.
 /// </summary>
 /// TODO: support local model querying through the PBI Desktop debug port?
 [Operator("daxquery")]
@@ -55,13 +56,15 @@ public class DaxQueryRule : Json.Logic.Rule
         var queryValue = Query.Apply(data, contextData);
         var strQuery = queryValue?.Stringify();
 
+        var ctx = InspectionContextHolder.Require("daxquery");
+
         var workspaceId = WorspaceId?.Apply(data, contextData)?.Stringify();
-        workspaceId = workspaceId!.Equals(Utils.Constants.ContextFabricWorkspace, StringComparison.OrdinalIgnoreCase) ? ContextService.FabricWorkspaceId : workspaceId;
+        workspaceId = workspaceId!.Equals(Utils.Constants.ContextFabricWorkspace, StringComparison.OrdinalIgnoreCase) ? ctx.FabricWorkspaceId : workspaceId;
         if (string.IsNullOrWhiteSpace(workspaceId) || !Guid.TryParse(workspaceId, out _))
             throw new InvalidOperationException("WorkspaceId is not configured.");
 
         var semanticModelId = SemanticModelId?.Apply(data, contextData)?.Stringify();
-        semanticModelId = semanticModelId!.Equals(Utils.Constants.ContextFabricItem, StringComparison.OrdinalIgnoreCase) ? ContextService.FabricItem : semanticModelId;
+        semanticModelId = semanticModelId!.Equals(Utils.Constants.ContextFabricItem, StringComparison.OrdinalIgnoreCase) ? ctx.FabricItem : semanticModelId;
         if (string.IsNullOrWhiteSpace(semanticModelId) || !Guid.TryParse(semanticModelId, out _))
             throw new InvalidOperationException("SemanticModelId is not configured.");
 
@@ -74,15 +77,12 @@ public class DaxQueryRule : Json.Logic.Rule
         if (string.IsNullOrWhiteSpace(strQuery?.ToString()))
             throw new JsonLogicException("The daxquery rule requires a non-empty DAX query");
 
-        var httpClient = ContextService.HttpClient
-            ?? throw new InvalidOperationException("ContextService.HttpClient is not configured. Ensure authentication has been completed before running daxquery rules.");
-
-        var tokenProvider = ContextService.TokenProvider
-            ?? throw new InvalidOperationException("ContextService.TokenProvider is not configured. Ensure authentication has been completed before running daxquery rules.");
+        var httpClient = ctx.HttpClient;
+        var tokenProvider = ctx.TokenProvider;
 
         var url = $"{PowerBIApiBaseUrl}/groups/{Uri.EscapeDataString(workspaceId)}/datasets/{Uri.EscapeDataString(semanticModelId)}/executeQueries";
 
-        ContextService.ReportOperatorProgress("daxquery", $"Starting DAX query execution for workspace '{workspaceId}' and semantic model '{semanticModelId}'.");
+        InspectionContextHolder.ReportOperatorProgress("daxquery", $"Starting DAX query execution for workspace '{workspaceId}' and semantic model '{semanticModelId}'.");
 
 
         string requestBody;
@@ -116,17 +116,17 @@ public class DaxQueryRule : Json.Logic.Rule
             AuthenticationHelper.PowerBIScopes,
             content).ConfigureAwait(false).GetAwaiter().GetResult();
 
-        var response = ContextService.HttpClient.SendAsync(pbiRequest).ConfigureAwait(false).GetAwaiter().GetResult();
+        var response = ctx.HttpClient.SendAsync(pbiRequest).ConfigureAwait(false).GetAwaiter().GetResult();
 
         if (!response.IsSuccessStatusCode)
         {
             var errorContent = response.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
-            ContextService.ReportOperatorProgress("daxquery", $"DAX query execution failed with status {(int)response.StatusCode} {response.StatusCode} after {stopwatch.ElapsedMilliseconds} ms.");
+            InspectionContextHolder.ReportOperatorProgress("daxquery", $"DAX query execution failed with status {(int)response.StatusCode} {response.StatusCode} after {stopwatch.ElapsedMilliseconds} ms.");
             throw new HttpRequestException($"DAX query execution failed ({response.StatusCode}): {errorContent}");
         }
 
         var resultJson = response.Content.ReadAsStringAsync().ConfigureAwait(false).GetAwaiter().GetResult();
-        ContextService.ReportOperatorProgress("daxquery", $"Completed DAX query execution in {stopwatch.ElapsedMilliseconds} ms.");
+        InspectionContextHolder.ReportOperatorProgress("daxquery", $"Completed DAX query execution in {stopwatch.ElapsedMilliseconds} ms.");
         return JsonNode.Parse(resultJson);
     }
 }

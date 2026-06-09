@@ -7,7 +7,6 @@
     <Nullable>enable</Nullable>
     <RootNamespace>FabInspector.Operators</RootNamespace>
     <SignAssembly>False</SignAssembly>
-    <Version>1.0.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,7 +1,6 @@
-using System.Text.Json.Serialization;
 using FabInspector.Core;
 
-namespace FabInspector.Operators;
+namespace Ric.Operators;
 
 public class RectangleOverlapOperator : BaseJsonLogicOperator
 {
