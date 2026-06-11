@@ -2,12 +2,17 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media.Imaging;
+using Avalonia.Input.Platform;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using FabInspector.ClientLibrary;
 using FabInspector.ClientLibrary.Utils;
 using FabInspector.Core;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace FabInspector.AvaloniaUI;
 
@@ -29,27 +34,6 @@ public partial class MainWindow : Window
         Opened += MainWindow_Opened;
         Closing += MainWindow_Closing;
     }
-
-    private TextBox FabricWorkspaceIdTextBox => this.FindControl<TextBox>(nameof(FabricWorkspaceIdTextBox))!;
-    private CheckBox BlankWorkspaceCheckBox => this.FindControl<CheckBox>(nameof(BlankWorkspaceCheckBox))!;
-    private TextBox FabricItemTextBox => this.FindControl<TextBox>(nameof(FabricItemTextBox))!;
-    private Button BrowseFabricItemButton => this.FindControl<Button>(nameof(BrowseFabricItemButton))!;
-    private CheckBox UseSampleCheckBox => this.FindControl<CheckBox>(nameof(UseSampleCheckBox))!;
-    private TextBox RulesFilePathTextBox => this.FindControl<TextBox>(nameof(RulesFilePathTextBox))!;
-    private Button BrowseRulesFileButton => this.FindControl<Button>(nameof(BrowseRulesFileButton))!;
-    private CheckBox UseBaseRulesCheckBox => this.FindControl<CheckBox>(nameof(UseBaseRulesCheckBox))!;
-    private TextBox RulesCatalogPathTextBox => this.FindControl<TextBox>(nameof(RulesCatalogPathTextBox))!;
-    private Button BrowseRulesCatalogButton => this.FindControl<Button>(nameof(BrowseRulesCatalogButton))!;
-    private TextBox OutputDirPathTextBox => this.FindControl<TextBox>(nameof(OutputDirPathTextBox))!;
-    private Button BrowseOutputDirButton => this.FindControl<Button>(nameof(BrowseOutputDirButton))!;
-    private CheckBox UseTempFilesCheckBox => this.FindControl<CheckBox>(nameof(UseTempFilesCheckBox))!;
-    private CheckBox JsonOutputCheckBox => this.FindControl<CheckBox>(nameof(JsonOutputCheckBox))!;
-    private CheckBox HtmlOutputCheckBox => this.FindControl<CheckBox>(nameof(HtmlOutputCheckBox))!;
-    private CheckBox ParallelCheckBox => this.FindControl<CheckBox>(nameof(ParallelCheckBox))!;
-    private CheckBox VerboseCheckBox => this.FindControl<CheckBox>(nameof(VerboseCheckBox))!;
-    private TextBox ConsoleOutputTextBox => this.FindControl<TextBox>(nameof(ConsoleOutputTextBox))!;
-    private Button RunButton => this.FindControl<Button>(nameof(RunButton))!;
-    private TextBlock StatusTextBlock => this.FindControl<TextBlock>(nameof(StatusTextBlock))!;
 
     private void MainWindow_Opened(object? sender, EventArgs e)
     {
@@ -78,8 +62,10 @@ public partial class MainWindow : Window
                 return;
             }
 
-            var dialogTask = Dispatcher.UIThread.InvokeAsync(() => ShowConfirmationAsync(e.Message)).GetAwaiter().GetResult();
-            e.DialogOKResponse = dialogTask.GetAwaiter().GetResult();
+            e.DialogOKResponse = Dispatcher.UIThread
+                .InvokeAsync(() => ShowConfirmationAsync(e.Message).GetAwaiter().GetResult())
+                .GetAwaiter()
+                .GetResult();
             return;
         }
 

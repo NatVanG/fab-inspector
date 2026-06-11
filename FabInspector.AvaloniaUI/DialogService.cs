@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
+using System.Threading.Tasks;
 
 namespace FabInspector.AvaloniaUI;
 
