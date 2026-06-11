@@ -35,9 +35,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\FabInspector.WinForm\Files\**" Link="Files\%(RecursiveDir)%(Filename)%(Extension)">
+    <None Include="Files\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  
+  <ItemGroup>
     <Content Include="..\Rules\Base-rules.json" Link="Files\Base-rules.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

@@ -14,8 +14,10 @@ namespace FabInspector.ClientLibrary.Output
 
         public Task WriteAsync(OutputContext context)
         {
-            string pbiinspectorlogobase64 = string.Concat(Constants.Base64ImgPrefix, _pageRenderer.ConvertBitmapToBase64(Constants.PBIInspectorPNG));
-            string template = File.ReadAllText(Constants.TestRunHTMLTemplate);
+            var pbiInspectorPngPath = AppUtils.ResolveFromExecutableDirectory(Constants.PBIInspectorPNG);
+            var templatePath = AppUtils.ResolveFromExecutableDirectory(Constants.TestRunHTMLTemplate);
+            string pbiinspectorlogobase64 = string.Concat(Constants.Base64ImgPrefix, _pageRenderer.ConvertBitmapToBase64(pbiInspectorPngPath));
+            string template = File.ReadAllText(templatePath);
             string html = template.Replace(Constants.LogoPlaceholder, pbiinspectorlogobase64, StringComparison.OrdinalIgnoreCase);
             html = html.Replace(Constants.VersionPlaceholder, AppUtils.About(), StringComparison.OrdinalIgnoreCase);
             html = html.Replace(Constants.JsonPlaceholder, context.JsonTestRun, StringComparison.OrdinalIgnoreCase);

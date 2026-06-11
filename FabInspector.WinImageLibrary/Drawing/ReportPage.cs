@@ -45,6 +45,8 @@ namespace FabInspector.WinImageLibrary.Drawing
             const string FONT = "Arial";
             const int FONTSIZE = 12;
             const string ICONPATH = @"Files\icon\pbiinspector.ico";
+            var executableDirectory = Path.GetDirectoryName(Environment.ProcessPath ?? string.Empty) ?? AppContext.BaseDirectory;
+            var iconPath = Path.Combine(executableDirectory, ICONPATH);
 
             _bitmap = new Bitmap(_pageSize.Width + PAGEMARGIN, _pageSize.Height + PAGEMARGIN);
             Graphics g = Graphics.FromImage(_bitmap);
@@ -78,7 +80,7 @@ namespace FabInspector.WinImageLibrary.Drawing
                     g.DrawRectangle(pen, rect);
 
                     var iconSize = (from s in iconSizes where s <= Math.Max(rect.Width, rect.Height) / 2 orderby s descending select s).FirstOrDefault();
-                    using (Icon ico = new(ICONPATH, iconSize, iconSize))
+                    using (Icon ico = new(iconPath, iconSize, iconSize))
                     {
                         if (!vc.Pass) { g.DrawIcon(ico, rect.X + VISOFFSET + (rect.Width - iconSize) / 2, rect.Y + VISOFFSET + (rect.Height - iconSize) / 2); };
 

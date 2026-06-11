@@ -163,12 +163,13 @@ public partial class MainWindow : Window
     private void UseSamplePBIFileStateCheck()
     {
         var enabled = UseSampleCheckBox.IsChecked != true;
-        FabricItemTextBox.Text = enabled ? FabricItemTextBox.Text : Constants.SamplePBIPReportFolderPath;
+        var samplePBIPPath = AppUtils.ResolveFromExecutableDirectory(Constants.SamplePBIPReportFolderPath);
+        FabricItemTextBox.Text = enabled ? FabricItemTextBox.Text : samplePBIPPath;
         if (!enabled)
         {
-            FabricItemTextBox.Text = Constants.SamplePBIPReportFolderPath;
+            FabricItemTextBox.Text = samplePBIPPath;
         }
-        else if (FabricItemTextBox.Text == Constants.SamplePBIPReportFolderPath)
+        else if (FabricItemTextBox.Text == samplePBIPPath)
         {
             FabricItemTextBox.Clear();
         }
@@ -180,11 +181,12 @@ public partial class MainWindow : Window
     private void UseBaseRulesCheck()
     {
         var enabled = UseBaseRulesCheckBox.IsChecked != true;
+        var baseRulesPath = AppUtils.ResolveFromExecutableDirectory(Constants.SampleRulesFilePath);
         if (!enabled)
         {
-            SetRulesFilePath(Constants.SampleRulesFilePath);
+            SetRulesFilePath(baseRulesPath);
         }
-        else if (RulesFilePathTextBox.Text == Constants.SampleRulesFilePath)
+        else if (RulesFilePathTextBox.Text == baseRulesPath)
         {
             RulesFilePathTextBox.Clear();
         }
@@ -424,7 +426,7 @@ public partial class MainWindow : Window
 
     private static WindowIcon? LoadWindowIcon()
     {
-        var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "pbiinspector.ico");
+        var iconPath = AppUtils.ResolveFromExecutableDirectory(Path.Combine("Assets", "pbiinspector.ico"));
         return File.Exists(iconPath) ? new WindowIcon(iconPath) : null;
     }
 }

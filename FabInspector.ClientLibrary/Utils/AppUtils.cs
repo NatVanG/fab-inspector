@@ -69,5 +69,32 @@ namespace FabInspector.ClientLibrary.Utils
         {
             return Path.Combine(Path.GetTempPath(), Constants.FabInspectorTemp);
         }
+
+        public static string GetExecutableDirectory()
+        {
+            var processPath = Environment.ProcessPath;
+            if (!string.IsNullOrWhiteSpace(processPath))
+            {
+                var executableDirectory = Path.GetDirectoryName(processPath);
+                if (!string.IsNullOrWhiteSpace(executableDirectory))
+                {
+                    return executableDirectory;
+                }
+            }
+
+            return AppContext.BaseDirectory;
+        }
+
+        public static string ResolveFromExecutableDirectory(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return path;
+            }
+
+            return Path.IsPathRooted(path)
+                ? path
+                : Path.Combine(GetExecutableDirectory(), path);
+        }
     }
 }

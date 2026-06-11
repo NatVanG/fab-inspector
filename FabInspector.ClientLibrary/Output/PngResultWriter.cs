@@ -1,6 +1,7 @@
 using FabInspector.Core;
 using FabInspector.Core.Exceptions;
 using FabInspector.Core.Output;
+using FabInspector.ClientLibrary.Utils;
 
 namespace FabInspector.ClientLibrary.Output
 {
@@ -48,7 +49,8 @@ namespace FabInspector.ClientLibrary.Output
 
             try
             {
-                var fieldMapPathRules = _deserialiseRules(Constants.ReportPageFieldMapFilePath);
+                var fieldMapPath = AppUtils.ResolveFromExecutableDirectory(Constants.ReportPageFieldMapFilePath);
+                var fieldMapPathRules = _deserialiseRules(fieldMapPath);
                 fieldMapResults = await _runInspectionAsync(fieldMapPathRules, _registries, fieldMapFileSystem).ConfigureAwait(false);
             }
             finally

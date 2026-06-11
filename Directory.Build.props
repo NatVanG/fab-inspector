@@ -1,7 +1,7 @@
 <Project>
 
   <PropertyGroup>
-    <FabInspectorVersionPrefix Condition="'$(FabInspectorVersionPrefix)' == ''">3.3.0</FabInspectorVersionPrefix>
+    <FabInspectorVersionPrefix Condition="'$(FabInspectorVersionPrefix)' == ''">3.4.0</FabInspectorVersionPrefix>
     <VersionPrefix Condition="'$(VersionPrefix)' == ''">$(FabInspectorVersionPrefix)</VersionPrefix>
     <Version Condition="'$(Version)' == ''">$(VersionPrefix)</Version>
     <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">$(VersionPrefix).0</AssemblyVersion>

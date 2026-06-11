@@ -1,5 +1,6 @@
 using FabInspector.ImageLibrary.Drawing.Palette;
 using SkiaSharp;
+using System;
 using System.Windows.Markup;
 
 namespace FabInspector.ImageLibrary.Drawing
@@ -37,7 +38,8 @@ namespace FabInspector.ImageLibrary.Drawing
             const string FONT = "Liberation Sans";
             const int FONTSIZE = 16;
             const string ICONPATH = @"pbiinspector.png";
-            var iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Files", "icon", ICONPATH);
+            var executableDirectory = Path.GetDirectoryName(Environment.ProcessPath ?? string.Empty) ?? AppContext.BaseDirectory;
+            var iconPath = Path.Combine(executableDirectory, "Files", "icon", ICONPATH);
 
             int[] iconSizes = [32, 64, 128];
 

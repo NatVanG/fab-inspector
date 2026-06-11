@@ -207,7 +207,8 @@ namespace FabInspector.WinForm
         private void UseSamplePBIFileStateCheck()
         {
             var enabled = !this.chckUseSamplePBIFile.Checked;
-            if (!enabled) { this.txtFabricItem.Text = Constants.SamplePBIPReportFolderPath; } else { this.txtFabricItem.Clear(); }
+            var samplePBIPPath = AppUtils.ResolveFromExecutableDirectory(Constants.SamplePBIPReportFolderPath);
+            if (!enabled) { this.txtFabricItem.Text = samplePBIPPath; } else { this.txtFabricItem.Clear(); }
             ;
             this.txtFabricItem.Enabled = enabled;
             this.btnBrowsePBIDesktopFile.Enabled = enabled;
@@ -223,7 +224,15 @@ namespace FabInspector.WinForm
         private void UseBaseRulesCheck()
         {
             var enabled = !this.chkUseBaseRules.Checked;
-            if (!enabled) { SetRulesFilePath(Constants.SampleRulesFilePath); } else { this.txtRulesFilePath.Clear(); }
+            var baseRulesPath = AppUtils.ResolveFromExecutableDirectory(Constants.SampleRulesFilePath);
+            if (!enabled) 
+            { 
+                SetRulesFilePath(baseRulesPath); 
+            } 
+            else 
+            { 
+                this.txtRulesFilePath.Clear(); 
+            }
             this.txtRulesFilePath.Enabled = enabled;
             UpdateRulesInputOptions();
         }

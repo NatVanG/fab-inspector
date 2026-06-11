@@ -62,11 +62,18 @@ namespace FabInspector.ImageLibrary
 
         public string ConvertBitmapToBase64(string bitmapPath)
         {
-            if (string.IsNullOrEmpty(bitmapPath) || !File.Exists(bitmapPath))
+            if (string.IsNullOrEmpty(bitmapPath))
             {
-                throw new ArgumentException("Bitmap path is null, empty, or does not exist.", nameof(bitmapPath));
+                throw new ArgumentException("Bitmap path is null or empty.", nameof(bitmapPath));
             }
-            bitmapPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, bitmapPath);
+            var executableDirectory = Path.GetDirectoryName(Environment.ProcessPath ?? string.Empty) ?? AppContext.BaseDirectory;
+            bitmapPath = Path.IsPathRooted(bitmapPath)
+                ? bitmapPath
+                : Path.Combine(executableDirectory, bitmapPath);
+            if (!File.Exists(bitmapPath))
+            {
+                throw new ArgumentException($"Bitmap path does not exist: {bitmapPath}", nameof(bitmapPath));
+            }
             using var bitmap = SKBitmap.Decode(bitmapPath);
             var skData = bitmap.Encode(SKEncodedImageFormat.Png, 100);
 
