@@ -55,8 +55,8 @@ public class FileTextSearchCountRule : Json.Logic.Rule
             throw new JsonLogicException("FileTextSearchCountRule - pattern string cannot be null or empty.");
         }
 
-        // Read the file content and count matches of the regex pattern
-        string fileContent = File.ReadAllText(partInfo.FileSystemPath);
+        // Read via the Part's file system to support local and remote backends.
+        string fileContent = partInfo.FileSystem.ReadAllText(partInfo.FileSystemPath);
         if (string.IsNullOrEmpty(fileContent))
         {
             throw new JsonLogicException($"FileTextSearchCountRule - file at \"{partInfo.FileSystemPath}\" is empty.");
