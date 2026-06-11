@@ -11,9 +11,19 @@ namespace FabInspector.ClientLibrary.Utils
         {
             try
             {
-                if (string.IsNullOrEmpty(url) || !File.Exists(url))
+                if (string.IsNullOrWhiteSpace(url))
                 {
-                    throw new PBIRInspectorException($"Path is not a local file path: {url}");
+                    throw new PBIRInspectorException("Path or URL is null or empty.");
+                }
+
+                var isWebUrl = Uri.TryCreate(url, UriKind.Absolute, out var uri)
+                    && (uri.Scheme.Equals(Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase)
+                        || uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase));
+                var isLocalPath = File.Exists(url) || Directory.Exists(url);
+
+                if (!isWebUrl && !isLocalPath)
+                {
+                    throw new PBIRInspectorException($"Path or URL does not exist or is unsupported: {url}");
                 }
 
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -28,6 +38,10 @@ namespace FabInspector.ClientLibrary.Utils
                 else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
                 {
                     Process.Start("xdg-open", url);
+                }
+                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    Process.Start("open", url);
                 }
                 else
                 {
