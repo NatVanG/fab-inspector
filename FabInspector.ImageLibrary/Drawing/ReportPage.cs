@@ -1,7 +1,6 @@
 using FabInspector.ImageLibrary.Drawing.Palette;
 using SkiaSharp;
 using System;
-using System.Windows.Markup;
 
 namespace FabInspector.ImageLibrary.Drawing
 {
