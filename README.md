@@ -296,7 +296,7 @@ Running ```FabInspector.WinForm.exe``` presents the user with the following inte
 
 ![WinForm](DocsImages/FabInspector.WinForm.png)
 
-`FabInspector.AvaloniaUI` is the cross-platform desktop alternative in this solution. It is intended to mirror the WinForms workflow while using `FabInspector.ImageLibrary` for cross-platform report rendering and can be packaged for both Windows and Linux.
+`FabInspector.AvaloniaUI` is the cross-platform desktop alternative in this solution. It is intended to mirror the WinForms workflow while using `FabInspector.ImageLibrary` for cross-platform report rendering and can be packaged for Windows, Linux and MacOS.
 
 1. Specify the Workspace Id to test. Leave blank to test Fabric item definitions on the local file system.
 2. If Workspace Id is blank, browse to a local Fabric CI/CD folder containing one or more Fabric CI/CD item definitions or paste the folder path. Alternatively if a Workspace ID is defined, optional scope the rules to a Fabric Item ID

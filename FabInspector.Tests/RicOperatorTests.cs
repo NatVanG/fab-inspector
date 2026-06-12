@@ -780,5 +780,145 @@ namespace FabInspector.Tests
         }
 
         #endregion
+
+        #region FileTextSearchCount
+
+        [Test]
+        public void FileTextSearchCount_CountsPatternOccurrences()
+        {
+            var tempFile = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllText(tempFile, "foo bar foo baz foo");
+                var escapedPath = tempFile.Replace(@"\", @"\\");
+                var rule = JsonSerializer.Deserialize<Rule>(
+                    $@"{{""filetextsearchcount"": [""{escapedPath}"", ""foo""]}}",
+                    _serializerOptions);
+
+                var result = rule!.Apply(null);
+                Assert.That(result?.GetValue<int>(), Is.EqualTo(3));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        [Test]
+        public void FileTextSearchCount_NoMatch_ReturnsZero()
+        {
+            var tempFile = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllText(tempFile, "hello world");
+                var escapedPath = tempFile.Replace(@"\", @"\\");
+                var rule = JsonSerializer.Deserialize<Rule>(
+                    $@"{{""filetextsearchcount"": [""{escapedPath}"", ""notpresent""]}}",
+                    _serializerOptions);
+
+                var result = rule!.Apply(null);
+                Assert.That(result?.GetValue<int>(), Is.EqualTo(0));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        [Test]
+        public void FileTextSearchCount_RegexPattern_CountsMatches()
+        {
+            var tempFile = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllText(tempFile, "color1 colour2 color3");
+                var escapedPath = tempFile.Replace(@"\", @"\\");
+                var rule = JsonSerializer.Deserialize<Rule>(
+                    $@"{{""filetextsearchcount"": [""{escapedPath}"", ""colou?r\\d""]}}",
+                    _serializerOptions);
+
+                var result = rule!.Apply(null);
+                Assert.That(result?.GetValue<int>(), Is.EqualTo(3));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        [Test]
+        public void FileTextSearchCount_SingleMatch_ReturnsOne()
+        {
+            var tempFile = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllText(tempFile, "the quick brown fox");
+                var escapedPath = tempFile.Replace(@"\", @"\\");
+                var rule = JsonSerializer.Deserialize<Rule>(
+                    $@"{{""filetextsearchcount"": [""{escapedPath}"", ""fox""]}}",
+                    _serializerOptions);
+
+                var result = rule!.Apply(null);
+                Assert.That(result?.GetValue<int>(), Is.EqualTo(1));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        [Test]
+        public void FileTextSearchCount_FileNotFound_Throws()
+        {
+            var rule = JsonSerializer.Deserialize<Rule>(
+                @"{""filetextsearchcount"": [""/nonexistent/path/file.txt"", ""pattern""]}",
+                _serializerOptions);
+
+            Assert.That(() => rule!.Apply(null), Throws.InstanceOf<JsonLogicException>());
+        }
+
+        [Test]
+        public void FileTextSearchCount_EmptyPatternString_Throws()
+        {
+            var tempFile = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllText(tempFile, "some content here");
+                var escapedPath = tempFile.Replace(@"\", @"\\");
+                var rule = JsonSerializer.Deserialize<Rule>(
+                    $@"{{""filetextsearchcount"": [""{escapedPath}"", """"]}}",
+                    _serializerOptions);
+
+                Assert.That(() => rule!.Apply(null), Throws.InstanceOf<JsonLogicException>());
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        [Test]
+        public void FileTextSearchCount_WithVar_UsesDataValue()
+        {
+            var tempFile = Path.GetTempFileName();
+            try
+            {
+                File.WriteAllText(tempFile, "alpha beta alpha gamma alpha");
+                var escapedPath = tempFile.Replace(@"\", @"\\");
+                var rule = JsonSerializer.Deserialize<Rule>(
+                    $@"{{""filetextsearchcount"": [""{escapedPath}"", {{""var"": ""pattern""}}]}}",
+                    _serializerOptions);
+
+                var data = JsonNode.Parse(@"{""pattern"": ""alpha""}");
+                var result = rule!.Apply(data);
+                Assert.That(result?.GetValue<int>(), Is.EqualTo(3));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        #endregion
     }
 }
