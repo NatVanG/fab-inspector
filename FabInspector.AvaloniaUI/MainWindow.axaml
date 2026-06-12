@@ -135,7 +135,6 @@
             <Grid RowDefinitions="Auto,*" RowSpacing="12">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Left" Text="Console output" FontSize="20" FontWeight="SemiBold" />
-                    <Button x:Name="CopyOutputButton" DockPanel.Dock="Right" Content="📋 Copy" Click="CopyOutputButton_Click" />
                 </DockPanel>
                 <TextBox x:Name="ConsoleOutputTextBox"
                          Grid.Row="1"
@@ -145,10 +144,5 @@
                          MinHeight="260" />
             </Grid>
         </Border>
-
-        <TextBlock Grid.Row="4"
-                   Margin="2,14,0,0"
-                   Foreground="#7383A2"
-                   Text="Uses FabInspector.ImageLibrary for cross-platform report rendering and keeps the WinForms feature set intact." />
     </Grid>
 </Window>

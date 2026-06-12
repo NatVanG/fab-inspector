@@ -298,23 +298,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void CopyOutputButton_Click(object? sender, RoutedEventArgs e)
-    {
-        if (string.IsNullOrEmpty(ConsoleOutputTextBox.Text))
-        {
-            return;
-        }
-
-        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
-        if (clipboard == null)
-        {
-            return;
-        }
-
-        await clipboard.SetTextAsync(ConsoleOutputTextBox.Text);
-        SetStatus("Console output copied to clipboard.");
-    }
-
     private void UseSampleCheckBox_Changed(object? sender, RoutedEventArgs e)
     {
         UseSamplePBIFileStateCheck();
