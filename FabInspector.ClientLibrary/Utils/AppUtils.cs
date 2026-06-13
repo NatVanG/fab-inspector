@@ -72,17 +72,18 @@ namespace FabInspector.ClientLibrary.Utils
 
         public static string GetExecutableDirectory()
         {
+            if (!string.IsNullOrWhiteSpace(AppContext.BaseDirectory))
+            {
+                return AppContext.BaseDirectory;
+            }
+
             var processPath = Environment.ProcessPath;
             if (!string.IsNullOrWhiteSpace(processPath))
             {
-                var executableDirectory = Path.GetDirectoryName(processPath);
-                if (!string.IsNullOrWhiteSpace(executableDirectory))
-                {
-                    return executableDirectory;
-                }
+                return Path.GetDirectoryName(processPath) ?? processPath;
             }
 
-            return AppContext.BaseDirectory;
+            return Directory.GetCurrentDirectory();
         }
 
         public static string ResolveFromExecutableDirectory(string path)
