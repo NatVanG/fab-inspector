@@ -77,6 +77,42 @@ jobs:
           -p:IncludeNativeLibrariesForSelfExtract=false \
           -o ./build/linux-x64
           
+    - name: Build macOS x64 CLI
+      run: |
+        dotnet publish FabInspector.CLI/FabInspector.CLI.csproj \
+          -c Release \
+          -r osx-x64 \
+          --self-contained false \
+          -p:Version=${{ steps.version.outputs.version }} \
+          -p:VersionPrefix=${{ steps.version.outputs.version_prefix }} \
+          -p:AssemblyVersion=${{ steps.version.outputs.assembly_version }} \
+          -p:FileVersion=${{ steps.version.outputs.file_version }} \
+          -p:InformationalVersion=${{ steps.version.outputs.informational_version }} \
+          -p:PublishSingleFile=true \
+          -p:PublishTrimmed=false \
+          -p:DebugType=None \
+          -p:DebugSymbols=false \
+          -p:IncludeNativeLibrariesForSelfExtract=false \
+          -o ./build/osx-x64
+          
+    - name: Build macOS ARM64 CLI
+      run: |
+        dotnet publish FabInspector.CLI/FabInspector.CLI.csproj \
+          -c Release \
+          -r osx-arm64 \
+          --self-contained false \
+          -p:Version=${{ steps.version.outputs.version }} \
+          -p:VersionPrefix=${{ steps.version.outputs.version_prefix }} \
+          -p:AssemblyVersion=${{ steps.version.outputs.assembly_version }} \
+          -p:FileVersion=${{ steps.version.outputs.file_version }} \
+          -p:InformationalVersion=${{ steps.version.outputs.informational_version }} \
+          -p:PublishSingleFile=true \
+          -p:PublishTrimmed=false \
+          -p:DebugType=None \
+          -p:DebugSymbols=false \
+          -p:IncludeNativeLibrariesForSelfExtract=false \
+          -o ./build/osx-arm64
+          
     - name: Prepare Windows package
       run: |
         mkdir -p ./package-legacy/win-x64/CLI
@@ -105,6 +141,36 @@ jobs:
         chmod +x ./package-fab/linux-x64/FabInspCLI/fab-inspector || true
         rm -f ./package-fab/linux-x64/FabInspCLI/*.pdb ./package-fab/linux-x64/FabInspCLI/*.config
         
+    - name: Prepare macOS x64 package
+      run: |
+        mkdir -p ./package-legacy/osx-x64/CLI
+        cp -r ./build/osx-x64/* ./package-legacy/osx-x64/CLI/
+        if [ -f ./package-legacy/osx-x64/CLI/fab-inspector ]; then
+          mv ./package-legacy/osx-x64/CLI/fab-inspector ./package-legacy/osx-x64/CLI/PBIRInspectorCLI
+          chmod +x ./package-legacy/osx-x64/CLI/PBIRInspectorCLI
+        fi
+        rm -f ./package-legacy/osx-x64/CLI/*.pdb ./package-legacy/osx-x64/CLI/*.config
+
+        mkdir -p ./package-fab/osx-x64/FabInspCLI
+        cp -r ./build/osx-x64/* ./package-fab/osx-x64/FabInspCLI/
+        chmod +x ./package-fab/osx-x64/FabInspCLI/fab-inspector || true
+        rm -f ./package-fab/osx-x64/FabInspCLI/*.pdb ./package-fab/osx-x64/FabInspCLI/*.config
+        
+    - name: Prepare macOS ARM64 package
+      run: |
+        mkdir -p ./package-legacy/osx-arm64/CLI
+        cp -r ./build/osx-arm64/* ./package-legacy/osx-arm64/CLI/
+        if [ -f ./package-legacy/osx-arm64/CLI/fab-inspector ]; then
+          mv ./package-legacy/osx-arm64/CLI/fab-inspector ./package-legacy/osx-arm64/CLI/PBIRInspectorCLI
+          chmod +x ./package-legacy/osx-arm64/CLI/PBIRInspectorCLI
+        fi
+        rm -f ./package-legacy/osx-arm64/CLI/*.pdb ./package-legacy/osx-arm64/CLI/*.config
+
+        mkdir -p ./package-fab/osx-arm64/FabInspCLI
+        cp -r ./build/osx-arm64/* ./package-fab/osx-arm64/FabInspCLI/
+        chmod +x ./package-fab/osx-arm64/FabInspCLI/fab-inspector || true
+        rm -f ./package-fab/osx-arm64/FabInspCLI/*.pdb ./package-fab/osx-arm64/FabInspCLI/*.config
+        
     - name: Create Windows zip
       run: |
         cd ./package-legacy
@@ -125,19 +191,43 @@ jobs:
         cd ./package-fab
         zip -r ../linux-x64-FabInspCLI.zip linux-x64/
         
+    - name: Create macOS x64 zip
+      run: |
+        cd ./package-legacy
+        zip -r ../osx-x64-CLI.zip osx-x64/
+
+    - name: Create macOS x64 FabInspCLI zip
+      run: |
+        cd ./package-fab
+        zip -r ../osx-x64-FabInspCLI.zip osx-x64/
+        
+    - name: Create macOS ARM64 zip
+      run: |
+        cd ./package-legacy
+        zip -r ../osx-arm64-CLI.zip osx-arm64/
+
+    - name: Create macOS ARM64 FabInspCLI zip
+      run: |
+        cd ./package-fab
+        zip -r ../osx-arm64-FabInspCLI.zip osx-arm64/
+        
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
         name: "CLI"
         body: |
-          Legacy artifacts (PBIRInspectorCLI): win-x64-CLI.zip, linux-x64-CLI.zip.
-          New artifacts (fab-inspector): win-x64-FabInspCLI.zip, linux-x64-FabInspCLI.zip.
+          Legacy artifacts (PBIRInspectorCLI): win-x64-CLI.zip, linux-x64-CLI.zip, osx-x64-CLI.zip, osx-arm64-CLI.zip.
+          New artifacts (fab-inspector): win-x64-FabInspCLI.zip, linux-x64-FabInspCLI.zip, osx-x64-FabInspCLI.zip, osx-arm64-FabInspCLI.zip.
           .NET 8.0 dependency not included.
         files: |
           win-x64-CLI.zip
           linux-x64-CLI.zip
+          osx-x64-CLI.zip
+          osx-arm64-CLI.zip
           win-x64-FabInspCLI.zip
           linux-x64-FabInspCLI.zip
+          osx-x64-FabInspCLI.zip
+          osx-arm64-FabInspCLI.zip
         prerelease: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

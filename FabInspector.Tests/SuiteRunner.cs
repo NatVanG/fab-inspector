@@ -37,6 +37,15 @@ namespace FabInspector.Tests;
 /// </summary>
 public class SuiteRunner
 {
+    private static string ResolveTestPath(string path)
+    {
+        var normalizedPath = path
+            .Replace('\\', Path.DirectorySeparatorChar)
+            .Replace('/', Path.DirectorySeparatorChar);
+
+        return Path.Combine(TestContext.CurrentContext.WorkDirectory, normalizedPath);
+    }
+
     #region BasePassSuite
     public static IEnumerable<TestCaseData> BasePassPBIPSuite()
     {
@@ -353,7 +362,7 @@ public class SuiteRunner
     public static IEnumerable<TestCaseData> JsonLogicSuite()
     {
         string PBIPFilePath = @"Files\pbip\Inventory Sample.pbip";
-        var testsPath = Path.Combine(TestContext.CurrentContext.WorkDirectory, @"Files\JsonLogicTests.json");
+        var testsPath = ResolveTestPath(@"Files\JsonLogicTests.json");
 
         return Task.Run(async () =>
         {
@@ -459,6 +468,9 @@ public class SuiteRunner
     {
         try
         {
+            PBIPFilePath = ResolveTestPath(PBIPFilePath);
+            RulesFilePath = ResolveTestPath(RulesFilePath);
+
             var sp = InitServiceProvider();
             var registries = sp.GetRequiredService<IEnumerable<JsonLogicOperatorRegistry>>();
             var fileSystem = new FabricLocalFileSystem(PBIPFilePath);
@@ -494,6 +506,8 @@ public class SuiteRunner
     {
         try
         {
+            PBIPFilePath = ResolveTestPath(PBIPFilePath);
+
             var sp = InitServiceProvider();
             var registries = sp.GetRequiredService<IEnumerable<JsonLogicOperatorRegistry>>();
             var fileSystem = new FabricLocalFileSystem(PBIPFilePath);

@@ -29,8 +29,25 @@ namespace FabInspector.Tests
     {
         public static void AreEquivalent(JsonNode? expected, JsonNode? actual)
         {
-            if (!expected.IsEquivalentTo(actual))
+            var normalizedExpected = Normalize(expected);
+            var normalizedActual = Normalize(actual);
+
+            if (!normalizedExpected.IsEquivalentTo(normalizedActual))
                 Assert.Fail($"Expected: {expected.AsJsonString()}\nActual: {actual.AsJsonString()}");
+        }
+
+        private static JsonNode? Normalize(JsonNode? node)
+        {
+            return node switch
+            {
+                null => null,
+                JsonArray array => new JsonArray(array
+                    .Select(Normalize)
+                    .OrderBy(item => item?.ToJsonString(), StringComparer.Ordinal)
+                    .ToArray()),
+                JsonObject obj => new JsonObject(obj.Select(property => new KeyValuePair<string, JsonNode?>(property.Key, Normalize(property.Value))).ToArray()),
+                _ => node.DeepClone()
+            };
         }
 
         public static void IsNull(JsonNode? actual)

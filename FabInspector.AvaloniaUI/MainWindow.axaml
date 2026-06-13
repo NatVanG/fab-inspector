@@ -1,0 +1,148 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="FabInspector.AvaloniaUI.MainWindow"
+        Title="Fab Inspector"
+        Width="1180"
+        Height="920"
+        MinWidth="1040"
+        MinHeight="800"
+        Background="#0E1320"
+        TransparencyLevelHint="AcrylicBlur">
+    <Window.Styles>
+        <Style Selector="Border.card">
+            <Setter Property="Background" Value="#171E2E" />
+            <Setter Property="BorderBrush" Value="#26324B" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="18" />
+            <Setter Property="Padding" Value="20" />
+        </Style>
+        <Style Selector="Button.link-button">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="#8EC5FF" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,18,0" />
+        </Style>
+        <Style Selector="Button.primary-button">
+            <Setter Property="Background" Value="#2D72FF" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="BorderBrush" Value="#2D72FF" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="18,10" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style Selector="TextBox">
+            <Setter Property="CornerRadius" Value="10" />
+        </Style>
+    </Window.Styles>
+
+    <Grid Margin="24" RowDefinitions="Auto,Auto,Auto,*,Auto">
+        <Border Classes="card" Grid.Row="0" Margin="0,0,0,18">
+            <DockPanel LastChildFill="False">
+                <StackPanel DockPanel.Dock="Left" Spacing="4">
+                    <TextBlock Text="Fab Inspector" FontSize="28" FontWeight="Bold" />
+                    <TextBlock Text="Avalonia cross-platform desktop UI for the Fab Inspector workflow." Foreground="#B6C2DD" />
+                </StackPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="ReadMeButton" Classes="link-button" Content="Read me" Click="ReadMeButton_Click" />
+                    <Button x:Name="ReportIssueButton" Classes="link-button" Content="Report an issue" Click="ReportIssueButton_Click" />
+                    <Button x:Name="LatestReleaseButton" Classes="link-button" Content="Latest release" Click="LatestReleaseButton_Click" />
+                    <Button x:Name="LicenseButton" Classes="link-button" Content="License" Click="LicenseButton_Click" />
+                    <Button x:Name="AboutButton" Classes="link-button" Content="About" Click="AboutButton_Click" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <TabControl Grid.Row="1" Margin="0,0,0,18">
+            <TabItem Header="Inputs">
+                <Border Classes="card" Margin="0,12,0,0">
+                    <StackPanel Spacing="18">
+                        <TextBlock Text="Inputs" FontSize="20" FontWeight="SemiBold" />
+                        <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="16" RowSpacing="14">
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Fabric Workspace ID" VerticalAlignment="Center" ToolTip.Tip="Optional Fabric workspace GUID. Required for workspace or item GUID scans." />
+                            <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <TextBox x:Name="FabricWorkspaceIdTextBox" PlaceholderText="Workspace GUID (optional)" />
+                                <CheckBox x:Name="BlankWorkspaceCheckBox" Grid.Column="1" Content="Blank" VerticalAlignment="Center" IsCheckedChanged="BlankWorkspaceCheckBox_Changed" />
+                            </Grid>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Fabric Item" VerticalAlignment="Center" ToolTip.Tip="Local Fabric item path or item GUID (with workspace ID). Supports PBIP/.Report folder paths." />
+                            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                <TextBox x:Name="FabricItemTextBox" PlaceholderText="Folder path or Fabric item GUID" />
+                                <Button x:Name="BrowseFabricItemButton" Grid.Column="1" Content="Browse" Click="BrowseFabricItemButton_Click" />
+                                <CheckBox x:Name="UseSampleCheckBox" Grid.Column="2" Content="Use sample" VerticalAlignment="Center" IsCheckedChanged="UseSampleCheckBox_Changed" />
+                            </Grid>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Rules file" VerticalAlignment="Center" ToolTip.Tip="Path or OneLake DFS URL to a single rules JSON file." />
+                            <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                <TextBox x:Name="RulesFilePathTextBox" PlaceholderText="Rules JSON path or DFS URL" TextChanged="RulesFilePathTextBox_TextChanged" />
+                                <Button x:Name="BrowseRulesFileButton" Grid.Column="1" Content="Browse" Click="BrowseRulesFileButton_Click" />
+                                <CheckBox x:Name="UseBaseRulesCheckBox" Grid.Column="2" Content="Use base rules" IsChecked="True" VerticalAlignment="Center" IsCheckedChanged="UseBaseRulesCheckBox_Changed" />
+                            </Grid>
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Rules catalog" VerticalAlignment="Center" ToolTip.Tip="Path or OneLake DFS URL to a rules catalog JSON that references multiple rulesets." />
+                            <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <TextBox x:Name="RulesCatalogPathTextBox" PlaceholderText="Rules catalog JSON path or DFS URL" TextChanged="RulesCatalogPathTextBox_TextChanged" />
+                                <Button x:Name="BrowseRulesCatalogButton" Grid.Column="1" Content="Browse" Click="BrowseRulesCatalogButton_Click" />
+                            </Grid>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </TabItem>
+
+            <TabItem Header="Outputs">
+                <Border Classes="card" Margin="0,12,0,0">
+                    <StackPanel Spacing="18">
+                        <TextBlock Text="Outputs" FontSize="20" FontWeight="SemiBold" />
+                        <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="16" RowSpacing="14">
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Output directory" VerticalAlignment="Center" ToolTip.Tip="Optional local output folder or OneLake DFS destination. Leave blank to use temp files." />
+                            <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                <TextBox x:Name="OutputDirPathTextBox" PlaceholderText="Output folder or DFS URL" />
+                                <Button x:Name="BrowseOutputDirButton" Grid.Column="1" Content="Browse" Click="BrowseOutputDirButton_Click" />
+                                <CheckBox x:Name="UseTempFilesCheckBox" Grid.Column="2" Content="Use temp files" VerticalAlignment="Center" IsCheckedChanged="UseTempFilesCheckBox_Changed" />
+                            </Grid>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Output formats" VerticalAlignment="Center" ToolTip.Tip="Select one or more result formats to generate, such as JSON and/or HTML." />
+                            <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="18">
+                                <CheckBox x:Name="JsonOutputCheckBox" Content="JSON" VerticalAlignment="Center" />
+                                <CheckBox x:Name="HtmlOutputCheckBox" Content="HTML" IsChecked="True" VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Output options" VerticalAlignment="Center" ToolTip.Tip="Optional run behavior settings that control execution details such as parallelism and verbose logging." />
+                            <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal" Spacing="18">
+                                <CheckBox x:Name="ParallelCheckBox" Content="Parallel" VerticalAlignment="Center" />
+                                <CheckBox x:Name="VerboseCheckBox" Content="Verbose" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </TabItem>
+        </TabControl>
+
+        <Border Classes="card" Grid.Row="2" Margin="0,0,0,18">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <StackPanel Spacing="4" VerticalAlignment="Center">
+                    <TextBlock Text="Run inspection" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock x:Name="StatusTextBlock" Text="Ready to inspect a local or Fabric item." Foreground="#B6C2DD" />
+                </StackPanel>
+                <Button x:Name="RunButton" Grid.Column="1" Classes="primary-button" Content="Run" MinWidth="140" Click="RunButton_Click" />
+            </Grid>
+        </Border>
+
+        <Border Classes="card" Grid.Row="3">
+            <Grid RowDefinitions="Auto,*" RowSpacing="12">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Left" Text="Console output" FontSize="20" FontWeight="SemiBold" />
+                </DockPanel>
+                <TextBox x:Name="ConsoleOutputTextBox"
+                         Grid.Row="1"
+                         AcceptsReturn="True"
+                         IsReadOnly="True"
+                         TextWrapping="Wrap"
+                         MinHeight="260" />
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

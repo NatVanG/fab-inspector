@@ -1,0 +1,124 @@
+name: Avalonia UI Release Build
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+-AvaloniaUI'
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Setup Avalonia templates
+        run: dotnet new install Avalonia.Templates
+
+      - name: Derive release version
+        id: version
+        shell: bash
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          if [[ "$tag" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-AvaloniaUI$ ]]; then
+            version="${BASH_REMATCH[1]}"
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+            echo "version_prefix=$version" >> "$GITHUB_OUTPUT"
+            echo "assembly_version=${version}.0" >> "$GITHUB_OUTPUT"
+            echo "file_version=${version}.0" >> "$GITHUB_OUTPUT"
+            echo "informational_version=$version" >> "$GITHUB_OUTPUT"
+          else
+            echo "Unsupported tag format: $tag" >&2
+            exit 1
+          fi
+
+      - name: Build Windows x64 Avalonia UI
+        run: |
+          dotnet publish FabInspector.AvaloniaUI/FabInspector.AvaloniaUI.csproj             -c Release             -r win-x64             --self-contained true             -p:Version=${{ steps.version.outputs.version }}             -p:VersionPrefix=${{ steps.version.outputs.version_prefix }}             -p:AssemblyVersion=${{ steps.version.outputs.assembly_version }}             -p:FileVersion=${{ steps.version.outputs.file_version }}             -p:InformationalVersion=${{ steps.version.outputs.informational_version }}             -p:PublishSingleFile=true             -p:PublishReadyToRun=false             -p:DebugType=None             -p:DebugSymbols=false             -p:PublishTrimmed=false             -o ./build/win-x64
+
+      - name: Build Linux x64 Avalonia UI
+        run: |
+          dotnet publish FabInspector.AvaloniaUI/FabInspector.AvaloniaUI.csproj             -c Release             -r linux-x64             --self-contained true             -p:Version=${{ steps.version.outputs.version }}             -p:VersionPrefix=${{ steps.version.outputs.version_prefix }}             -p:AssemblyVersion=${{ steps.version.outputs.assembly_version }}             -p:FileVersion=${{ steps.version.outputs.file_version }}             -p:InformationalVersion=${{ steps.version.outputs.informational_version }}             -p:PublishSingleFile=true             -p:PublishReadyToRun=false             -p:DebugType=None             -p:DebugSymbols=false             -p:PublishTrimmed=false             -o ./build/linux-x64
+
+      - name: Build macOS x64 Avalonia UI
+        run: |
+          dotnet publish FabInspector.AvaloniaUI/FabInspector.AvaloniaUI.csproj             -c Release             -r osx-x64             --self-contained true             -p:Version=${{ steps.version.outputs.version }}             -p:VersionPrefix=${{ steps.version.outputs.version_prefix }}             -p:AssemblyVersion=${{ steps.version.outputs.assembly_version }}             -p:FileVersion=${{ steps.version.outputs.file_version }}             -p:InformationalVersion=${{ steps.version.outputs.informational_version }}             -p:PublishSingleFile=true             -p:PublishReadyToRun=false             -p:DebugType=None             -p:DebugSymbols=false             -p:PublishTrimmed=false             -o ./build/osx-x64
+
+      - name: Build macOS ARM64 Avalonia UI
+        run: |
+          dotnet publish FabInspector.AvaloniaUI/FabInspector.AvaloniaUI.csproj             -c Release             -r osx-arm64             --self-contained true             -p:Version=${{ steps.version.outputs.version }}             -p:VersionPrefix=${{ steps.version.outputs.version_prefix }}             -p:AssemblyVersion=${{ steps.version.outputs.assembly_version }}             -p:FileVersion=${{ steps.version.outputs.file_version }}             -p:InformationalVersion=${{ steps.version.outputs.informational_version }}             -p:PublishSingleFile=true             -p:PublishReadyToRun=false             -p:DebugType=None             -p:DebugSymbols=false             -p:PublishTrimmed=false             -o ./build/osx-arm64
+
+      - name: Prepare Windows package
+        run: |
+          mkdir -p ./package/win-x64/AvaloniaUI
+          cp -r ./build/win-x64/* ./package/win-x64/AvaloniaUI/
+          rm -f ./package/win-x64/AvaloniaUI/*.pdb ./package/win-x64/AvaloniaUI/*.config
+
+      - name: Prepare Linux package
+        run: |
+          mkdir -p ./package/linux-x64/AvaloniaUI
+          cp -r ./build/linux-x64/* ./package/linux-x64/AvaloniaUI/
+          chmod +x ./package/linux-x64/AvaloniaUI/FabInspector.AvaloniaUI || true
+          rm -f ./package/linux-x64/AvaloniaUI/*.pdb ./package/linux-x64/AvaloniaUI/*.config
+
+      - name: Prepare macOS x64 package
+        run: |
+          mkdir -p ./package/osx-x64/AvaloniaUI
+          cp -r ./build/osx-x64/* ./package/osx-x64/AvaloniaUI/
+          chmod +x ./package/osx-x64/AvaloniaUI/FabInspector.AvaloniaUI || true
+          rm -f ./package/osx-x64/AvaloniaUI/*.pdb ./package/osx-x64/AvaloniaUI/*.config
+
+      - name: Prepare macOS ARM64 package
+        run: |
+          mkdir -p ./package/osx-arm64/AvaloniaUI
+          cp -r ./build/osx-arm64/* ./package/osx-arm64/AvaloniaUI/
+          chmod +x ./package/osx-arm64/AvaloniaUI/FabInspector.AvaloniaUI || true
+          rm -f ./package/osx-arm64/AvaloniaUI/*.pdb ./package/osx-arm64/AvaloniaUI/*.config
+
+      - name: Create Windows zip
+        run: |
+          cd ./package
+          zip -r ../win-x64-${{ github.ref_name }}-AvaloniaUI-portable-net8.0.zip win-x64/
+
+      - name: Create Linux zip
+        run: |
+          cd ./package
+          zip -r ../linux-x64-${{ github.ref_name }}-AvaloniaUI-portable-net8.0.zip linux-x64/
+
+      - name: Create macOS x64 zip
+        run: |
+          cd ./package
+          zip -r ../osx-x64-${{ github.ref_name }}-AvaloniaUI-portable-net8.0.zip osx-x64/
+
+      - name: Create macOS ARM64 zip
+        run: |
+          cd ./package
+          zip -r ../osx-arm64-${{ github.ref_name }}-AvaloniaUI-portable-net8.0.zip osx-arm64/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "AvaloniaUI-portable"
+          body: |
+            win-x64, linux-x64, osx-x64, and osx-arm64 Avalonia desktop client.
+            Self-contained with .NET 8.0 runtime included.
+          files: |
+            win-x64-${{ github.ref_name }}-AvaloniaUI-portable-net8.0.zip
+            linux-x64-${{ github.ref_name }}-AvaloniaUI-portable-net8.0.zip
+            osx-x64-${{ github.ref_name }}-AvaloniaUI-portable-net8.0.zip
+            osx-arm64-${{ github.ref_name }}-AvaloniaUI-portable-net8.0.zip
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
