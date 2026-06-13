@@ -2,7 +2,7 @@
 
 > For in-depth explanations and advanced examples, see the [Fab Inspector wiki](https://github.com/NatVanG/PBI-InspectorV2/wiki).
 
-Ric operators extend the [JSON Logic](https://json-everything.net/json-logic) engine used by Fab Inspector rules. They are available in the `test` (and `patch`) fields of any rule and work with both local and remote Fabric items. No authentication is required — these operators work entirely with data already available locally.
+Ric operators extend the [JSON Logic](https://jsonlogic.com/) engine used by Fab Inspector rules. They are available in the `test` (and `patch`) fields of any rule and work with both local and remote Fabric items. No authentication is required when targetting local files.
 
 For a guide on when to use Ric vs FabInspector operators, see [Operators Overview](../docs/operators-overview.md).
 

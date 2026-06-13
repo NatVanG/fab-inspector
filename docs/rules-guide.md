@@ -162,6 +162,8 @@ Although somewhat of an anti-pattern, rules can vary their test logic based on t
 | [Example-RulesCatalog.json](../DocsExamples/Example-RulesCatalog.json) | Rules catalog referencing multiple rulesets |
 | [RulesTemplate.json](../DocsExamples/RulesTemplate.json) | Minimal rules file template |
 
+For a categorized list of all sample files, see [Examples Index](examples-index.md).
+
 For operator-specific examples see the `See also` links in [Ric Operators](../DocsExamples/Ric-Operators.md) and [FabInspector Operators](../DocsExamples/FabInspector-Operators.md).
 
 ---

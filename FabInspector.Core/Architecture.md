@@ -39,8 +39,8 @@ flowchart LR
   H --> I["Resolve rulesets and create one shared IFabricFileSystem per run"]
   I --> J["RunAsync or RunAndReturnResultsAsync"]
 
-  classDef single fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
-  classDef perrun fill:#fff8e1,stroke:#f9a825,stroke-width:1px
+  classDef single fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px,color:#000
+  classDef perrun fill:#fff8e1,stroke:#f9a825,stroke-width:1px,color:#000
   class D single
   class H,I,J perrun
 ```
@@ -122,7 +122,7 @@ flowchart TB
     F3 --> G
   G --> H["Merge bucket results"]
 
-  classDef safe fill:#e3f2fd,stroke:#1565c0,stroke-width:1px
+  classDef safe fill:#e3f2fd,stroke:#1565c0,stroke-width:1px,color:#000
   class E1,E2,E3,F1,F2,F3 safe
   class FS safe
 ```
@@ -243,8 +243,8 @@ flowchart LR
 
   RA -. "No shared ambient state" .- RB
 
-  classDef shared fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px
-  classDef isolated fill:#e3f2fd,stroke:#1565c0,stroke-width:1px
+  classDef shared fill:#e8f5e9,stroke:#2e7d32,stroke-width:1px,color:#000
+  classDef isolated fill:#e3f2fd,stroke:#1565c0,stroke-width:1px,color:#000
   class HC shared
   class EA,SA,RA,DA,EB,SB,RB,DB isolated
 ```
