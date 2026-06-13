@@ -2,12 +2,78 @@ name: FabInspector Tests
 
 on:
   push:
-    branches: [ "main", "remove-win-dependencies" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
+
+  docs-operator-consistency:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Verify operator docs match code registrations
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+
+        function Get-CodeOperators([string]$globPath) {
+          $matches = Select-String -Path $globPath -Pattern '\[Operator\("([a-zA-Z0-9_]+)"\)\]' -AllMatches
+          $names = foreach ($m in $matches) {
+            foreach ($g in $m.Matches) {
+              $g.Groups[1].Value
+            }
+          }
+          return $names | Sort-Object -Unique
+        }
+
+        function Get-DocOperators([string]$docPath) {
+          $matches = Select-String -Path $docPath -Pattern '^###\s+`([a-zA-Z0-9_]+)`' -AllMatches
+          $names = foreach ($m in $matches) {
+            foreach ($g in $m.Matches) {
+              $g.Groups[1].Value
+            }
+          }
+          return $names | Sort-Object -Unique
+        }
+
+        $ricCode = Get-CodeOperators 'Ric.Operators/*.cs'
+        $fabCode = Get-CodeOperators 'FabInspector.Operators/*.cs'
+
+        $ricDoc = Get-DocOperators 'DocsExamples/Ric-Operators.md'
+        $fabDoc = Get-DocOperators 'DocsExamples/FabInspector-Operators.md'
+
+        $missingInRicDoc = $ricCode | Where-Object { $_ -notin $ricDoc }
+        $extraInRicDoc = $ricDoc | Where-Object { $_ -notin $ricCode }
+
+        $missingInFabDoc = $fabCode | Where-Object { $_ -notin $fabDoc }
+        $extraInFabDoc = $fabDoc | Where-Object { $_ -notin $fabCode }
+
+        if ($missingInRicDoc -or $extraInRicDoc -or $missingInFabDoc -or $extraInFabDoc) {
+          Write-Host 'Operator documentation drift detected.'
+
+          if ($missingInRicDoc) {
+            Write-Host "Missing in DocsExamples/Ric-Operators.md: $($missingInRicDoc -join ', ')"
+          }
+          if ($extraInRicDoc) {
+            Write-Host "Not found in Ric.Operators code but documented: $($extraInRicDoc -join ', ')"
+          }
+          if ($missingInFabDoc) {
+            Write-Host "Missing in DocsExamples/FabInspector-Operators.md: $($missingInFabDoc -join ', ')"
+          }
+          if ($extraInFabDoc) {
+            Write-Host "Not found in FabInspector.Operators code but documented: $($extraInFabDoc -join ', ')"
+          }
+
+          throw 'Operator docs are out of sync with code.'
+        }
+
+        Write-Host 'Operator documentation consistency check passed.'
 
   cross-platform-tests:
 

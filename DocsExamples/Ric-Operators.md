@@ -2,7 +2,9 @@
 
 > For in-depth explanations and advanced examples, see the [Fab Inspector wiki](https://github.com/NatVanG/PBI-InspectorV2/wiki).
 
-Ric operators extend the [JSON Logic](https://json-everything.net/json-logic) engine used by Fab Inspector rules. They are available in the `test` (and `patch`) fields of any rule and work with both local and remote Fabric items.
+Ric operators extend the [JSON Logic](https://jsonlogic.com/) engine used by Fab Inspector rules. They are available in the `test` (and `patch`) fields of any rule and work with both local and remote Fabric items. No authentication is required when targetting local files.
+
+For a guide on when to use Ric vs FabInspector operators, see [Operators Overview](../docs/operators-overview.md).
 
 All snippets below show the operator as it appears inside a rule's `test` array. For complete working rule files see the links in each section and the [Rule File Examples](../README.md#customrulesexamples) in the README.
 
@@ -14,7 +16,7 @@ All snippets below show the operator as it appears inside a rule's `test` array.
 - [Data Transformation](#data-transformation): `coalesce`, `tostring`, `torecord`, `typeof`, `keys`, `values`, `distinct`, `count`
 - [String Operations](#string-operations): `strcontains`, `strsplit`, `strjoin`, `regexextract`
 - [Array Operations](#array-operations): `slice`
-- [Set Operations](#set-operations): `union`, `intersect`, `diff`, `symdiff`, `equalsets`
+- [Set Operations](#set-operations): `union`, `intersection`, `diff`, `symdiff`, `equalsets`
 - [Layout & Geometry](#layout--geometry): `rectoverlap`
 - [Date & Time](#date--time): `now`, `datediff`
 - [Type & Null Checks](#type--null-checks): `hasprop`, `isnullorempty`
@@ -310,6 +312,8 @@ Returns the number of elements in an array.
 
 Counts the number of times a regex pattern appears in a string.
 
+> **Note:** Despite its name, `strcontains` returns a **count** (integer), not a boolean. Use `{ ">": [{ "strcontains": [...] }, 0] }` for a containment check, or compare the count directly against a threshold.
+
 | Parameter | Type | Description |
 |---|---|---|
 | searchString | string | String to search in |
@@ -319,6 +323,10 @@ Counts the number of times a regex pattern appears in a string.
 
 ```json
 { "strcontains": [{ "var": "description" }, "TODO"] }
+```
+
+```json
+{ ">": [{ "strcontains": [{ "var": "description" }, "TODO"] }, 0] }
 ```
 
 ---
@@ -365,7 +373,7 @@ Extracts all regex matches from a string. Optionally returns a specific capture 
 |---|---|---|
 | inputString | string | String to search |
 | pattern | string | Regex pattern |
-| group | number | Capture group index to return (optional; returns full matches if omitted) |
+| group | number | .NET `Groups` index to return per match (optional). `0` = full match (same as omitting), `1` = first capture group, `2` = second capture group, etc. |
 
 **Returns:** Array of matched strings (empty array if no matches).
 
@@ -376,6 +384,8 @@ Extracts all regex matches from a string. Optionally returns a specific capture 
 ```json
 { "regexextract": [{ "var": "sourceText" }, "(\\w+)@(\\w+)", 2] }
 ```
+
+The second example uses group `2` to extract the domain part from `user@domain` patterns (group 1 would be the username, group 0 the full match).
 
 ---
 
@@ -424,7 +434,7 @@ Returns all items from both arrays with duplicates removed.
 
 ---
 
-### `intersect`
+### `intersection`
 
 Returns items present in both arrays.
 
@@ -436,7 +446,7 @@ Returns items present in both arrays.
 **Returns:** Array (intersection).
 
 ```json
-{ "intersect": [{ "var": "activeTypes" }, { "var": "allowedTypes" }] }
+{ "intersection": [{ "var": "activeTypes" }, { "var": "allowedTypes" }] }
 ```
 
 ---
