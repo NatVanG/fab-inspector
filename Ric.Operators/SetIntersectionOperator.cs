@@ -5,6 +5,6 @@ namespace Ric.Operators;
 
 public class SetIntersectionOperator : BaseJsonLogicOperator
 {
-    public override string OperatorName => "intersect";
+    public override string OperatorName => "intersection";
     public override Type RuleType => typeof(SetIntersectionRule);
 }

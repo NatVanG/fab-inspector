@@ -16,7 +16,7 @@ All snippets below show the operator as it appears inside a rule's `test` array.
 - [Data Transformation](#data-transformation): `coalesce`, `tostring`, `torecord`, `typeof`, `keys`, `values`, `distinct`, `count`
 - [String Operations](#string-operations): `strcontains`, `strsplit`, `strjoin`, `regexextract`
 - [Array Operations](#array-operations): `slice`
-- [Set Operations](#set-operations): `union`, `intersect`, `diff`, `symdiff`, `equalsets`
+- [Set Operations](#set-operations): `union`, `intersection`, `diff`, `symdiff`, `equalsets`
 - [Layout & Geometry](#layout--geometry): `rectoverlap`
 - [Date & Time](#date--time): `now`, `datediff`
 - [Type & Null Checks](#type--null-checks): `hasprop`, `isnullorempty`
@@ -434,7 +434,7 @@ Returns all items from both arrays with duplicates removed.
 
 ---
 
-### `intersect`
+### `intersection`
 
 Returns items present in both arrays.
 
@@ -446,7 +446,7 @@ Returns items present in both arrays.
 **Returns:** Array (intersection).
 
 ```json
-{ "intersect": [{ "var": "activeTypes" }, { "var": "allowedTypes" }] }
+{ "intersection": [{ "var": "activeTypes" }, { "var": "allowedTypes" }] }
 ```
 
 ---
