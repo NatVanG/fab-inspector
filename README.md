@@ -20,13 +20,10 @@ This is a community project that is not supported by Microsoft.
 
 ## Microsoft Fabric workload (preview)
 
-A React + TypeScript frontend for the FabInspector custom Fabric workload lives
-in [`Workload/`](Workload/README.md), built on the
+A React + TypeScript frontend for the FabInspector custom Fabric workload built on the
 [Fabric Extensibility Toolkit](https://learn.microsoft.com/en-us/fabric/extensibility-toolkit/extensibility-toolkit-overview)
 and the `@ms-fabric/workload-client` SDK. It talks to the lifecycle / job
-controllers exposed by `FabInspector.Web` over `/api/workload/*`. The previous
-Blazor editor surfaces have been removed — see `Workload/README.md` for setup,
-build, and CI details.
+controllers exposed by `FabInspector.Web` over `/api/workload/*`.
 
 ## <a name="contents"></a>Contents
 
@@ -38,17 +35,27 @@ build, and CI details.
 - [Release notes](#release-notes-scroll)
 - [Releases](#releases)
 - [Base rules](#baserulesoverview)
-- [Run from the graphical user interface (GUI)](#gui)
-- [Run from the Command line (CLI)](#cli)
+- [Run from the GUI](#gui)
+- [Run from the CLI](#cli)
 - [Interpreting results](#results)
 - [Azure DevOps and GitHub integration](#ado)
 - [Custom rules guide](#customerruleguide)
-- [Patching](#patching) :warning: deprecated
-- [Create and Debug Rules with VS Code](#rulecreationwithvscode)
-- [Rule File Examples](#customrulesexamples)
+- [Rule file examples](#customrulesexamples)
+- [Create and debug rules with VS Code](#rulecreationwithvscode)
 - [Wiki](#wiki)
 - [Known issues](#knownissues)
 - [Report an issue](#reportanissue)
+
+### Documentation
+
+| Document | Description |
+|---|---|
+| [CLI Reference](docs/cli-reference.md) | All CLI parameters, authentication options, and command examples |
+| [Rules Guide](docs/rules-guide.md) | Rule object structure, test logic, patching, and worked examples |
+| [Operators Overview](docs/operators-overview.md) | When to use Ric vs FabInspector operators; shared conventions |
+| [Ric Operators](DocsExamples/Ric-Operators.md) | Navigation, data, string, set, layout, date/time, and file-system operators |
+| [FabInspector Operators](DocsExamples/FabInspector-Operators.md) | REST API, DAX, SQL, and OneLake DFS operators |
+| [Architecture](FabInspector.Core/Architecture.md) | Inspection engine internals, DI composition, and concurrency model |
 
 ## <a id="intro"></a>Intro
 
@@ -311,113 +318,23 @@ Running ```FabInspector.WinForm.exe``` presents the user with the following inte
 
 ## <a id="cli"></a>Run from the command line interface (CLI)
 
-All command line parameters are as follows:
+The `fab-inspector` CLI supports local file system mode and authenticated Fabric workspace mode. For the full parameter reference, authentication options, and command examples see **[CLI Reference](docs/cli-reference.md)**.
 
-```-fabricitem folderpath|itemid```: Path to a local CI/CD folder containing one or more Fabric item definitions (local mode), or a Fabric Item ID GUID when used with `-fabricworkspace` (Fabric mode). In local mode, Fab Inspector traverses subfolders so you can specify either a root folder or a specific subfolder. In Fabric workspace-scoped mode, omit this parameter to inspect all items in the workspace.
+Quick examples:
 
-```-fabricworkspace workspaceid```: Optional. Microsoft Fabric Workspace ID (GUID). When specified, enables Fabric mode where the Inspector uses the Fabric remote file system to access items directly from a Fabric workspace.
-- **Workspace-scoped access**: Omit `-fabricitem` to inspect all items in the workspace.
-- **Item-scoped access**: Provide a Fabric Item ID GUID via `-fabricitem` to inspect only that item.
-- **Authentication required**: `-authmethod` must be one of `interactive`, `azurecli`, `clientsecret`, `certificate`, `federatedtoken`, or `managedidentity`.
+```bash
+# Local mode — single report
+fab-inspector -fabricitem "C:\Files\Sales.Report" -rules ".\Files\Base-rules.json" -formats "Console,JSON"
 
-```-pbip filepath```: Deprecated, use `-fabricitem` instead. The path to the `*.pbip` file still works for local mode.
+# Workspace-scoped — interactive auth
+fab-inspector -fabricworkspace "<workspace-guid>" -rules ".\Files\Base-rules.json" -authmethod interactive -formats "Console,JSON"
 
-```-pbipreport filepath```: Deprecated, use `-fabricitem` instead.
+# CI/CD — GitHub Actions with OIDC
+fab-inspector -fabricworkspace "<workspace-guid>" -rules "./Rules/ci-rules.json" -authmethod federatedtoken -clientid "<client-id>" -tenantid "<tenant-id>" -federatedtoken "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" -formats "GitHub"
 
-```-pbix filepath```: Not currently supported.
-
-```-rules filepath```: Required. Path to the rules file. This can be a local JSON file path or a OneLake DFS URL. OneLake rules URLs require non-local authentication.
-
-```-authmethod local|interactive|azurecli|clientsecret|certificate|federatedtoken|managedidentity```: Optional, defaults to `local`.
-- **local** (default): No authentication, uses local file system.
-- **interactive**: Interactive browser authentication.
-- **azurecli**: Developer authentication using Azure CLI credentials from a prior `az login`. Optionally pair with `-tenantid` to pin to a specific tenant.
-- **clientsecret**: Service principal authentication using client secret. See [Handling client secrets safely](#handling-client-secrets-safely).
-- **certificate**: Service principal authentication using a certificate.
-- **federatedtoken**: Service principal authentication using federated token.
-- **managedidentity**: Managed identity authentication.
-
-```-clientid clientid```: Optional. Azure AD application (client) ID. Required for `clientsecret`, `certificate`, and `federatedtoken`. Optional for `interactive` and `managedidentity`. Can also be provided via `FABRIC_CLIENT_ID`.
-
-```-tenantid tenantid```: Optional. Azure AD tenant ID/name. Required for `clientsecret`, `certificate`, and `federatedtoken`; optional for `azurecli` tenant pinning. Can also be provided via `FABRIC_TENANT_ID`.
-
-```-clientsecret secret```: Optional. Required for `clientsecret`. Can also be provided via `FABRIC_CLIENT_SECRET`. See [Handling client secrets safely](#handling-client-secrets-safely).
-
-```-certificatepath path```: Optional. Required for `certificate`. Path to certificate file (`.pem`, `.p12`, etc.).
-
-```-certificatepassword password```: Optional. Certificate password (used with `certificate` when needed).
-
-```-federatedtoken token```: Optional. Required for `federatedtoken`.
-
-```-verbose true|false```: Optional, false by default. If false then only rule violations are shown; if true then all results are listed.
-
-```-parallel true|false```: Optional, false by default. If true, rules are split across available processors and run in parallel before results are merged. If false, rules are executed on a single thread.
-- **Supported auth methods**: Parallel execution can be used with `local`, `interactive`, `azurecli`, `clientsecret`, `certificate`, `federatedtoken`, and `managedidentity`.
-
-**Warnings when using `-parallel true`:**
-- If rules use `applyPatch`, avoid parallel patching of the same part/file because writes can conflict and become last-writer-wins.
-- Rules that call remote APIs (`apiget`, `dfsget`, `daxquery`, `sqlquery`, `scannerapi`) may hit service throttling/rate limits sooner under parallel fan-out.
-
-```-output directorypath|onelakeurl```: Optional. Output local directory path or OneLake folder URL. If omitted, a temporary local directory is created. OneLake output requires non-local authentication.
-
-```-overwriteoutput true|false```: Optional, false by default. If true, existing output artifacts can be overwritten.
-
-```-formats CONSOLE,JSON,HTML,PNG,ADO,GitHub```: Optional. Comma-separated list of output formats.
-- **CONSOLE** (default): Writes results to standard console output. Used when `-formats` is not specified.
-- **JSON**: Writes results to a JSON file.
-- **HTML**: Writes results to a formatted HTML page. If no output directory is specified and HTML is enabled, the page can be opened automatically. HTML output includes report page wireframe images so `PNG` is usually not needed in addition.
-- **PNG**: Writes report page wireframe images highlighting failing visuals.
-- **ADO**: Emits Azure DevOps task commands (`task.logissue`, `task.complete`) for pipeline integration. When `ADO` is specified, other output formats are ignored.
-- **GitHub**: Emits GitHub Actions-compatible logging/annotations.
-
-```-help``` (or ```--help``` or ```/?```): Displays all CLI options and short descriptions.
-
-
-**Command line examples:**
-
-- Run "Base-rules.json" rule definitions against PBI report file at "Sales.Report and return results in Json and HTML formats:
-
-``` fab-inspector -fabricitem "C:\Files\Sales.Report" -rules ".\Files\Base-rules.json" -output "C:\Files\TestRun" -formats "Console,JSON"```
-
-- Run "Base-rules.json" rule definitions against PBI report file at "Sales.Report and return results to the console only:
-
-``` fab-inspector -fabricitem "C:\Files\Sales.Report" -rules ".\Files\Base-rules.json" -output "C:\Files\TestRun" -formats "Console"```
-
-- Run "Base-rules.json" rule definitions against PBI report file at "Sales.Report and return results as Azure DevOps compatible log and tasks commands (see https://learn.microsoft.com/en-us/azure/devops/pipelines/scripts/logging-commands?view=azure-devops&tabs=bash#task-commands):
-
-``` fab-inspector -fabricitem "C:\Files\Sales.Report" -rules ".\Files\Base-rules.json"  -formats "ADO"```
-
-- Run custom rules against CopyJob Fabric items, output as GitHub logging:
-
-``` fab-inspector -fabricitem "C:\Files\copyjob1.CopyJob" -rules "C:\Files\Sample-CopyJob-Rules.json" -formats GitHub```
-
-- Show all CLI options and descriptions:
-
-``` fab-inspector -help```
-
-**Fabric Workspace mode examples:**
-
-- Run rules against all items in a Fabric workspace (workspace-scoped access) using interactive authentication:
-
-``` fab-inspector -fabricworkspace "12345678-1234-1234-1234-123456789abc" -rules ".\Files\Base-rules.json" -authmethod interactive -formats "Console,JSON"```
-
-- Run rules against all items in a Fabric workspace using Azure CLI authentication after `az login`:
-
-``` fab-inspector -fabricworkspace "12345678-1234-1234-1234-123456789abc" -rules ".\Files\Base-rules.json" -authmethod azurecli -formats "Console"```
-
-- Run rules against a specific item in a Fabric workspace (item-scoped access) using interactive authentication:
-
-``` fab-inspector -fabricworkspace "12345678-1234-1234-1234-123456789abc" -fabricitem "87654321-4321-4321-4321-cba987654321" -rules ".\Files\Base-rules.json" -authmethod interactive -formats Console```
-
-- Run rules in CI/CD pipeline using [client secret authentication](#handling-client-secrets-safely):
-
-``` fab-inspector -fabricworkspace "12345678-1234-1234-1234-123456789abc" -fabricitem "87654321-4321-4321-4321-cba987654321" -rules ".\Files\Base-rules.json" -authmethod clientsecret -clientid "your-client-id" -tenantid "your-tenant-id" -clientsecret "your-secret" -formats ADO```
-
-### Handling client secrets safely
-
-Treat client secrets as credentials, not configuration. Do not commit them to source control, paste real values into checked-in scripts, or expose them in build logs, screenshots, or shared chat threads.
-
-Prefer CI/CD secret stores, environment variables, or platform-managed credential mechanisms over hard-coded command lines. If a secret may have been exposed, rotate it immediately and update any dependent pipeline or app configuration.
+# Show all options
+fab-inspector -help
+```
 
 ## <a id="results"></a>Interpreting results
 
@@ -447,315 +364,33 @@ For a tutorial on how to run the Fab Inspector CLI (aka Fab Inspector) as part o
 
 ## <a id="customerruleguide"></a>Custom Rules Guide
 
-:pencil: This is a high-level guide to custom rules for a deeper explanation of rules and operators see the [Fab Inspector wiki](https://github.com/NatVanG/fab-inspector/wiki). For a quick-reference of all available operators see:
-- [Ric Operators](DocsExamples/Ric-Operators.md) — navigation, data transformation, string, set, layout/geometry (`rectoverlap`), date/time, and file-system operators
+:pencil: For the full guide to writing custom rules — rule object structure, test logic, `part` iterator, and worked examples — see **[Rules Guide](docs/rules-guide.md)**.
+
+For a quick-reference of all available operators see:
+- [Ric Operators](DocsExamples/Ric-Operators.md) — navigation, data transformation, string, set, layout/geometry, date/time, and file-system operators
 - [FabInspector Operators](DocsExamples/FabInspector-Operators.md) — REST API (`apiget`, `dfsget`, `daxquery`, `sqlquery`, `scannerapi`) operators
-
-Custom rules are defined in a JSON file as an array of rule objects as follows:
-
-```json
-{
-  "rules": [
-  ...
-  ]
-}
-```
-
-Each rule object has the following properties:
-
-```json
-{
-    "id": "A unique identifier of your choice for the rule",
-    "name": "A name that is shown in HTML results with wireframe images.",
-    "description": "Details to help you and others understand what this rule does",
-    "logType": "Optional. error|warning(default)",
-    "itemType": "[fabricitemtype]. The Fabric item type that the rule applies to as referred to in the item's CI\CD ".platform"" file, e.g. CopyJob, Lakehouse, Report, etc. or specify "*" to define a cross-Fabric items rule or "json" to define a rule that applies to any JSON metadata file.",
-    "disabled": true|false(default),
-    "part": "Optional iterator. A Regex expression to match one or more Fabric item file or folder path, for ease of use folder separators are column characters i.e. ':'. If the itemType is Report, file part abstractions i.e. one of Report|ReportExtensions|Pages|PagesHeader|AllPages|Visuals|AllVisuals|MobileVisuals|AllMobileVisuals|Bookmarks|BookmarksHeader|AllBookmarks can be specified instead of a regular expression to match a specific file type. If the itemType is SemanticModel, TMDL part abstractions i.e. one of Definition|Database|Expressions|Model|Relationships|DataSources|Functions|Tables|Cultures|Roles|Perspectives can be specified instead of a regular expression to match specific TMDL files or folders. If an array of multiple items is returned (such as when specifying "Pages" or "Tables"), the rule will apply to each item iterativey."
-    "test": [
-    //test logic
-    ,
-    //data variables (optional)
-    ,
-    //expected result
-    ],
-    "patch": 
-    [
-    //optional patch logic to fix the issue
-    ]
-}
-```
-
-For example (without the optional patch logic), the following rule checks that, for each Page, certain charts have both axes titles displayed. The rule returns the names of failing visuals in an array.
-
-```json
-{
-      "id": "SHOW_AXES_TITLES",
-      "name": "Show visual axes titles",
-      "description": "Check that certain charts have both axes title showing, returns an array of visual names that fail the test.",
-      "logType": "error",
-      "itemType": "Report",
-      "part": "Pages",
-      "disabled": false,
-      "test": [
-        {
-          "map": [
-            {
-              "filter": [
-                {
-                  "part": "Visuals"
-                },
-                {
-                  "and": [
-                    {
-                      "in": [
-                        {
-                          "var": "visual.visualType"
-                        },
-                        [
-                          "lineChart",
-                          "barChart",
-                          "columnChart",
-                          "clusteredBarChart",
-                          "stackedBarChart"
-                        ]
-                      ]
-                    },
-                    {
-                      "or": [
-                        {
-                          "==": [
-                            {
-                              "var": "visual.objects.categoryAxis.0.properties.showAxisTitle.expr.Literal.Value"
-                            },
-                            "false"
-                          ]
-                        },
-                        {
-                          "==": [
-                            {
-                              "var": "visual.objects.valueAxis.0.properties.showAxisTitle.expr.Literal.Value"
-                            },
-                            "false"
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "var": "name"
-            }
-          ]
-        },
-        {
-        },
-        []
-      ]
-    }
- ```
-
-## <a id="patching"></a>Patching
-
-:warning: Deprecated
-
-Optionally a rule can now also define a *patch* to fix items (e.g. visuals) failing the test. For example a patch for the test above is as follows. The patch iterates through the failing visual names returned and fixes the "Visuals" part of the report definition by setting the "showAxisTitle" property to "true" for both the category and value axes:
-
-```json
-"patch": [
-        "Visuals",
-        [
-          {
-            "op": "replace",
-            "path": "/visual/objects/categoryAxis/0/properties/showAxisTitle/expr/Literal/Value",
-            "value": "true"
-          },
-          {
-            "op": "replace",
-            "path": "/visual/objects/valueAxis/0/properties/showAxisTitle/expr/Literal/Value",
-            "value": "true"
-          }
-        ]
-      ]
-```
-
-A patch definition has the following structure:
-
-```json
-"patch": [
-        "One of Report|Pages|PagesHeader|AllPages|Visuals|AllVisuals|Bookmarks|BookmarksHeader|AllBookmarks",
-        [patch logic operator array]
-      ]
-```
-
-The patch logic operator array is defined as per the JSON Patch specification at https://tools.ietf.org/html/rfc6902. Fab Inspector uses the .NET implementation of JSON Patch, for see https://docs.json-everything.net/patch/basics/.
-
-Therefore the full rule example including the patch is as follows:
-
-```json
-    {
-      "id": "SHOW_AXES_TITLES",
-      "name": "Show visual axes titles",
-      "description": "Check that certain charts have both axes title showing.",
-      "part": "Pages",
-      "disabled": true,
-      "applyPatch": true,
-      "test": [
-        {
-          "map": [
-            {
-              "filter": [
-                {
-                  "part": "Visuals"
-                },
-                {
-                  "and": [
-                    {
-                      "in": [
-                        {
-                          "var": "visual.visualType"
-                        },
-                        [
-                          "lineChart",
-                          "barChart",
-                          "columnChart",
-                          "clusteredBarChart",
-                          "stackedBarChart"
-                        ]
-                      ]
-                    },
-                    {
-                      "or": [
-                        {
-                          "==": [
-                            {
-                              "var": "visual.objects.categoryAxis.0.properties.showAxisTitle.expr.Literal.Value"
-                            },
-                            "false"
-                          ]
-                        },
-                        {
-                          "==": [
-                            {
-                              "var": "visual.objects.valueAxis.0.properties.showAxisTitle.expr.Literal.Value"
-                            },
-                            "false"
-                          ]
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "var": "name"
-            }
-          ]
-        },
-        {
-        },
-        []
-      ],
-      "patch": [
-        "Visuals",
-        [
-          {
-            "op": "replace",
-            "path": "/visual/objects/categoryAxis/0/properties/showAxisTitle/expr/Literal/Value",
-            "value": "true"
-          },
-          {
-            "op": "replace",
-            "path": "/visual/objects/valueAxis/0/properties/showAxisTitle/expr/Literal/Value",
-            "value": "true"
-          }
-        ]
-      ]
-    }
-```
-
-Here's another custom rule with patch example that sets the report's default page. First we test the report's activePageName, if it's incorrect we replace it:
-
-```json
-{
-      "id": "ACTIVE_PAGE",
-      "name": "Ensure report's active page index is set to the correct page",
-      "description": "",
-      "part": "PagesHeader",
-      "applyPatch": true,
-      "test": [
-        {
-          "var": "activePageName"
-        },
-        "ReportSection89a9619c7025093ade1c"
-      ],
-      "patch": [
-        "PagesHeader",
-        [
-          {
-            "op": "replace",
-            "path": "/activePageName",
-            "value": "ReportSection89a9619c7025093ade1c"
-          }
-        ]
-      ]
-    }
-```
-
-Although somewhat of an anti-pattern, it is possible to vary a rule's test based on the report name which is retrieved from the .platform file as shown below:
-
-```json
-{
-      "id": "VARY_BY_REPORT_NAME",
-      "name": "Vary by report name",
-      "description": "Run rule only if report display name is 'Inventory sample'",
-      "test": [
-        {
-          "?:": [
-            {
-              "==": [
-                {
-                  "query": [
-                    {
-                      "part": ".platform"
-                    },
-                    {
-                      "var": "0.metadata.displayName"
-                    }
-                  ]
-                },
-                "Inventory sample"
-              ]
-            },
-            "Rule output",
-            "This is another report."
-          ]
-        },
-        "Rule output"
-      ]
-    }
-```
+- [Operators Overview](docs/operators-overview.md) — when to use Ric vs FabInspector operators
 
 ## <a id="customrulesexamples"></a>Rule File Examples
 
-For full rule file examples see:
-- [Base Rules](Rules/Base-rules.json) - The set of rules that ships with Fab Inspector
-- [Example Rules](DocsExamples/Examples-rules.json) - An ever growing library of example rules
-- [Example Rules with Patches](DocsExamples/Example-patches.json) - Examples of patches to fix issues
-- [CopyJob Rules](DocsExamples/Sample-CopyJob-Rules.json) - Rules to check for CopyJob settings/metadata. Yes you can now test any Fabric item's metadata!
-- [Environment Rules](DocsExamples/Example-Environment-Rules.json) - Example rules to check Fabric Environment CI/CD item types.
-- [Rules Template](DocsExamples/RulesTemplate.json) - A simple rules file  template to get you started with your own rules
+| File | Description |
+|---|---|
+| [Base Rules](Rules/Base-rules.json) | The set of rules that ships with Fab Inspector (Power BI report quality rules) |
+| [Examples-rules.json](DocsExamples/Examples-rules.json) | Growing library of example rules |
+| [Example-patches.json](DocsExamples/Example-patches.json) | Examples of patches to fix issues |
+| [Example-CopyJob-Rules.json](DocsExamples/Example-CopyJob-Rules.json) | Rules to check CopyJob metadata |
+| [Example-Environment-Rules.json](DocsExamples/Example-Environment-Rules.json) | Rules for Fabric Environment CI/CD items |
+| [Example-FabricCrossItem-Rules.json](DocsExamples/Example-FabricCrossItem-Rules.json) | Rules across multiple Fabric item types |
+| [Example-RulesCatalog.json](DocsExamples/Example-RulesCatalog.json) | Rules catalog referencing multiple rulesets |
+| [RulesTemplate.json](DocsExamples/RulesTemplate.json) | Minimal rules file template |
 
 For operator quick-reference and usage snippets see:
 - [Ric Operators](DocsExamples/Ric-Operators.md) — all built-in JSON Logic extension operators
 - [FabInspector Operators](DocsExamples/FabInspector-Operators.md) — REST API and layout operators requiring authentication
 
-## <a id="rulecreationwithvscode"></a>Create and Debug Rules with VS Code 
+## <a id="rulecreationwithvscode"></a>Create and Debug Rules with VS Code
 
-Check out the Fab Inspector VS Code extension at https://github.com/NatVanG/fab-inspector-vscode-ext and the demo video in the extension release [announcement post on LinkedIn](https://www.linkedin.com/posts/natvangulck_powerbi-microsoftfabric-microsoftfabriccicd-activity-7360220590856675328-NYDB).
+Check out the [Fab Inspector VS Code extension](https://github.com/NatVanG/fab-inspector-vscode-ext) and the demo video in the extension release [announcement post on LinkedIn](https://www.linkedin.com/posts/natvangulck_powerbi-microsoftfabric-microsoftfabriccicd-activity-7360220590856675328-NYDB).
 
 ## <a id="wiki"></a>Wiki
 

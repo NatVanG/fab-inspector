@@ -2,9 +2,11 @@
 
 > For in-depth explanations and advanced examples, see the [Fab Inspector wiki](https://github.com/NatVanG/PBI-InspectorV2/wiki).
 
-FabInspector operators extend the [JSON Logic](https://json-everything.net/json-logic) engine with remote API access and layout analysis. They are available in the `test` field of any rule.
+FabInspector operators extend the [JSON Logic](https://json-everything.net/json-logic) engine with remote API access and layout analysis. They are available in the `test` field of any rule and require a non-`local` authentication method.
 
-**Authentication:** All REST API operators require a non-`local` authentication method (e.g. `interactive`, `clientsecret`, `certificate`, `federatedtoken`, or `managedidentity`). See the [CLI documentation](../README.md#cli) for authentication options.
+For a guide on when to use FabInspector vs Ric operators, see [Operators Overview](../docs/operators-overview.md).
+
+**Authentication:** All REST API operators require a non-`local` authentication method (e.g. `interactive`, `clientsecret`, `certificate`, `federatedtoken`, or `managedidentity`). See the [CLI Reference](../docs/cli-reference.md#parameters) for authentication options.
 
 **URL placeholder tokens** are automatically resolved at runtime:
 
@@ -212,4 +214,4 @@ See also: [Example-scannerapi-rules.json](Example-scannerapi-rules.json)
 
 ---
 
-*For authentication configuration, CLI parameters, and advanced usage see the [Fab Inspector wiki](https://github.com/NatVanG/PBI-InspectorV2/wiki) and the [CLI documentation](../README.md#cli).*
+*For authentication configuration, CLI parameters, and advanced usage see the [Fab Inspector wiki](https://github.com/NatVanG/PBI-InspectorV2/wiki) and the [CLI Reference](../docs/cli-reference.md).*
