@@ -1,6 +1,6 @@
 # Fab Inspector — Operators Overview
 
-Fab Inspector extends the [JSON Logic](https://json-everything.net/json-logic) engine with two sets of custom operators. This page explains when to use each set and the shared conventions that apply to both.
+Fab Inspector extends the [JSON Logic](https://jsonlogic.com/operations.html) built-in operators with two sets of custom operators. This page explains when to use each set and the shared conventions that apply to both.
 
 ---
 
