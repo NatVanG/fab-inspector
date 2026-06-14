@@ -6,12 +6,27 @@ permissions:
 
 on:
   workflow_dispatch:
-  # Allows manual triggering of the workflow from the GitHub Actions UI
+    inputs:
+      action:
+        description: Select whether to publish a prerelease image or promote an existing image to latest
+        required: true
+        default: publish-prerelease
+        type: choice
+        options:
+          - publish-prerelease
+          - promote-latest
+      source_tag:
+        description: Existing image tag to promote when action is promote-latest
+        required: false
+        default: prerelease
+        type: string
 
 jobs:
 
   build:
     runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: ghcr.io/natvang/fab-inspector
 
     steps:
       - name: Checkout code
@@ -27,10 +42,28 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Docker image
+      - name: Validate promote source tag
+        if: ${{ inputs.action == 'promote-latest' }}
         run: |
-          docker build -f FabInspector.CLI/Dockerfile -t ghcr.io/natvang/fab-inspector:latest .
+          if [ -z "${{ inputs.source_tag }}" ]; then
+            echo "source_tag is required when promoting an image to latest." >&2
+            exit 1
+          fi
 
-      - name: Push Docker image
+      - name: Build and push prerelease Docker image
+        if: ${{ inputs.action == 'publish-prerelease' }}
         run: |
-          docker push ghcr.io/natvang/fab-inspector:latest
+          SHORT_SHA="${GITHUB_SHA::12}"
+          docker buildx build \
+            -f FabInspector.CLI/Dockerfile \
+            --push \
+            -t ${IMAGE_NAME}:prerelease \
+            -t ${IMAGE_NAME}:sha-${SHORT_SHA} \
+            .
+
+      - name: Promote existing image to latest
+        if: ${{ inputs.action == 'promote-latest' }}
+        run: |
+          docker buildx imagetools create \
+            --tag ${IMAGE_NAME}:latest \
+            ${IMAGE_NAME}:${{ inputs.source_tag }}
