@@ -17,6 +17,13 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
+    - name: Check README and Docs links
+      uses: lycheeverse/lychee-action@v2
+      with:
+        args: --no-progress --verbose README.md "Docs/**/*.md"
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Verify operator docs match code registrations
       shell: pwsh
       run: |
@@ -45,8 +52,8 @@ jobs:
         $ricCode = Get-CodeOperators 'Ric.Operators/*.cs'
         $fabCode = Get-CodeOperators 'FabInspector.Operators/*.cs'
 
-        $ricDoc = Get-DocOperators 'DocsExamples/Ric-Operators.md'
-        $fabDoc = Get-DocOperators 'DocsExamples/FabInspector-Operators.md'
+        $ricDoc = Get-DocOperators 'Docs/ric-operators.md'
+        $fabDoc = Get-DocOperators 'Docs/fabinspector-operators.md'
 
         $missingInRicDoc = $ricCode | Where-Object { $_ -notin $ricDoc }
         $extraInRicDoc = $ricDoc | Where-Object { $_ -notin $ricCode }
@@ -58,13 +65,13 @@ jobs:
           Write-Host 'Operator documentation drift detected.'
 
           if ($missingInRicDoc) {
-            Write-Host "Missing in DocsExamples/Ric-Operators.md: $($missingInRicDoc -join ', ')"
+            Write-Host "Missing in Docs/ric-operators.md: $($missingInRicDoc -join ', ')"
           }
           if ($extraInRicDoc) {
             Write-Host "Not found in Ric.Operators code but documented: $($extraInRicDoc -join ', ')"
           }
           if ($missingInFabDoc) {
-            Write-Host "Missing in DocsExamples/FabInspector-Operators.md: $($missingInFabDoc -join ', ')"
+            Write-Host "Missing in Docs/fabinspector-operators.md: $($missingInFabDoc -join ', ')"
           }
           if ($extraInFabDoc) {
             Write-Host "Not found in FabInspector.Operators code but documented: $($extraInFabDoc -join ', ')"

@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\DocsExamples\Examples-rules.json" Link="Files\Examples-rules.json">
+    <None Include="..\ExampleRules\Examples-rules.json" Link="Files\Examples-rules.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="..\FabInspector.ClientLibrary\Files\ReportPageFieldMap.json" Link="Files\ReportPageFieldMap.json">

@@ -33,6 +33,7 @@ public class OperatorProgressReportingTests
                 new SetDifferenceOperator(),
                 new SetEqualOperator(),
                 new SetIntersectionOperator(),
+                new SetIntersectOperator(),
                 new SetSymmetricDifferenceOperator(),
                 new SetUnionOperator(),
                 new StringContainsOperator(),

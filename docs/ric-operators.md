@@ -16,7 +16,7 @@ All snippets below show the operator as it appears inside a rule's `test` array.
 - [Data Transformation](#data-transformation): `coalesce`, `tostring`, `torecord`, `typeof`, `keys`, `values`, `distinct`, `count`
 - [String Operations](#string-operations): `strcontains`, `strsplit`, `strjoin`, `regexextract`
 - [Array Operations](#array-operations): `slice`
-- [Set Operations](#set-operations): `union`, `intersection`, `diff`, `symdiff`, `equalsets`
+- [Set Operations](#set-operations): `union`, `intersection` (`intersect` alias), `diff`, `symdiff`, `equalsets`
 - [Layout & Geometry](#layout--geometry): `rectoverlap`
 - [Date & Time](#date--time): `now`, `datediff`
 - [Type & Null Checks](#type--null-checks): `hasprop`, `isnullorempty`
@@ -447,6 +447,14 @@ Returns items present in both arrays.
 
 ```json
 { "intersection": [{ "var": "activeTypes" }, { "var": "allowedTypes" }] }
+```
+
+### `intersect`
+
+Alias for `intersection`.
+
+```json
+{ "intersect": [{ "var": "activeTypes" }, { "var": "allowedTypes" }] }
 ```
 
 ---

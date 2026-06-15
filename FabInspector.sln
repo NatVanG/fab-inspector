@@ -15,59 +15,58 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FabInspector.Tests", "FabInspector.Tests\FabInspector.Tests.csproj", "{0ABE09AE-A1A2-4156-A341-C6A38127884C}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DocsImages", "DocsImages", "{AD4E6E10-AD07-4A1E-B6D4-258C5BCF261F}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "images", "images", "{AD4E6E10-AD07-4A1E-B6D4-258C5BCF261F}"
 	ProjectSection(SolutionItems) = preProject
-		DocsImages\diff.svg = DocsImages\diff.svg
-		DocsImages\FabInspector.WinForm.png = DocsImages\FabInspector.WinForm.png
-		DocsImages\intersection.svg = DocsImages\intersection.svg
-		DocsImages\pbiinspector.png = DocsImages\pbiinspector.png
-		DocsImages\pbiinspectoricons.png = DocsImages\pbiinspectoricons.png
-		DocsImages\ReidSession.png = DocsImages\ReidSession.png
-		..\..\..\..\OneDrive\Pictures\VisOps\RIC.png = ..\..\..\..\OneDrive\Pictures\VisOps\RIC.png
-		DocsImages\RunReportFromWinForm.png = DocsImages\RunReportFromWinForm.png
-		DocsImages\SampleReportOverReport.png = DocsImages\SampleReportOverReport.png
-		DocsImages\symdiff.svg = DocsImages\symdiff.svg
-		DocsImages\TooltipPageWithIncorrectAspectRatio.png = DocsImages\TooltipPageWithIncorrectAspectRatio.png
-		DocsImages\union.svg = DocsImages\union.svg
-		DocsImages\UpdateReportParameter.png = DocsImages\UpdateReportParameter.png
-		DocsImages\WinForm1.png = DocsImages\WinForm1.png
-		DocsImages\WireframeChartsWiderThanTall.png = DocsImages\WireframeChartsWiderThanTall.png
-		DocsImages\WireframeWithFailures.png = DocsImages\WireframeWithFailures.png
-		DocsImages\WireframeWithHiddenVisual.png = DocsImages\WireframeWithHiddenVisual.png
+		Docs\Images\diff.svg = Docs\Images\diff.svg
+		Docs\Images\FabInspector.AvaloniaUI.png = Docs\Images\FabInspector.AvaloniaUI.png
+		Docs\Images\FabInspector.WinForm.png = Docs\Images\FabInspector.WinForm.png
+		Docs\Images\FabInsp_500x500.png = Docs\Images\FabInsp_500x500.png
+		Docs\Images\intersection.svg = Docs\Images\intersection.svg
+		Docs\Images\pbiinspector.png = Docs\Images\pbiinspector.png
+		Docs\Images\pbiinspectoricons.png = Docs\Images\pbiinspectoricons.png
+		Docs\Images\Ric_480x480.png = Docs\Images\Ric_480x480.png
+		Docs\Images\Ric_480x480_speech.png = Docs\Images\Ric_480x480_speech.png
+		Docs\Images\RunReportFromWinForm.png = Docs\Images\RunReportFromWinForm.png
+		Docs\Images\symdiff.svg = Docs\Images\symdiff.svg
+		Docs\Images\union.svg = Docs\Images\union.svg
+		Docs\Images\UpdateReportParameter.png = Docs\Images\UpdateReportParameter.png
+		Docs\Images\WinForm1.png = Docs\Images\WinForm1.png
+		Docs\Images\WireframeChartsWiderThanTall.png = Docs\Images\WireframeChartsWiderThanTall.png
+		Docs\Images\WireframeWithFailures.png = Docs\Images\WireframeWithFailures.png
+		Docs\Images\WireframeWithHiddenVisual.png = Docs\Images\WireframeWithHiddenVisual.png
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FabInspector.ClientLibrary", "FabInspector.ClientLibrary\FabInspector.ClientLibrary.csproj", "{C6CBC9A2-22D7-4CA6-BC1B-5F7DD629D17F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FabInspector.WinForm", "FabInspector.WinForm\FabInspector.WinForm.csproj", "{2EFEF6B8-E017-4D14-9F30-DCD093CB85CD}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DocsExamples", "DocsExamples", "{0DABAA35-C96D-4D84-96ED-C088A39D5CA0}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExampleRules", "ExampleRules", "{0DABAA35-C96D-4D84-96ED-C088A39D5CA0}"
 	ProjectSection(SolutionItems) = preProject
-		DocsExamples\ContinuousIntegration-CustomRules-PBIR.yml = DocsExamples\ContinuousIntegration-CustomRules-PBIR.yml
-		DocsExamples\ContinuousIntegration-Rules-PBIR.yml = DocsExamples\ContinuousIntegration-Rules-PBIR.yml
-		DocsExamples\Example-CopyJob-Rules.json = DocsExamples\Example-CopyJob-Rules.json
-		DocsExamples\Example-daxquery-rule.json = DocsExamples\Example-daxquery-rule.json
-		DocsExamples\Example-daxquery-rule2.json = DocsExamples\Example-daxquery-rule2.json
-		DocsExamples\Example-daxquery-rule3.json = DocsExamples\Example-daxquery-rule3.json
-		DocsExamples\Example-dfsget-rule.json = DocsExamples\Example-dfsget-rule.json
-		DocsExamples\Example-Environment-Rules.json = DocsExamples\Example-Environment-Rules.json
-		DocsExamples\Example-fabric-apiget-rule.json = DocsExamples\Example-fabric-apiget-rule.json
-		DocsExamples\Example-fabric-apiget-wparams-rule.json = DocsExamples\Example-fabric-apiget-wparams-rule.json
-		DocsExamples\Example-FabricCrossItem-Rules.json = DocsExamples\Example-FabricCrossItem-Rules.json
-		DocsExamples\Example-pbi-apiget-rule.json = DocsExamples\Example-pbi-apiget-rule.json
-		DocsExamples\Example-pbir-rules.json = DocsExamples\Example-pbir-rules.json
-		DocsExamples\Example-ReportPageFieldMap.json = DocsExamples\Example-ReportPageFieldMap.json
-		DocsExamples\Example-scannerapi-rules.json = DocsExamples\Example-scannerapi-rules.json
-		DocsExamples\Example-StaticResources-rules.json = DocsExamples\Example-StaticResources-rules.json
-		DocsExamples\Example-theme-rules.json = DocsExamples\Example-theme-rules.json
-		DocsExamples\Example-VaryRuleByFabricItemName-rules.json = DocsExamples\Example-VaryRuleByFabricItemName-rules.json
-		DocsExamples\Examples-rules.json = DocsExamples\Examples-rules.json
-		DocsExamples\Reid-rules.json = DocsExamples\Reid-rules.json
-		DocsExamples\RulesTemplate.json = DocsExamples\RulesTemplate.json
-		DocsExamples\Sample-CapacityTenantOverrides.json = DocsExamples\Sample-CapacityTenantOverrides.json
-		DocsExamples\Sample-Lakehouse-Rules.json = DocsExamples\Sample-Lakehouse-Rules.json
-		DocsExamples\Sample-TenantSettings.json = DocsExamples\Sample-TenantSettings.json
-		DocsExamples\Sample-VariableLibrary-rules.json = DocsExamples\Sample-VariableLibrary-rules.json
-		DocsExamples\Themeable-properties-rules.json = DocsExamples\Themeable-properties-rules.json
+		ExampleRules\ContinuousIntegration-CustomRules-PBIR.yml = ExampleRules\ContinuousIntegration-CustomRules-PBIR.yml
+		ExampleRules\ContinuousIntegration-Rules-PBIR.yml = ExampleRules\ContinuousIntegration-Rules-PBIR.yml
+		ExampleRules\Example-CopyJob-Rules.json = ExampleRules\Example-CopyJob-Rules.json
+		ExampleRules\Example-daxquery-rule.json = ExampleRules\Example-daxquery-rule.json
+		ExampleRules\Example-daxquery-rule2.json = ExampleRules\Example-daxquery-rule2.json
+		ExampleRules\Example-daxquery-rule3.json = ExampleRules\Example-daxquery-rule3.json
+		ExampleRules\Example-dfsget-rule.json = ExampleRules\Example-dfsget-rule.json
+		ExampleRules\Example-Environment-Rules.json = ExampleRules\Example-Environment-Rules.json
+		ExampleRules\Example-fabric-apiget-rule.json = ExampleRules\Example-fabric-apiget-rule.json
+		ExampleRules\Example-fabric-apiget-wparams-rule.json = ExampleRules\Example-fabric-apiget-wparams-rule.json
+		ExampleRules\Example-FabricCrossItem-Rules.json = ExampleRules\Example-FabricCrossItem-Rules.json
+		ExampleRules\Example-pbi-apiget-rule.json = ExampleRules\Example-pbi-apiget-rule.json
+		ExampleRules\Example-pbir-rules.json = ExampleRules\Example-pbir-rules.json
+		ExampleRules\Example-ReportPageFieldMap.json = ExampleRules\Example-ReportPageFieldMap.json
+		ExampleRules\Example-scannerapi-rules.json = ExampleRules\Example-scannerapi-rules.json
+		ExampleRules\Example-StaticResources-rules.json = ExampleRules\Example-StaticResources-rules.json
+		ExampleRules\Example-theme-rules.json = ExampleRules\Example-theme-rules.json
+		ExampleRules\Example-VaryRuleByFabricItemName-rules.json = ExampleRules\Example-VaryRuleByFabricItemName-rules.json
+		ExampleRules\Examples-rules.json = ExampleRules\Examples-rules.json
+		ExampleRules\RulesTemplate.json = ExampleRules\RulesTemplate.json
+		ExampleRules\Sample-CapacityTenantOverrides.json = ExampleRules\Sample-CapacityTenantOverrides.json
+		ExampleRules\Sample-Lakehouse-Rules.json = ExampleRules\Sample-Lakehouse-Rules.json
+		ExampleRules\Sample-TenantSettings.json = ExampleRules\Sample-TenantSettings.json
+		ExampleRules\Sample-VariableLibrary-rules.json = ExampleRules\Sample-VariableLibrary-rules.json
+		ExampleRules\Themeable-properties-rules.json = ExampleRules\Themeable-properties-rules.json
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Rules", "Rules", "{BB86A63C-BBD5-48DA-9481-343165781823}"
@@ -78,38 +77,38 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Rules", "Rules", "{BB86A63C
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ReportExample", "ReportExample", "{3A0CE8CE-A7CB-4288-B9EF-06056779A0D1}"
 	ProjectSection(SolutionItems) = preProject
-		DocsExamples\ReportExample\PBI Inspector Reporting.pbip = DocsExamples\ReportExample\PBI Inspector Reporting.pbip
+		ExampleRules\ReportExample\PBI Inspector Reporting.pbip = ExampleRules\ReportExample\PBI Inspector Reporting.pbip
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PBI Inspector Reporting.Report", "PBI Inspector Reporting.Report", "{4692719B-AC01-4A09-8889-EBB4CC69D5C2}"
 	ProjectSection(SolutionItems) = preProject
-		DocsExamples\ReportExample\PBI Inspector Reporting.Report\definition.pbir = DocsExamples\ReportExample\PBI Inspector Reporting.Report\definition.pbir
-		DocsExamples\ReportExample\PBI Inspector Reporting.Report\item.config.json = DocsExamples\ReportExample\PBI Inspector Reporting.Report\item.config.json
-		DocsExamples\ReportExample\PBI Inspector Reporting.Report\item.metadata.json = DocsExamples\ReportExample\PBI Inspector Reporting.Report\item.metadata.json
-		DocsExamples\ReportExample\PBI Inspector Reporting.Report\report.json = DocsExamples\ReportExample\PBI Inspector Reporting.Report\report.json
+		ExampleRules\ReportExample\PBI Inspector Reporting.Report\definition.pbir = ExampleRules\ReportExample\PBI Inspector Reporting.Report\definition.pbir
+		ExampleRules\ReportExample\PBI Inspector Reporting.Report\item.config.json = ExampleRules\ReportExample\PBI Inspector Reporting.Report\item.config.json
+		ExampleRules\ReportExample\PBI Inspector Reporting.Report\item.metadata.json = ExampleRules\ReportExample\PBI Inspector Reporting.Report\item.metadata.json
+		ExampleRules\ReportExample\PBI Inspector Reporting.Report\report.json = ExampleRules\ReportExample\PBI Inspector Reporting.Report\report.json
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "PBI Inspector Reporting.Dataset", "PBI Inspector Reporting.Dataset", "{F575C0AD-D7C5-4B54-A387-DBDC50C58225}"
 	ProjectSection(SolutionItems) = preProject
-		DocsExamples\ReportExample\PBI Inspector Reporting.Dataset\definition.pbidataset = DocsExamples\ReportExample\PBI Inspector Reporting.Dataset\definition.pbidataset
-		DocsExamples\ReportExample\PBI Inspector Reporting.Dataset\diagramLayout.json = DocsExamples\ReportExample\PBI Inspector Reporting.Dataset\diagramLayout.json
-		DocsExamples\ReportExample\PBI Inspector Reporting.Dataset\item.config.json = DocsExamples\ReportExample\PBI Inspector Reporting.Dataset\item.config.json
-		DocsExamples\ReportExample\PBI Inspector Reporting.Dataset\item.metadata.json = DocsExamples\ReportExample\PBI Inspector Reporting.Dataset\item.metadata.json
-		DocsExamples\ReportExample\PBI Inspector Reporting.Dataset\model.bim = DocsExamples\ReportExample\PBI Inspector Reporting.Dataset\model.bim
+		ExampleRules\ReportExample\PBI Inspector Reporting.Dataset\definition.pbidataset = ExampleRules\ReportExample\PBI Inspector Reporting.Dataset\definition.pbidataset
+		ExampleRules\ReportExample\PBI Inspector Reporting.Dataset\diagramLayout.json = ExampleRules\ReportExample\PBI Inspector Reporting.Dataset\diagramLayout.json
+		ExampleRules\ReportExample\PBI Inspector Reporting.Dataset\item.config.json = ExampleRules\ReportExample\PBI Inspector Reporting.Dataset\item.config.json
+		ExampleRules\ReportExample\PBI Inspector Reporting.Dataset\item.metadata.json = ExampleRules\ReportExample\PBI Inspector Reporting.Dataset\item.metadata.json
+		ExampleRules\ReportExample\PBI Inspector Reporting.Dataset\model.bim = ExampleRules\ReportExample\PBI Inspector Reporting.Dataset\model.bim
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "StaticResources", "StaticResources", "{F8D8F5A8-2FAB-4D9A-A9A8-EB48369A75F0}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RegisteredResources", "RegisteredResources", "{250ACB5C-52B3-494A-B3A9-EF734F348F43}"
 	ProjectSection(SolutionItems) = preProject
-		DocsExamples\ReportExample\PBI Inspector Reporting.Report\StaticResources\RegisteredResources\pbiinspector41285453691645757.png = DocsExamples\ReportExample\PBI Inspector Reporting.Report\StaticResources\RegisteredResources\pbiinspector41285453691645757.png
+		ExampleRules\ReportExample\PBI Inspector Reporting.Report\StaticResources\RegisteredResources\pbiinspector41285453691645757.png = ExampleRules\ReportExample\PBI Inspector Reporting.Report\StaticResources\RegisteredResources\pbiinspector41285453691645757.png
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SharedResources", "SharedResources", "{D1568C15-D0F3-439F-9EA1-D6353CEFB15C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "BaseThemes", "BaseThemes", "{29D794BC-3EBD-4D04-92D5-F26B81AEE6D0}"
 	ProjectSection(SolutionItems) = preProject
-		DocsExamples\ReportExample\PBI Inspector Reporting.Report\StaticResources\SharedResources\BaseThemes\CY23SU11.json = DocsExamples\ReportExample\PBI Inspector Reporting.Report\StaticResources\SharedResources\BaseThemes\CY23SU11.json
+		ExampleRules\ReportExample\PBI Inspector Reporting.Report\StaticResources\SharedResources\BaseThemes\CY23SU11.json = ExampleRules\ReportExample\PBI Inspector Reporting.Report\StaticResources\SharedResources\BaseThemes\CY23SU11.json
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FabInspector.ImageLibrary", "FabInspector.ImageLibrary\FabInspector.ImageLibrary.csproj", "{561E52C7-3683-43BA-9F15-0D3FA0B36CD9}"
@@ -121,6 +120,17 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ric.Operators", "Ric.Operators\Ric.Operators.csproj", "{C62A0FFC-0A20-4DE2-B2CF-FE892731888C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FabInspector.AvaloniaUI", "FabInspector.AvaloniaUI\FabInspector.AvaloniaUI.csproj", "{C94179BA-8952-47E5-BE47-E7E43630D2EF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+	ProjectSection(SolutionItems) = preProject
+		docs\cli-reference.md = docs\cli-reference.md
+		docs\examples-index.md = docs\examples-index.md
+		docs\gui-reference.md = docs\gui-reference.md
+		docs\intro.md = docs\intro.md
+		docs\operators-overview.md = docs\operators-overview.md
+		docs\rules-guide.md = docs\rules-guide.md
+		docs\usage-scenarios.md = docs\usage-scenarios.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -256,7 +266,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{AD4E6E10-AD07-4A1E-B6D4-258C5BCF261F} = {D842426E-4F0A-42E7-8574-3D8C739651F1}
+		{AD4E6E10-AD07-4A1E-B6D4-258C5BCF261F} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{0DABAA35-C96D-4D84-96ED-C088A39D5CA0} = {D842426E-4F0A-42E7-8574-3D8C739651F1}
 		{BB86A63C-BBD5-48DA-9481-343165781823} = {D842426E-4F0A-42E7-8574-3D8C739651F1}
 		{3A0CE8CE-A7CB-4288-B9EF-06056779A0D1} = {0DABAA35-C96D-4D84-96ED-C088A39D5CA0}
@@ -266,6 +276,7 @@ Global
 		{250ACB5C-52B3-494A-B3A9-EF734F348F43} = {F8D8F5A8-2FAB-4D9A-A9A8-EB48369A75F0}
 		{D1568C15-D0F3-439F-9EA1-D6353CEFB15C} = {F8D8F5A8-2FAB-4D9A-A9A8-EB48369A75F0}
 		{29D794BC-3EBD-4D04-92D5-F26B81AEE6D0} = {D1568C15-D0F3-439F-9EA1-D6353CEFB15C}
+		{02EA681E-C7D8-13C7-8484-4AC65E1B71E8} = {D842426E-4F0A-42E7-8574-3D8C739651F1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {937CBF58-BBEF-4642-AAD3-5156B6BF45CE}

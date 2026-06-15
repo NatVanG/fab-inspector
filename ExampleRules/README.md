@@ -1,6 +1,6 @@
-# DocsExamples
+# ExampleRules
 
-`DocsExamples` contains sample rule files and CI/CD examples used by Fab Inspector documentation.
+`ExampleRules` contains sample rule files and CI/CD examples used by Fab Inspector documentation.
 
 Use the curated index here:
 

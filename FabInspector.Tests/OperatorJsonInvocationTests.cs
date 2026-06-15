@@ -36,6 +36,7 @@ namespace FabInspector.Tests
                     new SetDifferenceOperator(),
                     new SetEqualOperator(),
                     new SetIntersectionOperator(),
+                    new SetIntersectOperator(),
                     new SetSymmetricDifferenceOperator(),
                     new SetUnionOperator(),
                     new StringContainsOperator(),
@@ -343,6 +344,20 @@ namespace FabInspector.Tests
             
             Assert.That(rule, Is.Not.Null);
             Assert.That(rule, Is.InstanceOf<SetIntersectionRule>());
+
+            var result = rule!.Apply(null);
+            Assert.That(result, Is.Not.Null);
+            JsonAssert.AreEquivalent(JsonNode.Parse(@"[""b"", ""c""]"), result);
+        }
+
+        [Test]
+        public void SetIntersect_CanBeDeserialized()
+        {
+            var jsonRule = @"{""intersect"": [[""a"", ""b"", ""c""], [""b"", ""c"", ""d""]]}";
+            var rule = JsonSerializer.Deserialize<Rule>(jsonRule, _serializerOptions);
+            
+            Assert.That(rule, Is.Not.Null);
+            Assert.That(rule, Is.InstanceOf<SetIntersectRule>());
 
             var result = rule!.Apply(null);
             Assert.That(result, Is.Not.Null);

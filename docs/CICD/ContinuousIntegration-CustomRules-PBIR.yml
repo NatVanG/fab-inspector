@@ -12,30 +12,30 @@ stages:
         - checkout: self
           path: 'self'
         - task: PowerShell@2
-          displayName: 'Download PBI Inspector'
+          displayName: 'Download Fab Inspector Inspector'
           inputs:
             targetType: inline
             script: |
               $path = "$(Build.SourcesDirectory)"
               $tempPath = "$path\_temp"
-              $toolPath = "$path\_Tools\PBIInspector"
+              $toolPath = "$path\_Tools\FabInspector"
               New-Item -ItemType Directory -Path $tempPath -ErrorAction SilentlyContinue | Out-Null
 
               Write-Host "##[debug]Downloading PBI Inspector"
-              $downloadUrl = "https://github.com/NatVanG/PBI-InspectorV2/releases/latest/download/win-x64-CLI.zip" 
-              $zipFile = "$tempPath\PBIRInspector.zip"
+              $downloadUrl = "https://github.com/NatVanG/fab-inspector/releases/latest/download/win-x64-FabInspCLI.zip" 
+              $zipFile = "$tempPath\FabInspector.zip"
               Invoke-WebRequest -Uri $downloadUrl -OutFile $zipFile
               Expand-Archive -Path $zipFile -DestinationPath $toolPath -Force                            
  
         - task: PowerShell@2
-          displayName: 'Run Report Rules'
+          displayName: 'Run Fab Inspector Rules'
           inputs:
             targetType: inline
             script: |
                   $path = "$(Build.SourcesDirectory)"
                   $rulesPath = "$path\rules"
                   $tempPath = "$path\_temp"
-                  $toolPath =  "$path\_Tools\PBIInspector\win-x64\CLI\PBIRInspectorCLI.exe"
+                  $toolPath =  "$path\_Tools\FabInspector\win-x64\FabInspCLI\fab-inspector.exe"
 
                   $itemsFolders = Get-ChildItem  -Path $path -recurse -include *.pbir
                   $rulesFiles = Get-ChildItem -Path $rulesPath -recurse -include *.json
@@ -50,7 +50,7 @@ stages:
                         {
                             $rulesFilePath = $rulesFile.FullName
                             Write-Host "##[group]Rules path: '$rulesFilePath'"
-                            Start-Process -FilePath "$toolPath" -ArgumentList "-pbipreport ""$itemPath"" -rules ""$rulesFilePath"" -formats ""ADO""" -NoNewWindow -Wait
+                            Start-Process -FilePath "$toolPath" -ArgumentList "-fabricitem ""$itemPath"" -rules ""$rulesFilePath"" -formats ""ADO""" -NoNewWindow -Wait
                         }
 
                       Write-Host "##[endgroup]"

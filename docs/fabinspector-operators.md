@@ -129,7 +129,7 @@ Executes a DAX query against a published Power BI semantic model via the [Power 
 }
 ```
 
-See also: [Example-daxquery-rule.json](Example-daxquery-rule.json), [Example-daxquery-rule2.json](Example-daxquery-rule2.json), [Example-daxquery-rule3.json](Example-daxquery-rule3.json), [Example-daxquery-rule4.json](Example-daxquery-rule4.json)
+See also: [Example-daxquery-rule.json](..ExampleRules/Example-daxquery-rule.json), [Example-daxquery-rule2.json](..ExampleRules/Example-daxquery-rule2.json), [Example-daxquery-rule3.json](..ExampleRules/Example-daxquery-rule3.json), [Example-daxquery-rule4.json](..ExampleRules/Example-daxquery-rule4.json)
 
 ---
 

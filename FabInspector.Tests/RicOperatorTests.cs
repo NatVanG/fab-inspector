@@ -34,6 +34,7 @@ namespace FabInspector.Tests
                     new SetDifferenceOperator(),
                     new SetEqualOperator(),
                     new SetIntersectionOperator(),
+                    new SetIntersectOperator(),
                     new SetSymmetricDifferenceOperator(),
                     new SetUnionOperator(),
                     new StringContainsOperator(),
