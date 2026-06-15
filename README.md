@@ -76,8 +76,8 @@ Release binaries for the CLI and GUI are published at: https://github.com/NatVan
 | [Rules Guide](Docs/rules-guide.md) | Rule schema, test logic, and patching guidance |
 | [Operators Overview](Docs/operators-overview.md) | When to use Ric vs FabInspector operators |
 | [Examples Index](Docs/examples-index.md) | Catalog of rule files in ExampleRules by use case |
-| [Ric Operators](ExampleRules/Ric-Operators.md) | Local/query/transformation/file-system operators |
-| [FabInspector Operators](ExampleRules/FabInspector-Operators.md) | API, DAX, SQL, and DFS operators |
+| [Ric Operators](Docs/Ric-Operators.md) | Local/query/transformation/file-system operators |
+| [FabInspector Operators](Docs/FabInspector-Operators.md) | API, DAX, SQL, and DFS operators |
 | [Architecture](FabInspector.Core/Architecture.md) | Inspection engine and DI/concurrency internals |
 
 ## Base Rules

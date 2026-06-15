@@ -6,8 +6,6 @@ Ric operators extend the [JSON Logic](https://jsonlogic.com/) engine used by Fab
 
 For a guide on when to use Ric vs FabInspector operators, see [Operators Overview](../docs/operators-overview.md).
 
-All snippets below show the operator as it appears inside a rule's `test` array. For complete working rule files see the links in each section and the [Rule File Examples](../README.md#customrulesexamples) in the README.
-
 ---
 
 ## Contents
@@ -86,7 +84,7 @@ Evaluates a [JSONPath](https://goessner.net/articles/JsonPath/) expression again
 { "path": "$.visuals[*].visual.visualType" }
 ```
 
-See also: [Example-NewOperators-rules.json](Example-NewOperators-rules.json)
+See also: [Example-NewOperators-rules.json](../ExampleRules/Example-NewOperators-rules.json)
 
 ---
 
@@ -161,7 +159,7 @@ Binds named variables to expressions and makes them available by name in a `body
 }
 ```
 
-See also: [Example-let-rule.json](Example-let-rule.json)
+See also: [Example-let-rule.json](../ExampleRules/Example-let-rule.json)
 
 ---
 
@@ -246,7 +244,7 @@ Returns all property names of a JSON object as an array.
 { "keys": [{ "var": "" }] }
 ```
 
-See also: [Example-NewOperators-rules.json](Example-NewOperators-rules.json)
+See also: [Example-NewOperators-rules.json](../ExampleRules/Example-NewOperators-rules.json)
 
 ---
 
@@ -264,7 +262,7 @@ Returns all property values of a JSON object as an array.
 { "values": [{ "var": "" }] }
 ```
 
-See also: [Example-NewOperators-rules.json](Example-NewOperators-rules.json)
+See also: [Example-NewOperators-rules.json](../ExampleRules/Example-NewOperators-rules.json)
 
 ---
 
@@ -286,7 +284,7 @@ Removes duplicate elements from an array using deep equality comparison.
 }
 ```
 
-See also: [Example-NewOperators-rules.json](Example-NewOperators-rules.json)
+See also: [Example-NewOperators-rules.json](../ExampleRules/Example-NewOperators-rules.json)
 
 ---
 
@@ -678,4 +676,4 @@ Loads a YAML file and returns its content as a JSON node. If the file contains m
 
 ---
 
-*For deeper examples and combined operator usage, see [Example-NewOperators-rules.json](Example-NewOperators-rules.json), [Example-let-rule.json](Example-let-rule.json), and the [Fab Inspector wiki](https://github.com/NatVanG/PBI-InspectorV2/wiki).*
+*For deeper examples and combined operator usage, see [Example-NewOperators-rules.json](../ExampleRules/Example-NewOperators-rules.json), [Example-let-rule.json](../ExampleRules/Example-let-rule.json), and the [Fab Inspector wiki](https://github.com/NatVanG/PBI-InspectorV2/wiki).*

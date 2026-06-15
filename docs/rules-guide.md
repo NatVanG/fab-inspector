@@ -9,7 +9,6 @@
 - [Rule object structure](#rule-object-structure)
 - [Test logic](#test-logic)
 - [Rule file examples](#rule-file-examples)
-- [Patching](#patching) ⚠️ deprecated
 
 ---
 

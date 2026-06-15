@@ -44,7 +44,6 @@ This page catalogs sample rule files in [ExampleRules](../ExampleRules) so you c
 |---|---|
 | [Example-NewOperators-rules.json](../ExampleRules/Example-NewOperators-rules.json) | Multiple Ric operator patterns |
 | [Example-let-rule.json](../ExampleRules/Example-let-rule.json) | `let` variable binding patterns |
-| [Example-Let-Nested-Sample.json](../ExampleRules/Example-Let-Nested-Sample.json) | Nested `let` patterns |
 | [Example-ReportPageFieldMap.json](../ExampleRules/Example-ReportPageFieldMap.json) | Report page field mapping pattern |
 
 ## Governance, Naming, and Configuration
@@ -66,8 +65,8 @@ This page catalogs sample rule files in [ExampleRules](../ExampleRules) so you c
 
 | File | Purpose |
 |---|---|
-| [ContinuousIntegration-Rules-PBIR.yml](../ExampleRules/ContinuousIntegration-Rules-PBIR.yml) | CI pipeline sample for PBIR rules |
-| [ContinuousIntegration-CustomRules-PBIR.yml](../ExampleRules/ContinuousIntegration-CustomRules-PBIR.yml) | CI pipeline sample for custom rules |
+| [ContinuousIntegration-Rules-PBIR.yml](CICD/ContinuousIntegration-Rules-PBIR.yml) | CI pipeline sample for PBIR rules |
+| [ContinuousIntegration-CustomRules-PBIR.yml](CICD/ContinuousIntegration-CustomRules-PBIR.yml) | CI pipeline sample for custom rules |
 
 ## Next Step
 

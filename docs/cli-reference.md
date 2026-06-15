@@ -167,4 +167,4 @@ The following environment variables are read automatically when the correspondin
 
 ---
 
-*For CI/CD pipeline setup and tutorials see [Azure DevOps and GitHub integration](usage-scenarios.md##2-fabric-item-definitions-in-source-control--local-rules-in-cicd). For operator reference see [Ric Operators](Ric-Operators.md) and [FabInspector Operators](FabInspector-Operators.md).*
+*For CI/CD pipeline setup and tutorials see [Azure DevOps and GitHub integration](usage-scenarios.md). For operator reference see [Ric Operators](Ric-Operators.md) and [FabInspector Operators](FabInspector-Operators.md).*
