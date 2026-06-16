@@ -5,7 +5,7 @@
       "name": "Execute Dfs Get",
       "description": "",
       "itemType": "none",
-      "disabled": false,
+      "disabled": true,
       "test": [
         {
           "dfsget": [
@@ -18,11 +18,11 @@
       ]
     },
     {
-      "id": "ONELAKE_RESULTS_COUNT",
+      "id": "ONELAKE_DAXQUERY_COUNT",
       "name": "Count items in Results array from OneLake JSON",
       "description": "Fetches a OneLake JSON file using dfsget and verifies the Results array can be counted.",
       "itemType": "None",
-      "disabled": false,
+      "disabled": true,
       "test": [
         {
           ">=": [
@@ -32,11 +32,11 @@
                   "query": [
                     {
                       "dfsget": [
-                        "https://onelake.dfs.fabric.microsoft.com/LoadTestWS2/LoadTestResults.Lakehouse/Files/FabInspector/2026-04-17/f45498e6-9f62-4bbb-bdb6-6d8a7e3a2703/52dabb3a-6985-4c00-87d8-a9eada76782e/TestRun_65ee343536d143aeb182d2bfe42f976d.json"
+                        "https://onelake.dfs.fabric.microsoft.com/FUAM/FUAM_Performance.Lakehouse/Files/PBI-Performance/PowerBIPerformanceData.json"
                       ]
                     },
                     {
-                      "path": "$.Results[*]"
+                      "path": "$.events[?@.name == 'Execute DAX Query']"
                     }
                   ]
                 }
@@ -46,6 +46,95 @@
           ]
         },
         true
+      ]
+    },
+    {
+      "id": "ONELAKE_DAXQUERY_EXECUTIONS",
+      "name": "Return each DAX query execution",
+      "description": "Fetches OneLake 'Execute DAX Query' events and returns the raw daxquery execution result for each event.",
+      "itemType": "None",
+      "disabled": false,
+      "test": [
+        {
+          "map": [
+            {
+              "query": [
+                {
+                  "dfsget": [
+                    "https://onelake.dfs.fabric.microsoft.com/FUAM/FUAM_Performance.Lakehouse/Files/PBI-Performance/PowerBIPerformanceData.json"
+                  ]
+                },
+                {
+                  "path": "$.events[?@.name == 'Execute DAX Query']"
+                }
+              ]
+            },
+            {
+              "daxquery": [
+                {
+                  "path": "$.metrics.QueryText"
+                }
+              ]
+            }
+          ]
+        },
+        []
+      ]
+    },
+    {
+      "id": "ONELAKE_DAXQUERY_RESULTS",
+      "name": "Return IDs of events whose DAX query fails",
+      "description": "Executes each DAX query found in OneLake 'Execute DAX Query' events and returns the event IDs for queries that return no results.",
+      "itemType": "None",
+      "disabled": true,
+      "test": [
+        {
+          "map": [
+            {
+              "filter": [
+                {
+                  "query": [
+                    {
+                      "dfsget": [
+                        "https://onelake.dfs.fabric.microsoft.com/FUAM/FUAM_Performance.Lakehouse/Files/PBI-Performance/PowerBIPerformanceData.json"
+                      ]
+                    },
+                    {
+                      "path": "$.events[?@.name == 'Execute DAX Query']"
+                    }
+                  ]
+                },
+                {
+                  "<=": [
+                    {
+                      "count": [
+                        {
+                          "query": [
+                            {
+                              "daxquery": [
+                                {
+                                  "path": "$.metrics.QueryText"
+                                }
+                              ]
+                            },
+                            {
+                              "var": "results.0.tables.0.rows"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    0
+                  ]
+                }
+              ]
+            },
+            {
+              "var": "id"
+            }
+          ]
+        },
+        []
       ]
     }
   ]
