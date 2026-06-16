@@ -19,7 +19,7 @@ Optional. Microsoft Fabric Workspace ID (GUID). When specified, enables Fabric m
 Required. Path to the rules file. This can be a local JSON file path or a OneLake DFS URL. OneLake rules URLs require non-local authentication.
 
 ```-rulescatalog filepath```  
-Alternative to `-rules`. Path to a rules catalog JSON file that references multiple rulesets. Mutually exclusive with `-rules`. See [Example-RulesCatalog.json](../ExampleRules/Example-RulesCatalog.json).
+Alternative to `-rules`. Path to a rules catalog JSON file that references multiple rulesets. Mutually exclusive with `-rules`. See [23-RulesCatalog.json](../ExampleRules/23-RulesCatalog.json).
 
 ```-authmethod local|interactive|azurecli|clientsecret|certificate|federatedtoken|managedidentity```  
 Optional, defaults to `local`.

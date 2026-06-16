@@ -4,14 +4,14 @@ Fab Inspector supports local, workspace, and OneLake-based validation workflows.
 
 | Scenario | Fabric items source | Rules source | Test results output targets | Auth method |
 |---|---|---|---|---|
-| [1. Local-only](#1-local-fabric-item-definitions--local-rules--local-output) | Local folder | Local | Console, HTML, JSON | `local` |
-| [2. CI/CD checkout](#2-fabric-item-definitions-in-source-control--local-rules-in-cicd) | Git checkout on build agent | Local in repo | GitHub logs, JSON stored in OneLake | `local` or `federatedtoken` (GitHub OIDC) |
+| [1. Local-only](#1-local-fabric-item-definitions-local-rules-local-output) | Local folder | Local | Console, HTML, JSON | `local` |
+| [2. CI/CD checkout](#2-fabric-item-definitions-in-source-control-local-rules-in-cicd) | Git checkout on build agent | Local in repo | GitHub logs, JSON stored in OneLake | `local` or `federatedtoken` (GitHub OIDC) |
 | [3. Workspace-scoped](#3-workspace-scoped-all-items-in-a-fabric-workspace) | All/some items in a Fabric workspace | Local or OneLake | Console or JSON stored in OneLake | `interactive`, `azurecli`, [`clientsecret`](cli-reference.md#handling-client-secrets-safely), `certificate`, `federatedtoken`, or `managedidentity` |
 | [4. Item-scoped workspace](#4-item-scoped-single-item-in-a-fabric-workspace) | Single item in a Fabric workspace | Local or OneLake | Console or JSON stored in OneLake | `interactive`, `azurecli`, [`clientsecret`](cli-reference.md#handling-client-secrets-safely), `certificate`, `federatedtoken`, or `managedidentity` |
 
 Rules input can be provided either as a single rules file (`-rules`) or as a rules catalog (`-rulescatalog`) that references multiple rulesets. The two options are mutually exclusive.
 
-Rules catalog examples are available at [ExampleRules/Example-RulesCatalog.json](../ExampleRules/Example-RulesCatalog.json).
+Rules catalog examples are available at [ExampleRules/23-RulesCatalog.json](../ExampleRules/23-RulesCatalog.json).
 
 ## 1. Local Fabric item definitions + local rules + local output
 

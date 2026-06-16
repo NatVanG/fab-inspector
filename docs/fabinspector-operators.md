@@ -61,7 +61,7 @@ Performs an authenticated HTTP GET against the Power BI or Fabric REST API and r
 { "apiget": ["https://api.fabric.microsoft.com/v1/workspaces/{context-fabricworkspace}/onelake/settings"] }
 ```
 
-See also: [Example-pbi-apiget-rule.json](../ExampleRules/Example-pbi-apiget-rule.json), [Example-fabric-apiget-rule.json](../ExampleRules/Example-fabric-apiget-rule.json), [Example-fabric-apiget-wparams-rule.json](../ExampleRules/Example-fabric-apiget-wparams-rule.json)
+See also: [18-PBI-apiget-Rules.json](../ExampleRules/18-PBI-apiget-Rules.json), [08-Fabric-apiget-Rules.json](../ExampleRules/08-Fabric-apiget-Rules.json)
 
 ---
 
@@ -88,7 +88,7 @@ The URL must use HTTPS and target a host ending in `.dfs.fabric.microsoft.com`.
 }
 ```
 
-See also: [Example-dfsget-rule.json](../ExampleRules/Example-dfsget-rule.json)
+See also: [05-dfsget-Rules.json](../ExampleRules/05-dfsget-Rules.json)
 
 ---
 
@@ -129,7 +129,7 @@ Executes a DAX query against a published Power BI semantic model via the [Power 
 }
 ```
 
-See also: [Example-daxquery-rule.json](../ExampleRules/Example-daxquery-rule.json), [Example-daxquery-rule2.json](../ExampleRules/Example-daxquery-rule2.json), [Example-daxquery-rule3.json](../ExampleRules/Example-daxquery-rule3.json), [Example-daxquery-rule4.json](../ExampleRules/Example-daxquery-rule4.json)
+See also: [01-daxquery-Rules.json](../ExampleRules/01-daxquery-Rules.json)
 
 ---
 
@@ -177,7 +177,7 @@ For safety, `sqlquery` only allows single SELECT-style queries and rejects SQL c
 }
 ```
 
-See also: [Example-sqlquery-rule.json](../ExampleRules/Example-sqlquery-rule.json), [Example-sqlquery-wparams-rule.json](../ExampleRules/Example-sqlquery-wparams-rule.json)
+See also: [26-sqlquery-Rules.json](../ExampleRules/26-sqlquery-Rules.json)
 
 ---
 
@@ -210,7 +210,7 @@ Calls the [Power BI Admin Workspace Info API](https://learn.microsoft.com/en-us/
 { "scannerapi": ["", true, true, true, true, true] }
 ```
 
-See also: [Example-scannerapi-rules.json](../ExampleRules/Example-scannerapi-rules.json)
+See also: [25-scannerapi-Rules.json](../ExampleRules/25-scannerapi-Rules.json)
 
 ---
 

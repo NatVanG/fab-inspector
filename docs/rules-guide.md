@@ -153,12 +153,12 @@ Although somewhat of an anti-pattern, rules can vary their test logic based on t
 | File | Description |
 |---|---|
 | [Base Rules](../Rules/Base-rules.json) | The set of rules that ships with Fab Inspector (Power BI report quality rules) |
-| [Examples-rules.json](../ExampleRules/Examples-rules.json) | Growing library of example rules |
-| [Example-CopyJob-Rules.json](../ExampleRules/Example-CopyJob-Rules.json) | Rules to check CopyJob metadata |
-| [Example-Environment-Rules.json](../ExampleRules/Example-Environment-Rules.json) | Rules for Fabric Environment CI/CD items |
-| [Example-FabricCrossItem-Rules.json](../ExampleRules/Example-FabricCrossItem-Rules.json) | Rules across multiple Fabric item types |
-| [Example-RulesCatalog.json](../ExampleRules/Example-RulesCatalog.json) | Rules catalog referencing multiple rulesets |
-| [RulesTemplate.json](../ExampleRules/RulesTemplate.json) | Minimal rules file template |
+| [23-RulesCatalog.json](../ExampleRules/23-RulesCatalog.json) | Growing library of example rules |
+| [00-CopyJob-Rules.json](../ExampleRules/00-CopyJob-Rules.json) | Rules to check CopyJob metadata |
+| [06-Environment-Rules.json](../ExampleRules/06-Environment-Rules.json) | Rules for Fabric Environment CI/CD items |
+| [10-Fabric-CrossItemTypes-Rules.json](../ExampleRules/10-Fabric-CrossItemTypes-Rules.json) | Rules across multiple Fabric item types |
+| [23-RulesCatalog.json](../ExampleRules/23-RulesCatalog.json) | Rules catalog referencing multiple rulesets |
+| [21-Rules-Template.json](../ExampleRules/21-Rules-Template.json) | Minimal rules file template |
 
 For a categorized list of all sample files, see [Examples Index](examples-index.md).
 

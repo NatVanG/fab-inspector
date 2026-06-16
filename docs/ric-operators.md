@@ -10,14 +10,14 @@ For a guide on when to use Ric vs FabInspector operators, see [Operators Overvie
 
 ## Contents
 
-- [Navigation & Query](#navigation--query): `part`, `partinfo`, `path`, `query`, `drillvar`, `let`
+- [Navigation & Query](#navigation-query): `part`, `partinfo`, `path`, `query`, `drillvar`, `let`
 - [Data Transformation](#data-transformation): `coalesce`, `tostring`, `torecord`, `typeof`, `keys`, `values`, `distinct`, `count`
 - [String Operations](#string-operations): `strcontains`, `strsplit`, `strjoin`, `regexextract`
 - [Array Operations](#array-operations): `slice`
 - [Set Operations](#set-operations): `union`, `intersection` (`intersect` alias), `diff`, `symdiff`, `equalsets`
-- [Layout & Geometry](#layout--geometry): `rectoverlap`
-- [Date & Time](#date--time): `now`, `datediff`
-- [Type & Null Checks](#type--null-checks): `hasprop`, `isnullorempty`
+- [Layout & Geometry](#layout-geometry): `rectoverlap`
+- [Date & Time](#date-time): `now`, `datediff`
+- [Type & Null Checks](#type-null-checks): `hasprop`, `isnullorempty`
 - [File System](#file-system): `filesize`, `filetextsearchcount`, `fromyamlfile`
 
 ---
@@ -84,7 +84,7 @@ Evaluates a [JSONPath](https://goessner.net/articles/JsonPath/) expression again
 { "path": "$.visuals[*].visual.visualType" }
 ```
 
-See also: [Example-NewOperators-rules.json](../ExampleRules/Example-NewOperators-rules.json)
+See also: [16-MiscOperators-Rules.json](../ExampleRules/16-MiscOperators-Rules.json)
 
 ---
 
@@ -159,7 +159,7 @@ Binds named variables to expressions and makes them available by name in a `body
 }
 ```
 
-See also: [Example-let-rule.json](../ExampleRules/Example-let-rule.json)
+See also: [15-let-Rules.json](../ExampleRules/15-let-Rules.json)
 
 ---
 
@@ -244,7 +244,7 @@ Returns all property names of a JSON object as an array.
 { "keys": [{ "var": "" }] }
 ```
 
-See also: [Example-NewOperators-rules.json](../ExampleRules/Example-NewOperators-rules.json)
+See also: [16-MiscOperators-Rules.json](../ExampleRules/16-MiscOperators-Rules.json)
 
 ---
 
@@ -262,7 +262,7 @@ Returns all property values of a JSON object as an array.
 { "values": [{ "var": "" }] }
 ```
 
-See also: [Example-NewOperators-rules.json](../ExampleRules/Example-NewOperators-rules.json)
+See also: [16-MiscOperators-Rules.json](../ExampleRules/16-MiscOperators-Rules.json)
 
 ---
 
@@ -284,7 +284,7 @@ Removes duplicate elements from an array using deep equality comparison.
 }
 ```
 
-See also: [Example-NewOperators-rules.json](../ExampleRules/Example-NewOperators-rules.json)
+See also: [16-MiscOperators-Rules.json](../ExampleRules/16-MiscOperators-Rules.json)
 
 ---
 
@@ -676,4 +676,4 @@ Loads a YAML file and returns its content as a JSON node. If the file contains m
 
 ---
 
-*For deeper examples and combined operator usage, see [Example-NewOperators-rules.json](../ExampleRules/Example-NewOperators-rules.json), [Example-let-rule.json](../ExampleRules/Example-let-rule.json), and the [Fab Inspector wiki](https://github.com/NatVanG/PBI-InspectorV2/wiki).*
+*For deeper examples and combined operator usage, see [16-MiscOperators-Rules.json](../ExampleRules/16-MiscOperators-Rules.json), [15-let-Rules.json](../ExampleRules/15-let-Rules.json), and the [Fab Inspector wiki](https://github.com/NatVanG/PBI-InspectorV2/wiki).*
