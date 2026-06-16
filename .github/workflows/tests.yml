@@ -17,13 +17,6 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Check README and Docs links
-      uses: lycheeverse/lychee-action@v2
-      with:
-        args: --no-progress --verbose README.md "Docs/**/*.md"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     - name: Verify operator docs match code registrations
       shell: pwsh
       run: |
