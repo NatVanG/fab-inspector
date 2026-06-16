@@ -62,9 +62,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ExampleRules", "ExampleRule
 		ExampleRules\Example-VaryRuleByFabricItemName-rules.json = ExampleRules\Example-VaryRuleByFabricItemName-rules.json
 		ExampleRules\Examples-rules.json = ExampleRules\Examples-rules.json
 		ExampleRules\RulesTemplate.json = ExampleRules\RulesTemplate.json
-		ExampleRules\Sample-CapacityTenantOverrides.json = ExampleRules\Sample-CapacityTenantOverrides.json
 		ExampleRules\Sample-Lakehouse-Rules.json = ExampleRules\Sample-Lakehouse-Rules.json
-		ExampleRules\Sample-TenantSettings.json = ExampleRules\Sample-TenantSettings.json
 		ExampleRules\Sample-VariableLibrary-rules.json = ExampleRules\Sample-VariableLibrary-rules.json
 		ExampleRules\Themeable-properties-rules.json = ExampleRules\Themeable-properties-rules.json
 	EndProjectSection

@@ -4,6 +4,8 @@
       "id": "LIST_THEMES",
       "name": "List themes.",
       "description": "",
+      "itemType": "Report",
+      "disabled": false,
       "part": "SharedResources",
       "test": [
         {
@@ -25,6 +27,8 @@
       "id": "LIST_THEMES_V2",
       "name": "List themes v2.",
       "description": "",
+      "itemType": "Report",
+      "disabled": false,
       "part": "BaseThemes",
       "test": [
         {

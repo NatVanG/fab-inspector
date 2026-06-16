@@ -1,0 +1,67 @@
+{
+  "rules": [
+    {
+      "id": "EXECUTE_DAX_QUERY",
+      "name": "Execute Dax query",
+      "description": "",
+      "itemType": "None",
+      "disabled": false,
+      "test": [
+        {
+          "daxquery": "EVALUATE TOPN(100, 'dashboards')"
+        },
+        []
+      ]
+    },
+    {
+      "id": "EXECUTE_DAX_QUERY_WITH_RLS_IMPERSONATION",
+      "name": "Execute Dax query with RLS impersonation",
+      "description": "",
+      "itemType": "None",
+      "disabled": true,
+      "test": [
+        {
+          "daxquery": [
+            "EVALUATE TOPN(100, 'dashboards')",
+            "{context-fabricworkspace}",
+            "{context-fabricitem}",
+            false,
+            "Dev1@env.onmicrosoft.com"
+          ]
+        },
+        []
+      ]
+    },
+    {
+      "id": "EXECUTE_DAX_QUERY_ROWCOUNT_GT_ZERO",
+      "name": "Execute Dax query row count greater than zero",
+      "description": "Executes a DAX query and validates the Execute Queries response contains at least one row in results[0].tables[0].rows.",
+      "itemType": "None",
+      "disabled": false,
+      "test": [
+        {
+          "let": [
+            {
+              "daxResult": {
+                "daxquery": "EVALUATE TOPN(100, 'dashboards')"
+              }
+            },
+            {
+              ">": [
+                {
+                  "count": [
+                    {
+                      "var": "daxResult.results.0.tables.0.rows"
+                    }
+                  ]
+                },
+                0
+              ]
+            }
+          ]
+        },
+        true
+      ]
+    }
+  ]
+}

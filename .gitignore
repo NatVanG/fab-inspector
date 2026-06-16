@@ -399,5 +399,5 @@ ExampleRules/FabricFileSystem-IntegrationTests.md
 publish-test/
 /.github/copilot-instructions.md
 /.vscode/settings.json
-/Scripts/
+/.my-scripts/
 THIRD-PARTY-NOTICES.md

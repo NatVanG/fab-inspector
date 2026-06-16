@@ -4,7 +4,8 @@
       "id": "LIST_STATICRESOURCES",
       "name": "List staticresources.",
       "description": "",
-      "disabled": true,
+      "itemType": "Report",
+      "disabled": false,
       "part": "RegisteredResources",
       "test": [
         {
@@ -24,7 +25,8 @@
       "id": "LIST_STATICRESOURCES_V2",
       "name": "List staticresources v2.",
       "description": "list png files only",
-      "disabled": true,
+      "disabled": false,
+      "itemType": "Report",
       "part": "StaticResources",
       "test": [
         {
@@ -56,7 +58,8 @@
       "id": "LIST_STATICRESOURCES_FILESIZE",
       "name": "List staticresources file sizes.",
       "description": "list sizes of png files only",
-      "disabled": true,
+      "itemType": "Report",
+      "disabled": false,
       "part": "StaticResources",
       "test": [
         {
@@ -92,7 +95,8 @@
       "id": "LIST_STATICRESOURCES_V3",
       "name": "List staticresources v3.",
       "description": "list png files only",
-      "disabled": true,
+      "disabled": false,
+      "itemType": "Report",
       "part": "StaticResources",
       "test": [
         {
@@ -116,7 +120,8 @@
       "id": "LIST_STATICRESOURCES_V4",
       "name": "List staticresources v4.",
       "description": "list png files only",
-      "disabled": true,
+      "itemType": "Report",
+      "disabled": false,
       "part": "StaticResources",
       "test": [
         {
@@ -139,6 +144,7 @@
       "id": "LIST_STATICRESOURCES_FILESIZE",
       "name": "List staticresources file sizes.",
       "description": "list sizes of png files only",
+      "itemType": "Report",
       "disabled": false,
       "part": "StaticResources",
       "test": [

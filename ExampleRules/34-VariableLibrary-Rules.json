@@ -3,7 +3,7 @@
     {
       "id": "VARLIBRARY_MISSINGREFERENCES",
       "name": "Check that all variable library references are valid.",
-      "itemType": "*",
+      "itemType": "DataPipeline|VariableLibrary",
       "test": [
         {
           "diff": [

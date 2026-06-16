@@ -4,6 +4,8 @@
       "id": "GENERAL_PROPERTIES_PRESENT",
       "name": "Consider using a theme file to define general properties.",
       "description": "",
+      "itemType": "Report",
+      "disabled": false,
       "part": "Pages",
       "test": [
         {
@@ -78,6 +80,8 @@
       "id": "BORDER_PROPERTIES_PRESENT",
       "name": "Consider using a theme file to define border properties.",
       "description": "",
+      "itemType": "Report",
+      "disabled": false,
       "part": "Pages",
       "test": [
         {
@@ -154,6 +158,8 @@
     {
       "id": "VISUALHEADER_PROPERTIES_PRESENT",
       "name": "Consider using a theme file to define visualHeader properties.",
+      "itemType": "Report",
+      "disabled": false,
       "part": "Pages",
       "test": [
         {
@@ -233,6 +239,8 @@
       "id": "VISUALTOOLTIP_PROPERTIES_PRESENT",
       "name": "Consider using a theme file to define visualTooltip properties.",
       "description": "",
+      "itemType": "Report",
+      "disabled": false,
       "part": "Pages",
       "test": [
         {
@@ -309,6 +317,8 @@
     {
       "id": "PADDING_PROPERTIES_PRESENT",
       "name": "Consider using a theme file to define padding properties.",
+      "itemType": "Report",
+      "disabled": false,
       "part": "Pages",
       "test": [
         {
@@ -387,6 +397,8 @@
     {
       "id": "BACKGROUND_PROPERTIES_PRESENT",
       "name": "Consider using a theme file to define background properties.",
+      "itemType": "Report",
+      "disabled": false,
       "part": "Pages",
       "test": [
         {
@@ -463,6 +475,8 @@
     {
       "id": "DROPSHADOW_PROPERTIES_PRESENT",
       "name": "Consider using a theme file to define dropShadow properties.",
+      "itemType": "Report",
+      "disabled": false,
       "part": "Pages",
       "test": [
         {
@@ -539,6 +553,8 @@
     {
       "id": "TITLE_PROPERTIES_PRESENT",
       "name": "Consider using a theme file to define title properties.",
+      "itemType": "Report",
+      "disabled": false,
       "part": "Pages",
       "test": [
         {
@@ -625,6 +641,9 @@
     {
       "id": "SUBTITLE_PROPERTIES_PRESENT",
       "name": "Consider using a theme file to define subtitle properties.",
+      "description": "Check if subtitle properties are defined in a theme file.",
+      "itemType": "Report",
+      "disabled": false,
       "part": "Pages",
       "test": [
         {
@@ -701,6 +720,9 @@
     {
       "id": "SPACING_PROPERTIES_PRESENT",
       "name": "Consider using a theme file to define spacing properties.",
+      "description": "Check if spacing properties are defined in a theme file.",
+      "itemType": "Report",
+      "disabled": false,
       "part": "Pages",
       "test": [
         {
@@ -777,6 +799,9 @@
     {
       "id": "DIVIDER_PROPERTIES_PRESENT",
       "name": "Consider using a theme file to define divider properties.",
+      "description": "Check if divider properties are defined in a theme file.",
+      "itemType": "Report",
+      "disabled": false,
       "part": "Pages",
       "test": [
         {
@@ -855,6 +880,9 @@
     {
       "id": "STYLEPRESET_PROPERTIES_PRESENT",
       "name": "Consider using a theme file to define stylePreset properties.",
+      "description": "Check if stylePreset properties are defined in a theme file.",
+      "itemType": "Report",
+      "disabled": false,
       "part": "Pages",
       "test": [
         {

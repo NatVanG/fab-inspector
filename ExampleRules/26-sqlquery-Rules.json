@@ -1,0 +1,44 @@
+{
+  "rules": [
+    {
+      "id": "EXECUTE_SQL_QUERY",
+      "name": "Execute SQL query",
+      "description": "",
+      "itemType": "None",
+      "disabled": false,
+      "test": [
+        {
+          "sqlquery": "select count(*) as capacityCount from capacities"
+        },
+        [
+          {
+            "capacityCount": 5
+          }
+        ]
+      ]
+    },
+    {
+      "id": "EXECUTE_SQL_QUERY_WITH_PARAMETERS",
+      "name": "Execute SQL query (with parameters)",
+      "description": "",
+      "itemType": "None",
+      "disabled": true,
+      "test": [
+        {
+          "sqlquery": [
+            "select count(*) as capacityCount from capacities",
+            "{context-fabricworkspace}",
+            "{context-fabricitem}",
+            true,
+            true
+          ]
+        },
+        [
+          {
+            "capacityCount": 5
+          }
+        ]
+      ]
+    }
+  ]
+}
