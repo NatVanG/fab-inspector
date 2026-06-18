@@ -45,8 +45,8 @@ jobs:
         $ricCode = Get-CodeOperators 'Ric.Operators/*.cs'
         $fabCode = Get-CodeOperators 'FabInspector.Operators/*.cs'
 
-        $ricDoc = Get-DocOperators 'Docs/ric-operators.md'
-        $fabDoc = Get-DocOperators 'Docs/fabinspector-operators.md'
+        $ricDoc = Get-DocOperators 'docs/ric-operators.md'
+        $fabDoc = Get-DocOperators 'docs/fabinspector-operators.md'
 
         $missingInRicDoc = $ricCode | Where-Object { $_ -notin $ricDoc }
         $extraInRicDoc = $ricDoc | Where-Object { $_ -notin $ricCode }
@@ -58,13 +58,13 @@ jobs:
           Write-Host 'Operator documentation drift detected.'
 
           if ($missingInRicDoc) {
-            Write-Host "Missing in Docs/ric-operators.md: $($missingInRicDoc -join ', ')"
+            Write-Host "Missing in docs/ric-operators.md: $($missingInRicDoc -join ', ')"
           }
           if ($extraInRicDoc) {
             Write-Host "Not found in Ric.Operators code but documented: $($extraInRicDoc -join ', ')"
           }
           if ($missingInFabDoc) {
-            Write-Host "Missing in Docs/fabinspector-operators.md: $($missingInFabDoc -join ', ')"
+            Write-Host "Missing in docs/fabinspector-operators.md: $($missingInFabDoc -join ', ')"
           }
           if ($extraInFabDoc) {
             Write-Host "Not found in FabInspector.Operators code but documented: $($extraInFabDoc -join ', ')"
