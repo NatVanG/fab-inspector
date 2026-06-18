@@ -1,0 +1,111 @@
+{
+  "rules": [
+    {
+      "id": "CHECK_LAKEHOUSE_SHORTCUT_TARGETTYPE",
+      "name": "Check Shortcuts target type.",
+      "itemType": "Lakehouse",
+      "part": "shortcuts.metadata.json",
+      "test": [
+        {
+          "all": [
+            {
+              "var": ""
+            },
+            {
+              "==": [
+                {
+                  "var": "target.type"
+                },
+                "OneLake"
+              ]
+            }
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "CHECK_LAKEHOUSE_SHORTCUT_TARGETTYPE2",
+      "name": "Check Shortcuts target type 2.",
+      "itemType": "Lakehouse",
+      "test": [
+        {
+          "all": [
+            {
+              "merge": [
+                {
+                  "part": "shortcuts.metadata.json"
+                }
+              ]
+            },
+            {
+              "==": [
+                {
+                  "var": "target.type"
+                },
+                "OneLake"
+              ]
+            }
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "FABRIC_API_LAKEHOUSE_NAMES_START_WITH_LH",
+      "name": "Lakehouse names must start with LH_",
+      "description": "Calls the Fabric API to list Lakehouse items in the current workspace and returns names that do not start with LH_.",
+      "itemType": "none",
+      "disabled": false,
+      "test": [
+        {
+          "let": [
+            {
+              "response": {
+                "apiget": [
+                  "https://api.fabric.microsoft.com/v1/workspaces/{context-fabricworkspace}/items?type={type}&recursive={recursive}",
+                  "Lakehouse",
+                  "true"
+                ]
+              }
+            },
+            {
+              "map": [
+                {
+                  "filter": [
+                    {
+                      "query": [
+                        {
+                          "var": "response"
+                        },
+                        {
+                          "path": "$.value[*].displayName"
+                        }
+                      ]
+                    },
+                    {
+                      "!": [
+                        {
+                          "strcontains": [
+                            {
+                              "var": ""
+                            },
+                            "^LH_"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "var": ""
+                }
+              ]
+            }
+          ]
+        },
+        []
+      ]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "rules": [
+    {
+      "id": "VARY_BY_REPORT_NAME",
+      "name": "Vary by report name",
+      "description": "Run rule only if report display name is 'Inventory sample'",
+      "itemType":  "Report",
+      "disabled": false,
+      "test": [
+        {
+          "?:": [
+            {
+              "==": [
+                {
+                  "query": [
+                    {
+                      "part": ".platform"
+                    },
+                    {
+                      "var": "0.metadata.displayName"
+                    }
+                  ]
+                },
+                "Inventory sample"
+              ]
+            },
+            "Rule output",
+            "This is another report."
+          ]
+        },
+        "Rule output"
+      ]
+    }
+  ]
+}

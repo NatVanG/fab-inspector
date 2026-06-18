@@ -19,7 +19,7 @@ Optional. Microsoft Fabric Workspace ID (GUID). When specified, enables Fabric m
 Required. Path to the rules file. This can be a local JSON file path or a OneLake DFS URL. OneLake rules URLs require non-local authentication.
 
 ```-rulescatalog filepath```  
-Alternative to `-rules`. Path to a rules catalog JSON file that references multiple rulesets. Mutually exclusive with `-rules`. See [Example-RulesCatalog.json](../DocsExamples/Example-RulesCatalog.json).
+Alternative to `-rules`. Path to a rules catalog JSON file that references multiple rulesets. Mutually exclusive with `-rules`. See [23-RulesCatalog.json](../ExampleRules/23-RulesCatalog.json).
 
 ```-authmethod local|interactive|azurecli|clientsecret|certificate|federatedtoken|managedidentity```  
 Optional, defaults to `local`.
@@ -167,4 +167,4 @@ The following environment variables are read automatically when the correspondin
 
 ---
 
-*For CI/CD pipeline setup and tutorials see [Azure DevOps and GitHub integration](../README.md#ado). For operator reference see [Ric Operators](../DocsExamples/Ric-Operators.md) and [FabInspector Operators](../DocsExamples/FabInspector-Operators.md).*
+*For CI/CD pipeline setup and tutorials see [Azure DevOps and GitHub integration](usage-scenarios.md). For operator reference see [Ric Operators](Ric-Operators.md) and [FabInspector Operators](FabInspector-Operators.md).*

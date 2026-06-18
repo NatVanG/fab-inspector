@@ -1,0 +1,48 @@
+{
+  "rules": [
+    {
+      "id": "INTERSECTION_SHARED_ITEMS",
+      "name": "Get shared items from two collections",
+      "description": "Uses the 'intersection' operator to find all items that exist in both arrays. Useful for discovering common properties, measures, or values across two data sets.",
+      "disabled": true,
+      "logType": "info",
+      "test": [
+        {
+          "intersection": [
+            ["USA", "Canada", "Mexico"],
+            ["USA", "Brazil", "Mexico"]
+          ]
+        },
+        ["USA", "Mexico"]
+      ]
+    },
+    {
+      "id": "INTERSECTION_MEASURE_OVERLAP",
+      "name": "Find measures available in multiple reports",
+      "description": "Applied to report data, intersection can find which measures are defined in both the current report and a reference set.",
+      "disabled": true,
+      "part": "Report",
+      "logType": "info",
+      "test": [
+        {
+          "intersection": [
+            [
+              "Total Sales",
+              "Revenue",
+              "Profit"
+            ],
+            [
+              "Revenue",
+              "Profit",
+              "Margin %"
+            ]
+          ]
+        },
+        [
+          "Revenue",
+          "Profit"
+        ]
+      ]
+    }
+  ]
+}

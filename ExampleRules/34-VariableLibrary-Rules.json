@@ -1,0 +1,36 @@
+{
+  "rules": [
+    {
+      "id": "VARLIBRARY_MISSINGREFERENCES",
+      "name": "Check that all variable library references are valid.",
+      "itemType": "DataPipeline|VariableLibrary",
+      "test": [
+        {
+          "diff": [
+            {
+              "query": [
+                {
+                  "part": "pipeline-content.json"
+                },
+                {
+                  "path": "$.*.properties.libraryVariables.*.variableName"
+                }
+              ]
+            },
+            {
+              "query": [
+                {
+                  "part": "variables.json"
+                },
+                {
+                  "path": "$.*.variables[*].name"
+                }
+              ]
+            }
+          ]
+        },
+        []
+      ]
+    }
+  ]
+}

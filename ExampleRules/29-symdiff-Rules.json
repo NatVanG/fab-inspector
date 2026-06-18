@@ -1,0 +1,36 @@
+{
+  "rules": [
+    {
+      "id": "SYMDIFF_UNIQUE_TO_EACH",
+      "name": "Find elements unique to each set",
+      "description": "Uses the 'symdiff' (symmetric difference) operator to find elements that appear in one set or the other, but NOT in both. Useful for finding differences between two collections.",
+      "disabled": false,
+      "logType": "info",
+      "test": [
+        {
+          "symdiff": [
+            [1, 2, 3],
+            [2, 3, 4]
+          ]
+        },
+        [1, 4]
+      ]
+    },
+    {
+      "id": "SYMDIFF_DISJOINT_SETS",
+      "name": "Symmetric difference with completely different sets",
+      "description": "When two sets have no overlap, symmetric difference returns all elements from both sets combined.",
+      "disabled": false,
+      "logType": "info",
+      "test": [
+        {
+          "symdiff": [
+            ["red", "blue"],
+            ["yellow", "green"]
+          ]
+        },
+        ["red", "blue", "yellow", "green"]
+      ]
+    }
+  ]
+}

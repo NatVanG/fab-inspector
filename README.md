@@ -9,8 +9,8 @@
 Meet Ric, the Fab Inspector.
 
 <div style="display: flex; gap: 20px; align-items: center;">
-  <img src="DocsImages/Ric_480x480_speech.png" alt="Hi! I'm Ric, the Fab Inspector." height="300"/>
-  <img src="DocsImages/FabInsp_500x500.png" alt="Fab Inspector logo" height="240"/>
+  <img src="docs/Images/Ric_480x480_speech.png" alt="Hi! I'm Ric, the Fab Inspector." height="300"/>
+  <img src="docs/Images/FabInsp_500x500.png" alt="Fab Inspector logo" height="240"/>
 </div>
 
 ## Note
@@ -38,7 +38,7 @@ Outputs can be written as Console, JSON, HTML, ADO, or GitHub formats.
 
 ### Desktop GUI (Avalonia)
 
-![AvaloniaUI](DocsImages/FabInspector.AvaloniaUI.png)
+![AvaloniaUI](docs/Images/FabInspector.AvaloniaUI.png)
 
 The cross-platform `FabInspector.AvaloniaUI` desktop application lets you run inspections without the CLI. Point it at a local Fabric item folder or a Fabric workspace, choose a rules file and output format, and click **Run**. Results are written to a local folder or directly to OneLake, and can auto-open in the browser as HTML. See the [GUI Reference](docs/gui-reference.md) for a full walkthrough.
 
@@ -75,9 +75,9 @@ Release binaries for the CLI and GUI are published at: https://github.com/NatVan
 | [CLI Reference](docs/cli-reference.md) | Full CLI parameters, auth options, and command examples |
 | [Rules Guide](docs/rules-guide.md) | Rule schema, test logic, and patching guidance |
 | [Operators Overview](docs/operators-overview.md) | When to use Ric vs FabInspector operators |
-| [Examples Index](docs/examples-index.md) | Catalog of rule files in DocsExamples by use case |
-| [Ric Operators](DocsExamples/Ric-Operators.md) | Local/query/transformation/file-system operators |
-| [FabInspector Operators](DocsExamples/FabInspector-Operators.md) | API, DAX, SQL, and DFS operators |
+| [Examples Index](docs/examples-index.md) | Catalog of rule files in ExampleRules by use case |
+| [Ric Operators](docs/Ric-Operators.md) | Local/query/transformation/file-system operators |
+| [FabInspector Operators](docs/FabInspector-Operators.md) | API, DAX, SQL, and DFS operators |
 | [Architecture](FabInspector.Core/Architecture.md) | Inspection engine and DI/concurrency internals |
 
 ## Base Rules

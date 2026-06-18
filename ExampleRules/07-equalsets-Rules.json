@@ -1,0 +1,36 @@
+{
+  "rules": [
+    {
+      "id": "EQUALSETS_IDENTICAL_SETS",
+      "name": "Check if two sets are identical",
+      "description": "Uses the 'equalsets' operator to compare two arrays for set equality. Order doesn't matter, only membership. Returns true if both sets contain the same elements.",
+      "disabled": false,
+      "logType": "info",
+      "test": [
+        {
+          "equalsets": [
+            [1, 2, 3],
+            [3, 1, 2]
+          ]
+        },
+        true
+      ]
+    },
+    {
+      "id": "EQUALSETS_DIFFERENT_SETS",
+      "name": "Detect when two sets differ",
+      "description": "Uses 'equalsets' to identify when two arrays represent different sets. Returns empty when sets are not equal.",
+      "disabled": false,
+      "logType": "info",
+      "test": [
+        {
+          "equalsets": [
+            ["a", "b", "c"],
+            ["a", "b"]
+          ]
+        },
+        true
+      ]
+    }
+  ]
+}

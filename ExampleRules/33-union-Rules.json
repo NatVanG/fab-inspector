@@ -1,0 +1,36 @@
+{
+  "rules": [
+    {
+      "id": "UNION_COMBINE_SETS",
+      "name": "Combine two sets removing duplicates",
+      "description": "Uses the 'union' operator to merge two arrays into a single set with no duplicate elements. Useful for combining collections while maintaining uniqueness.",
+      "disabled": true,
+      "logType": "info",
+      "test": [
+        {
+          "union": [
+            [1, 2, 3],
+            [3, 4, 5]
+          ]
+        },
+        [1, 2, 3, 4, 5]
+      ]
+    },
+    {
+      "id": "UNION_COMBINE_WITH_DUPLICATES",
+      "name": "Union merges duplicate elements",
+      "description": "When combining sets, duplicate elements are deduplicated. All elements from both sets are preserved exactly once.",
+      "disabled": true,
+      "logType": "info",
+      "test": [
+        {
+          "union": [
+            ["apple", "banana", "cherry"],
+            ["banana", "cherry", "date"]
+          ]
+        },
+        ["apple", "banana", "cherry", "date"]
+      ]
+    }
+  ]
+}

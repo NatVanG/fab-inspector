@@ -1,0 +1,69 @@
+{
+  "rules": [
+    {
+      "id": "EXECUTE_API_GET",
+      "name": "Execute Api Get",
+      "description": "",
+      "itemType": "None",
+      "disabled": false,
+      "test": [
+        {
+          "apiget": [
+            "https://api.fabric.microsoft.com/v1/workspaces/{context-fabricworkspace}/onelake/settings"
+          ]
+        },
+        []
+      ]
+    },
+    {
+      "id": "EXECUTE_API_GET_WPARAMS",
+      "name": "Execute Api Get With Parameters",
+      "description": "",
+      "itemType": "None",
+      "disabled": false,
+      "test": [
+        {
+          "apiget": [
+            "https://api.fabric.microsoft.com/v1/workspaces/{context-fabricworkspace}/items?type={type}&recursive={recursive}",
+            "Lakehouse",
+            "true"
+          ]
+        },
+        []
+      ]
+    },
+    {
+      "id": "NO_CAPACITY_IN_WEST_US_3",
+      "name": "No capacity should be in West US 3",
+      "description": "Fetches all Fabric capacities via the admin API and fails if any capacity is located in the 'West US 3' region.",
+      "itemType": "None",
+      "disabled": false,
+      "logType": "error",
+      "test": [
+        {
+          "let": [
+            {
+              "capacities": {
+                "apiget": [
+                  "https://api.fabric.microsoft.com/v1/capacities"
+                ]
+              }
+            },
+            {
+              "filter": [
+                { "var": "capacities.value" },
+                {
+                  "==": [
+                    { "var": "region" },
+                    "West US 3"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        []
+      ]
+    }
+  ]
+}

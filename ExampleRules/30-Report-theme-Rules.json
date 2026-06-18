@@ -1,0 +1,50 @@
+{
+  "rules": [
+    {
+      "id": "LIST_THEMES",
+      "name": "List themes.",
+      "description": "",
+      "itemType": "Report",
+      "disabled": false,
+      "part": "SharedResources",
+      "test": [
+        {
+          "query": [
+            {
+              "part": "CY22SU11.json"
+            },
+            {
+              "var": "name"
+            }
+          ]
+        },
+        {
+        },
+        "other_theme_name"
+      ]
+    },
+    {
+      "id": "LIST_THEMES_V2",
+      "name": "List themes v2.",
+      "description": "",
+      "itemType": "Report",
+      "disabled": false,
+      "part": "BaseThemes",
+      "test": [
+        {
+          "map": [
+            {
+              "part": "Files"
+            },
+            {
+              "var": "name"
+            }
+          ]
+        },
+        {
+        },
+        []
+      ]
+    }
+  ]
+}

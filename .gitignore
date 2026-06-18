@@ -372,8 +372,8 @@ FodyWeavers.xsd
 /FabInspector.CLI/Properties/PublishProfiles/FolderProfile.pubxml
 /FabInspector.WinForm/Files/pbip/Inventory sample - fails.Dataset/.pbi
 /FabInspector.WinForm/Files/pbip/Inventory sample - fails.Report/.pbi
-/DocsExamples/ReportExample/PBI Inspector Reporting.Dataset/.pbi
-/DocsExamples/ReportExample/PBI Inspector Reporting.Report/.pbi
+/ExampleRules/ReportExample/PBI Inspector Reporting.Dataset/.pbi
+/ExampleRules/ReportExample/PBI Inspector Reporting.Report/.pbi
 /FabInspector.WinForm/Files/pbip/Inventory sample.Dataset/.pbi
 /FabInspector.WinForm/Files/pbip/Inventory sample.Report/.pbi
 /FabInspector.Tests/Files/pbip/Inventory-sample-fails.Report/.pbi/localSettings.json
@@ -393,10 +393,11 @@ FodyWeavers.xsd
 /FabInspector.Tests/Files/pbip/Example-rules-passes.SemanticModel/.pbi/editorSettings.json
 /FabInspector.Tests/Files/pbip/Example-rules-passes.SemanticModel/.pbi/localSettings.json
 FILE_SYSTEM_ABSTRACTION_SUMMARY.md
-DocsExamples/FabricFileSystem-Implementation-Summary.md
-DocsExamples/FabricFileSystem-README.md
-DocsExamples/FabricFileSystem-IntegrationTests.md
+ExampleRules/FabricFileSystem-Implementation-Summary.md
+ExampleRules/FabricFileSystem-README.md
+ExampleRules/FabricFileSystem-IntegrationTests.md
 publish-test/
 /.github/copilot-instructions.md
 /.vscode/settings.json
+/.my-scripts/
 THIRD-PARTY-NOTICES.md

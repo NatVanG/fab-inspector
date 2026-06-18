@@ -4,14 +4,14 @@ Fab Inspector supports local, workspace, and OneLake-based validation workflows.
 
 | Scenario | Fabric items source | Rules source | Test results output targets | Auth method |
 |---|---|---|---|---|
-| 1. Local-only | Local folder | Local | Console, HTML, JSON | `local` |
-| 2. CI/CD checkout | Git checkout on build agent | Local in repo | GitHub logs, JSON stored in OneLake | `local` or `federatedtoken` (GitHub OIDC) |
-| 3. Workspace-scoped | All/some items in a Fabric workspace | Local or OneLake | Console or JSON stored in OneLake | `interactive`, `azurecli`, [`clientsecret`](cli-reference.md#handling-client-secrets-safely), `certificate`, `federatedtoken`, or `managedidentity` |
-| 4. Item-scoped workspace | Single item in a Fabric workspace | Local or OneLake | Console or JSON stored in OneLake | `interactive`, `azurecli`, [`clientsecret`](cli-reference.md#handling-client-secrets-safely), `certificate`, `federatedtoken`, or `managedidentity` |
+| [1. Local-only](#1-local-fabric-item-definitions-local-rules-local-output) | Local folder | Local | Console, HTML, JSON | `local` |
+| [2. CI/CD checkout](#2-fabric-item-definitions-in-source-control-local-rules-in-cicd) | Git checkout on build agent | Local in repo | GitHub logs, JSON stored in OneLake | `local` or `federatedtoken` (GitHub OIDC) |
+| [3. Workspace-scoped](#3-workspace-scoped-all-items-in-a-fabric-workspace) | All/some items in a Fabric workspace | Local or OneLake | Console or JSON stored in OneLake | `interactive`, `azurecli`, [`clientsecret`](cli-reference.md#handling-client-secrets-safely), `certificate`, `federatedtoken`, or `managedidentity` |
+| [4. Item-scoped workspace](#4-item-scoped-single-item-in-a-fabric-workspace) | Single item in a Fabric workspace | Local or OneLake | Console or JSON stored in OneLake | `interactive`, `azurecli`, [`clientsecret`](cli-reference.md#handling-client-secrets-safely), `certificate`, `federatedtoken`, or `managedidentity` |
 
 Rules input can be provided either as a single rules file (`-rules`) or as a rules catalog (`-rulescatalog`) that references multiple rulesets. The two options are mutually exclusive.
 
-Rules catalog examples are available at [DocsExamples/Example-RulesCatalog.json](../DocsExamples/Example-RulesCatalog.json).
+Rules catalog examples are available at [ExampleRules/23-RulesCatalog.json](../ExampleRules/23-RulesCatalog.json).
 
 ## 1. Local Fabric item definitions + local rules + local output
 
@@ -107,7 +107,7 @@ fab-inspector -fabricworkspace "<workspace-guid>" -fabricitem "<item-guid>" -rul
 
 ## 5. Hybrid pattern
 
-Rules can call the Power BI/Fabric admin scanner API, the Power BI and Fabric REST APIs' GET methods, request JSON files from the OneLake DFS endpoint, or execute DAX and SQL queries directly from within rule logic using the [`apiget`](../DocsExamples/FabInspector-Operators.md#apiget), [`dfsget`](../DocsExamples/FabInspector-Operators.md#dfsget), [`daxquery`](../DocsExamples/FabInspector-Operators.md#daxquery), [`sqlquery`](../DocsExamples/FabInspector-Operators.md#sqlquery), and [`scannerapi`](../DocsExamples/FabInspector-Operators.md#scannerapi) operators.
+Rules can call the Power BI/Fabric admin scanner API, the Power BI and Fabric REST APIs' GET methods, request JSON files from the OneLake DFS endpoint, or execute DAX and SQL queries directly from within rule logic using the [`apiget`](FabInspector-Operators.md#apiget), [`dfsget`](FabInspector-Operators.md#dfsget), [`daxquery`](FabInspector-Operators.md#daxquery), [`sqlquery`](FabInspector-Operators.md#sqlquery), and [`scannerapi`](FabInspector-Operators.md#scannerapi) operators.
 
 ```mermaid
 flowchart TB
@@ -149,3 +149,4 @@ Example combinations:
 4. Workspace items + OneLake rules (including REST API, DAX, and SQL calls via operators) + OneLake JSON output.
 
 This flexibility lets teams start local, then progressively adopt CI/CD, workspace-scoped inspection, and API-driven rules without changing the core rule model.
+

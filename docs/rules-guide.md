@@ -1,6 +1,6 @@
 # Fab Inspector — Custom Rules Guide
 
-> For a quick-reference of all available operators see [Ric Operators](../DocsExamples/Ric-Operators.md) and [FabInspector Operators](../DocsExamples/FabInspector-Operators.md). For in-depth operator explanations and advanced examples see the [Fab Inspector wiki](https://github.com/NatVanG/fab-inspector/wiki).
+> For a quick-reference of all available operators see [Ric Operators](Ric-Operators.md) and [FabInspector Operators](FabInspector-Operators.md). For in-depth operator explanations and advanced examples see the [Fab Inspector wiki](https://github.com/NatVanG/fab-inspector/wiki).
 
 ---
 
@@ -9,7 +9,6 @@
 - [Rule object structure](#rule-object-structure)
 - [Test logic](#test-logic)
 - [Rule file examples](#rule-file-examples)
-- [Patching](#patching) ⚠️ deprecated
 
 ---
 
@@ -154,110 +153,16 @@ Although somewhat of an anti-pattern, rules can vary their test logic based on t
 | File | Description |
 |---|---|
 | [Base Rules](../Rules/Base-rules.json) | The set of rules that ships with Fab Inspector (Power BI report quality rules) |
-| [Examples-rules.json](../DocsExamples/Examples-rules.json) | Growing library of example rules |
-| [Example-patches.json](../DocsExamples/Example-patches.json) | Examples of patches to fix issues |
-| [Example-CopyJob-Rules.json](../DocsExamples/Example-CopyJob-Rules.json) | Rules to check CopyJob metadata |
-| [Example-Environment-Rules.json](../DocsExamples/Example-Environment-Rules.json) | Rules for Fabric Environment CI/CD items |
-| [Example-FabricCrossItem-Rules.json](../DocsExamples/Example-FabricCrossItem-Rules.json) | Rules across multiple Fabric item types |
-| [Example-RulesCatalog.json](../DocsExamples/Example-RulesCatalog.json) | Rules catalog referencing multiple rulesets |
-| [RulesTemplate.json](../DocsExamples/RulesTemplate.json) | Minimal rules file template |
+| [23-RulesCatalog.json](../ExampleRules/23-RulesCatalog.json) | Growing library of example rules |
+| [00-CopyJob-Rules.json](../ExampleRules/00-CopyJob-Rules.json) | Rules to check CopyJob metadata |
+| [06-Environment-Rules.json](../ExampleRules/06-Environment-Rules.json) | Rules for Fabric Environment CI/CD items |
+| [10-Fabric-CrossItemTypes-Rules.json](../ExampleRules/10-Fabric-CrossItemTypes-Rules.json) | Rules across multiple Fabric item types |
+| [23-RulesCatalog.json](../ExampleRules/23-RulesCatalog.json) | Rules catalog referencing multiple rulesets |
+| [21-Rules-Template.json](../ExampleRules/21-Rules-Template.json) | Minimal rules file template |
 
 For a categorized list of all sample files, see [Examples Index](examples-index.md).
 
-For operator-specific examples see the `See also` links in [Ric Operators](../DocsExamples/Ric-Operators.md) and [FabInspector Operators](../DocsExamples/FabInspector-Operators.md).
-
----
-
-## Patching
-
-> ⚠️ **Deprecated.** The `patch` mechanism is available but no longer actively developed. Prefer fixing issues at the source rather than using automated patches.
-
-A rule can optionally define a `patch` to automatically fix items failing the test. The patch targets a file part and applies a [JSON Patch](https://tools.ietf.org/html/rfc6902) operation array.
-
-Structure:
-
-```json
-"patch": [
-  "One of Report|Pages|PagesHeader|AllPages|Visuals|AllVisuals|Bookmarks|BookmarksHeader|AllBookmarks",
-  [
-    { "op": "replace", "path": "/some/json/pointer", "value": "new-value" }
-  ]
-]
-```
-
-To apply patches, set `"applyPatch": true` on the rule. Use `-parallel false` when patches are active to avoid last-writer-wins conflicts.
-
-### Example: fix axis titles
-
-```json
-{
-  "id": "SHOW_AXES_TITLES",
-  "name": "Show visual axes titles",
-  "description": "Check that certain charts have both axes title showing.",
-  "part": "Pages",
-  "disabled": true,
-  "applyPatch": true,
-  "test": [
-    {
-      "map": [
-        {
-          "filter": [
-            { "part": "Visuals" },
-            {
-              "and": [
-                {
-                  "in": [
-                    { "var": "visual.visualType" },
-                    ["lineChart", "barChart", "columnChart", "clusteredBarChart", "stackedBarChart"]
-                  ]
-                },
-                {
-                  "or": [
-                    { "==": [{ "var": "visual.objects.categoryAxis.0.properties.showAxisTitle.expr.Literal.Value" }, "false"] },
-                    { "==": [{ "var": "visual.objects.valueAxis.0.properties.showAxisTitle.expr.Literal.Value" }, "false"] }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        { "var": "name" }
-      ]
-    },
-    {},
-    []
-  ],
-  "patch": [
-    "Visuals",
-    [
-      { "op": "replace", "path": "/visual/objects/categoryAxis/0/properties/showAxisTitle/expr/Literal/Value", "value": "true" },
-      { "op": "replace", "path": "/visual/objects/valueAxis/0/properties/showAxisTitle/expr/Literal/Value", "value": "true" }
-    ]
-  ]
-}
-```
-
-### Example: set active report page
-
-```json
-{
-  "id": "ACTIVE_PAGE",
-  "name": "Ensure report's active page index is set to the correct page",
-  "description": "",
-  "part": "PagesHeader",
-  "applyPatch": true,
-  "test": [
-    { "var": "activePageName" },
-    "ReportSection89a9619c7025093ade1c"
-  ],
-  "patch": [
-    "PagesHeader",
-    [
-      { "op": "replace", "path": "/activePageName", "value": "ReportSection89a9619c7025093ade1c" }
-    ]
-  ]
-}
-```
+For operator-specific examples see the 'See also` links in [Ric Operators](Ric-Operators.md) and [Fab Inspector Operators](FabInspector-Operators.md).
 
 ---
 

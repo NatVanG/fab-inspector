@@ -1,0 +1,36 @@
+{
+  "rules": [
+    {
+      "id": "INTERSECT_COMMON_ELEMENTS",
+      "name": "Find common elements between two sets",
+      "description": "Uses the 'intersect' operator to find elements that appear in both arrays. 'intersect' is an alias for 'intersection'. Returns only items present in both sets.",
+      "disabled": true,
+      "logType": "info",
+      "test": [
+        {
+          "intersect": [
+            [1, 2, 3, 4],
+            [3, 4, 5, 6]
+          ]
+        },
+        [3, 4]
+      ]
+    },
+    {
+      "id": "INTERSECT_NO_OVERLAP",
+      "name": "Intersect with no common elements",
+      "description": "When two sets have no common elements, 'intersect' returns an empty array.",
+      "disabled": true,
+      "logType": "info",
+      "test": [
+        {
+          "intersect": [
+            ["apple", "banana"],
+            ["cherry", "date"]
+          ]
+        },
+        []
+      ]
+    }
+  ]
+}
