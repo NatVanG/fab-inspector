@@ -13,7 +13,7 @@ namespace FabInspector.Core
         /// <summary>
         /// Draws the report page wireframe.
         /// </summary>
-        void DrawReportPages(IEnumerable<TestResult> fieldMapResults, IEnumerable<TestResult> testResults, string outputDir);
+        void DrawReportPages(IEnumerable<TestResult> fieldMapResults, IEnumerable<TestResult> testResults, string outputDir, string testedFilePath);
 
         string ConvertBitmapToBase64(string bitmapPath);
     }

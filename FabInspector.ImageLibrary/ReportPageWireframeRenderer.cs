@@ -5,17 +5,20 @@ using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.Json.Nodes;
-using System.Threading.Tasks;
 
 
 namespace FabInspector.ImageLibrary
 {
     public class ReportPageWireframeRenderer : IReportPageWireframeRenderer
     {
-        public void DrawReportPages(IEnumerable<TestResult> fieldMapResults, IEnumerable<TestResult> testResults, string outputDir)
+        private const int DefaultPageHeight = 720;
+        private const int DefaultPageWidth = 1280;
+
+        public void DrawReportPages(IEnumerable<TestResult> fieldMapResults, IEnumerable<TestResult> testResults, string outputDir, string testedFilePath)
         {
+            var pageSizes = LoadPageSizes(testedFilePath);
+
             foreach (TestResult testResult in testResults.Where(_ => !string.IsNullOrEmpty(_.ParentName)))
             {
                 var testResultId = testResult.Id;
@@ -24,17 +27,22 @@ namespace FabInspector.ImageLibrary
                 {
                     var pageName = fields.ParentName;
                     var pageDisplayName = fields.ParentDisplayName;
-                    //TODO: page size is currently hardcoded to 1280x720 (i.e. 16x9 aspect ratio). 
-                    var pageSize = new ReportPage.PageSize { Height = 720, Width = 1280 };
+                    var sourcePageSize = GetPageSize(pageName, pageSizes);
+                    var scale = (decimal)DefaultPageHeight / sourcePageSize.Height;
+                    var pageSize = new ReportPage.PageSize
+                    {
+                        Height = DefaultPageHeight,
+                        Width = (int)Math.Round(sourcePageSize.Width * scale)
+                    };
                     List<ReportPage.VisualContainer> visuals = new List<ReportPage.VisualContainer>();
                     foreach (var f in fields.Actual!.AsArray())
                     {
                         var name = f!["name"]?.ToString();
                         var visualType = f!["visualType"]?.ToString();
-                        var x = (int)Math.Round(f!["x"]!.GetValue<decimal>());
-                        var y = (int)Math.Round(f!["y"]!.GetValue<decimal>());
-                        var height = (int)Math.Round(f!["height"]!.GetValue<decimal>());
-                        var width = (int)Math.Round(f!["width"]!.GetValue<decimal>());
+                        var x = ScaleValue(f!["x"]!.GetValue<decimal>(), scale);
+                        var y = ScaleValue(f!["y"]!.GetValue<decimal>(), scale);
+                        var height = ScaleValue(f!["height"]!.GetValue<decimal>(), scale);
+                        var width = ScaleValue(f!["width"]!.GetValue<decimal>(), scale);
                         var visible = f!["visible"]!.GetValue<bool>();
 
                         //If a visual name is returned in the test actual array then highlight it as a test failure in the page wireframe
@@ -86,6 +94,86 @@ namespace FabInspector.ImageLibrary
             // Convert byte[] to Base64 String
             string base64String = Convert.ToBase64String(imageBytes);
             return base64String;
+        }
+
+        private static int ScaleValue(decimal value, decimal scale)
+        {
+            return (int)Math.Round(value * scale);
+        }
+
+        private static ReportPage.PageSize GetPageSize(string? pageName, IReadOnlyDictionary<string, ReportPage.PageSize> pageSizes)
+        {
+            if (!string.IsNullOrEmpty(pageName) && pageSizes.TryGetValue(pageName, out var pageSize))
+            {
+                return pageSize;
+            }
+
+            return new ReportPage.PageSize { Height = DefaultPageHeight, Width = DefaultPageWidth };
+        }
+
+        private static Dictionary<string, ReportPage.PageSize> LoadPageSizes(string testedFilePath)
+        {
+            var reportFolderPath = ResolveReportFolderPath(testedFilePath);
+            if (string.IsNullOrEmpty(reportFolderPath) || !Directory.Exists(reportFolderPath))
+            {
+                return new Dictionary<string, ReportPage.PageSize>(StringComparer.Ordinal);
+            }
+
+            return Directory
+                .EnumerateFiles(reportFolderPath, "page.json", SearchOption.AllDirectories)
+                .Select(TryReadPageSize)
+                .Where(_ => _.HasValue)
+                .Select(_ => _.GetValueOrDefault())
+                .ToDictionary(_ => _.Name, _ => _.PageSize, StringComparer.Ordinal);
+        }
+
+        private static (string Name, ReportPage.PageSize PageSize)? TryReadPageSize(string pagePath)
+        {
+            var pageNode = JsonNode.Parse(File.ReadAllText(pagePath));
+            var name = pageNode?["name"]?.GetValue<string>();
+            var width = pageNode?["width"]?.GetValue<int?>();
+            var height = pageNode?["height"]?.GetValue<int?>();
+
+            if (string.IsNullOrEmpty(name) || !width.HasValue || width.Value <= 0 || !height.HasValue || height.Value <= 0)
+            {
+                return null;
+            }
+
+            return (name, new ReportPage.PageSize { Width = width.Value, Height = height.Value });
+        }
+
+        private static string? ResolveReportFolderPath(string testedFilePath)
+        {
+            if (string.IsNullOrWhiteSpace(testedFilePath))
+            {
+                return null;
+            }
+
+            if (Directory.Exists(testedFilePath))
+            {
+                return testedFilePath;
+            }
+
+            if (!File.Exists(testedFilePath) || !testedFilePath.EndsWith(".pbip", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            var pbipNode = JsonNode.Parse(File.ReadAllText(testedFilePath));
+            var relativeReportPath = pbipNode?["artifacts"]?[0]?["report"]?["path"]?.GetValue<string>();
+
+            if (string.IsNullOrWhiteSpace(relativeReportPath))
+            {
+                return null;
+            }
+
+            var baseDirectory = Path.GetDirectoryName(testedFilePath);
+            if (string.IsNullOrEmpty(baseDirectory))
+            {
+                return null;
+            }
+
+            return Path.GetFullPath(Path.Combine(baseDirectory, relativeReportPath));
         }
     }
 }

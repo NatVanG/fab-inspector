@@ -109,6 +109,22 @@ namespace FabInspector.Tests.Output
         }
 
         [Test]
+        public async Task WriteAsync_PassesTestedFilePathToRenderer()
+        {
+            var renderer = new StubPageRenderer();
+            var results = new List<TestResult>
+            {
+                new() { RuleName = "R1", Message = "ok", Pass = true, RuleItemType = "Report" }
+            };
+
+            var context = CreateContext(results);
+            var writer = CreateWriter(renderer);
+            await writer.WriteAsync(context);
+
+            Assert.That(renderer.DrawCalls[0].TestedFilePath, Is.EqualTo("test"));
+        }
+
+        [Test]
         public async Task WriteAsync_OverwriteTrue_DeletesExistingPngDir()
         {
             var renderer = new StubPageRenderer();
