@@ -73,4 +73,27 @@ public class FabInspectorTools
 
         return JsonSerializer.Serialize(testRun, new JsonSerializerOptions { WriteIndented = true });
     }
+
+    [McpServerTool(Name = "discover_rules"), Description("Discover applicable Fabric Inspector guardrails for a Power BI / Fabric item and return planning metadata as JSON.")]
+    public async Task<string> DiscoverRules(
+        [Description("Path to a local folder containing Fabric item definitions (e.g. .pbip, .Report folder), or a Fabric item GUID when used with fabricWorkspaceId.")] string fabricItem,
+        [Description("Path to the rules file (JSON) or a OneLake DFS URL pointing to the rules file.")] string rules,
+        [Description("Optional comma-separated rule tags. When provided, returns rules containing any matching tag.")] string tags = "",
+        [Description("Authentication method. Valid: local, interactive, azurecli. Default: local.")] string authMethod = "local",
+        [Description("Fabric workspace ID (GUID). Requires authentication.")] string? fabricWorkspaceId = null)
+    {
+        var args = new Args
+        {
+            FabricItem = fabricItem,
+            RulesFilePath = rules,
+            AuthMethod = authMethod,
+            FabricWorkspaceId = fabricWorkspaceId,
+            OutputPath = string.Empty,
+            FormatsString = string.Empty
+        };
+
+        var discoveredRules = await FabInspector.ClientLibrary.Main.DiscoverRulesAsync(args, tags);
+
+        return JsonSerializer.Serialize(discoveredRules, new JsonSerializerOptions { WriteIndented = true });
+    }
 }

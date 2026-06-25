@@ -151,6 +151,140 @@ fab-inspector -help
 
 ---
 
+## MCP Tool Examples
+
+Use the `discover_rules` MCP tool to return applicable guardrail metadata before running `inspect`.
+This is useful in agentic workflows where an agent is creating or editing Fabric items and needs rule context, scope, and remote-operator hints up front.
+
+### inspect parameters
+
+| Parameter | Required | Description |
+|---|---|---|
+| `fabricItem` | Yes | Local path to a Fabric item/folder, or a Fabric item GUID when used with `fabricWorkspaceId`. |
+| `rules` | Yes | Local rules JSON path or OneLake DFS URL. |
+| `verbose` | No | `false` by default. If `true`, passing and failing rule results are included. |
+| `authMethod` | No | `local` (default), `interactive`, or `azurecli`. |
+| `fabricWorkspaceId` | No | Fabric workspace GUID. Required for workspace/item GUID scenarios. |
+
+### inspect examples
+
+**Local folder + local rules:**
+```json
+{
+	"tool": "inspect",
+	"arguments": {
+		"fabricItem": "C:\\Files\\Sales.Report",
+		"rules": "C:\\Rules\\Base-rules.json",
+		"authMethod": "local"
+	}
+}
+```
+
+**Local folder + local rules (verbose results):**
+```json
+{
+	"tool": "inspect",
+	"arguments": {
+		"fabricItem": "C:\\Files\\Sales.Report",
+		"rules": "C:\\Rules\\Base-rules.json",
+		"verbose": true,
+		"authMethod": "local"
+	}
+}
+```
+
+**Workspace item GUID + interactive auth:**
+```json
+{
+	"tool": "inspect",
+	"arguments": {
+		"fabricWorkspaceId": "12345678-1234-1234-1234-123456789abc",
+		"fabricItem": "87654321-4321-4321-4321-cba987654321",
+		"rules": "./Rules/ci-rules.json",
+		"authMethod": "interactive"
+	}
+}
+```
+
+`inspect` returns structured inspection run results as JSON, including run metadata and rule evaluation outcomes.
+
+### discover_rules parameters
+
+| Parameter | Required | Description |
+|---|---|---|
+| `fabricItem` | Yes | Local path to a Fabric item/folder, or a Fabric item GUID when used with `fabricWorkspaceId`. |
+| `rules` | Yes | Local rules JSON path or OneLake DFS URL. |
+| `tags` | No | Comma-separated tags. When supplied, rules are filtered by any matching tag (case-insensitive). |
+| `authMethod` | No | `local` (default), `interactive`, or `azurecli`. |
+| `fabricWorkspaceId` | No | Fabric workspace GUID. Required for workspace/item GUID scenarios. |
+
+### discover_rules examples
+
+**Local folder + local rules (no tag filter):**
+```json
+{
+	"tool": "discover_rules",
+	"arguments": {
+		"fabricItem": "C:\\Files\\Sales.Report",
+		"rules": "C:\\Rules\\Base-rules.json",
+		"authMethod": "local"
+	}
+}
+```
+
+**Local folder + local rules (tag-filtered):**
+```json
+{
+	"tool": "discover_rules",
+	"arguments": {
+		"fabricItem": "C:\\Files\\Sales.Report",
+		"rules": "C:\\Rules\\Base-rules.json",
+		"tags": "governance,performance",
+		"authMethod": "local"
+	}
+}
+```
+
+**Workspace item GUID + interactive auth:**
+```json
+{
+	"tool": "discover_rules",
+	"arguments": {
+		"fabricWorkspaceId": "12345678-1234-1234-1234-123456789abc",
+		"fabricItem": "87654321-4321-4321-4321-cba987654321",
+		"rules": "./Rules/ci-rules.json",
+		"authMethod": "interactive"
+	}
+}
+```
+
+**Workspace with OneLake-hosted rules + Azure CLI auth:**
+```json
+{
+	"tool": "discover_rules",
+	"arguments": {
+		"fabricWorkspaceId": "12345678-1234-1234-1234-123456789abc",
+		"fabricItem": "87654321-4321-4321-4321-cba987654321",
+		"rules": "https://onelake.dfs.fabric.microsoft.com/<workspace>/<lakehouse>/Files/rules/rules.json",
+		"tags": "security",
+		"authMethod": "azurecli"
+	}
+}
+```
+
+`discover_rules` returns a schema-versioned JSON object containing matching, non-disabled rule metadata using the same rules-loading/auth behavior as `inspect`.
+
+Each returned rule includes planning-oriented fields such as:
+
+- `ruleId`, `name`, `description`, `severity`
+- `itemTypes`, `tags`, `ruleSetName`, `sourcePath`
+- `requiresAuth`, `test` (`logic`, `data`, `expected`)
+- `partScope`, `inclusionReason`, `guidanceSummary`
+
+Use `discover_rules` as the pre-flight planning step and `inspect` as the deterministic enforcement step.
+
+---
+
 ## Handling client secrets safely
 
 Treat client secrets as credentials, not configuration. Do not commit them to source control, paste real values into checked-in scripts, or expose them in build logs, screenshots, or shared chat threads.

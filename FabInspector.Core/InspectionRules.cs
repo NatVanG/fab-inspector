@@ -22,6 +22,8 @@ namespace FabInspector.Core
 
         public string? Description { get; set; }
 
+        public List<string>? Tags { get; set; }
+
         public bool Disabled { get; set; }
 
         public string? LogType { get; set; }

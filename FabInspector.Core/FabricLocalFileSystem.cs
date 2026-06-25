@@ -69,7 +69,7 @@ namespace FabInspector.Core
             {
                 foreach (var platformFile in platformFiles)
                 {
-                    JsonNode? platformNode = JsonNode.Parse(this.ReadAllBytes(platformFile));
+                    JsonNode? platformNode = JsonNode.Parse(this.ReadAllText(platformFile));
                     if (platformNode == null)
                     {
                         //TODO: raise error but continue

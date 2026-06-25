@@ -5,6 +5,7 @@ using FabInspector.Core;
 using FabInspector.Core.Inspection;
 using FabInspector.Core.Output;
 using System.Net.Http;
+using System.Text.Json.Nodes;
 
 namespace FabInspector.ClientLibrary
 {
@@ -182,6 +183,40 @@ namespace FabInspector.ClientLibrary
             };
         }
 
+        /// <summary>
+        /// Resolves applicable rules for the provided item/workspace context without executing tests
+        /// and returns agent-oriented planning metadata.
+        /// </summary>
+        public async Task<DiscoverRulesResponse> DiscoverRulesAsync(Args args, string? tags)
+        {
+            _args = args;
+
+            if (args.AuthMethod != "local")
+            {
+                await AuthenticateAsync(args).ConfigureAwait(false);
+            }
+
+            var resolvedRuleSets = await ResolveRuleSetsAsync(args).ConfigureAwait(false);
+            var fileSystem = await CreateFileSystemAsync().ConfigureAwait(false);
+
+            var targetItemTypes = await ResolveTargetItemTypesAsync(fileSystem).ConfigureAwait(false);
+            var requestedTags = ParseTags(tags);
+
+            var discoveredRules = resolvedRuleSets
+                .SelectMany(ruleSet => ProjectDiscoverableRules(ruleSet, targetItemTypes, requestedTags))
+                .ToList();
+
+            return new DiscoverRulesResponse
+            {
+                GeneratedAt = DateTime.UtcNow,
+                FabricItem = args.FabricItem,
+                RulesFilePath = args.RulesFilePath,
+                RulesCatalogPath = args.RulesCatalogPath,
+                TargetItemTypes = targetItemTypes.OrderBy(itemType => itemType, StringComparer.OrdinalIgnoreCase).ToList(),
+                Rules = discoveredRules
+            };
+        }
+
         private async Task AuthenticateAsync(Args args)
         {
             TokenCredential credential;
@@ -282,15 +317,8 @@ namespace FabInspector.ClientLibrary
 
         internal static IEnumerable<string>? GetScopedItemTypes(IEnumerable<ResolvedRuleSet> resolvedRuleSets)
         {
-            var scopedItemTypes = resolvedRuleSets
-                .SelectMany(ruleSet => ruleSet.Rules.Rules)
-                .SelectMany(rule => (rule.ItemType ?? string.Empty)
-                    .Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-                .Where(itemType => !string.IsNullOrWhiteSpace(itemType))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            return scopedItemTypes.Count == 0 ? null : scopedItemTypes;
+            return RuleApplicabilityService.GetScopedItemTypes(
+                resolvedRuleSets.SelectMany(ruleSet => ruleSet.Rules.Rules));
         }
 
         private async Task<IReadOnlyList<ResolvedRuleSet>> ResolveRuleSetsAsync(Args args)
@@ -312,6 +340,209 @@ namespace FabInspector.ClientLibrary
                     Rules = rules
                 }
             };
+        }
+
+        private static HashSet<string> ParseTags(string? tags)
+        {
+            if (string.IsNullOrWhiteSpace(tags))
+            {
+                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            return tags
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(tag => !string.IsNullOrWhiteSpace(tag))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static IEnumerable<DiscoverRuleMetadata> ProjectDiscoverableRules(ResolvedRuleSet ruleSet, HashSet<string> targetItemTypes, HashSet<string> requestedTags)
+        {
+            foreach (var rule in RuleApplicabilityService.FilterDisabledRules(ruleSet.Rules.Rules))
+            {
+                if (!RuleApplicabilityService.TryDescribeInclusionReason(rule, targetItemTypes, out var inclusionReason))
+                {
+                    continue;
+                }
+
+                if (!RuleApplicabilityService.MatchesTags(rule, requestedTags))
+                {
+                    continue;
+                }
+
+                var operatorsUsed = ExtractOperatorsUsed(rule.Test.Logic);
+                yield return new DiscoverRuleMetadata
+                {
+                    RuleId = rule.Id,
+                    Name = rule.Name,
+                    Description = rule.Description,
+                    Severity = NormalizeSeverity(rule.LogType),
+                    ItemTypes = RuleApplicabilityService.SplitItemTypes(rule.ItemType),
+                    Tags = (rule.Tags ?? []).ToList(),
+                    SourcePath = ruleSet.SourcePath,
+                    RuleSetName = ruleSet.Name,
+                    RequiresAuth = operatorsUsed.Any(OperatorRequiresAuth),
+                    Test = new DiscoverRuleTestMetadata
+                    {
+                        Logic = rule.Test.Logic,
+                        Data = rule.Test.Data,
+                        Expected = rule.Test.Expected
+                    },
+                    PartScope = new DiscoverRulePartScopeHint
+                    {
+                        Part = rule.Part,
+                        PathErrorWhenNoMatch = rule.PathErrorWhenNoMatch,
+                        AppliesToRootPart = string.IsNullOrWhiteSpace(rule.Part)
+                    },
+                    InclusionReason = AppendTagReason(inclusionReason, requestedTags),
+                    GuidanceSummary = BuildGuidanceSummary(rule)
+                };
+            }
+        }
+
+        private static string NormalizeSeverity(string? logType)
+        {
+            return string.IsNullOrWhiteSpace(logType) ? "warning" : logType.Trim().ToLowerInvariant();
+        }
+
+        private static string AppendTagReason(string inclusionReason, HashSet<string> requestedTags)
+        {
+            if (requestedTags.Count == 0)
+            {
+                return inclusionReason;
+            }
+
+            return $"{inclusionReason} Rule also matched requested tags '{string.Join(", ", requestedTags.OrderBy(tag => tag, StringComparer.OrdinalIgnoreCase))}'.";
+        }
+
+        private static string BuildGuidanceSummary(Rule rule)
+        {
+            var scope = string.IsNullOrWhiteSpace(rule.Part) ? "root content" : $"part '{rule.Part}'";
+            return $"Validate {scope} using the provided test logic payload.";
+        }
+
+        private static List<string> ExtractOperatorsUsed(string? logicJson)
+        {
+            if (string.IsNullOrWhiteSpace(logicJson))
+            {
+                return [];
+            }
+
+            try
+            {
+                var node = JsonNode.Parse(logicJson);
+                var operators = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                CollectOperators(node, operators);
+                return operators.OrderBy(name => name, StringComparer.OrdinalIgnoreCase).ToList();
+            }
+            catch
+            {
+                return [];
+            }
+        }
+
+        private static void CollectOperators(JsonNode? node, ISet<string> operators)
+        {
+            switch (node)
+            {
+                case JsonObject obj:
+                    foreach (var property in obj)
+                    {
+                        if (!string.IsNullOrWhiteSpace(property.Key))
+                        {
+                            operators.Add(property.Key);
+                        }
+
+                        CollectOperators(property.Value, operators);
+                    }
+                    break;
+                case JsonArray array:
+                    foreach (var item in array)
+                    {
+                        CollectOperators(item, operators);
+                    }
+                    break;
+            }
+        }
+
+        private static bool OperatorRequiresAuth(string operatorName)
+        {
+            return operatorName.Equals("apiget", StringComparison.OrdinalIgnoreCase)
+                || operatorName.Equals("daxquery", StringComparison.OrdinalIgnoreCase)
+                || operatorName.Equals("dfsget", StringComparison.OrdinalIgnoreCase)
+                || operatorName.Equals("scannerapi", StringComparison.OrdinalIgnoreCase)
+                || operatorName.Equals("sqlquery", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private async Task<HashSet<string>> ResolveTargetItemTypesAsync(IFabricFileSystem fileSystem)
+        {
+            var rootPath = fileSystem.RootPath;
+            var targetItemTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "none"
+            };
+
+            if (string.IsNullOrWhiteSpace(rootPath))
+            {
+                return targetItemTypes;
+            }
+
+            if (fileSystem.DirectoryExists(rootPath))
+            {
+                var fabricItems = fileSystem.GetFabricItems(rootPath).ToList();
+
+                if (fabricItems.Count > 0)
+                {
+                    foreach (var fabricItem in fabricItems)
+                    {
+                        if (!string.IsNullOrWhiteSpace(fabricItem.Type))
+                        {
+                            targetItemTypes.Add(fabricItem.Type);
+                            targetItemTypes.Add($"{fabricItem.Type}_deprecated");
+                        }
+                    }
+
+                    return targetItemTypes;
+                }
+
+                if (rootPath.EndsWith("definition", StringComparison.OrdinalIgnoreCase)
+                    || rootPath.EndsWith(".report", StringComparison.OrdinalIgnoreCase))
+                {
+                    targetItemTypes.Add("report_deprecated");
+                }
+
+                return targetItemTypes;
+            }
+
+            if (!fileSystem.FileExists(rootPath))
+            {
+                return targetItemTypes;
+            }
+
+            var extension = fileSystem.GetExtension(rootPath).ToLowerInvariant();
+            switch (extension)
+            {
+                case ".pbip":
+                    targetItemTypes.Add("report_deprecated");
+                    break;
+                case ".json":
+                    targetItemTypes.Add("json");
+                    break;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_args?.FabricWorkspaceId) && !string.IsNullOrWhiteSpace(_args?.FabricItem))
+            {
+                var scopedItems = await Task.Run(() => fileSystem.GetFabricItems(rootPath).ToList()).ConfigureAwait(false);
+                foreach (var scopedItem in scopedItems)
+                {
+                    if (!string.IsNullOrWhiteSpace(scopedItem.Type))
+                    {
+                        targetItemTypes.Add(scopedItem.Type);
+                        targetItemTypes.Add($"{scopedItem.Type}_deprecated");
+                    }
+                }
+            }
+
+            return targetItemTypes;
         }
 
         private async Task<IEnumerable<TestResult>> ExecuteSingleRuleSetAsync(ResolvedRuleSet ruleSet, IEnumerable<JsonLogicOperatorRegistry> registries, bool parallel, IFabricFileSystem fileSystem)

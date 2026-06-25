@@ -66,7 +66,7 @@ namespace FabInspector.Core
         public List<TestResult> Inspect()
         {
             var fileSystemPath = _fileSystem.RootPath;
-            var rules = _inspectionRules.Rules.Where(_ => !_.Disabled);
+            var rules = RuleApplicabilityService.FilterDisabledRules(_inspectionRules.Rules);
             var testResults = new List<TestResult>();
 
             if (rules != null && rules.Any())
@@ -189,11 +189,15 @@ namespace FabInspector.Core
 
             if (type.Equals("*"))
             {
-                rulesFilteredByItemType = rules.Where(_ => _.ItemType.Contains('|') || _.ItemType.Equals("*"));
+                rulesFilteredByItemType = rules.Where(rule => RuleApplicabilityService
+                    .SplitItemTypes(rule.ItemType)
+                    .Any(itemType => itemType.Equals("*", StringComparison.OrdinalIgnoreCase)));
             }
             else
             {
-                rulesFilteredByItemType = rules.Where(_ => _.ItemType.Equals(type, StringComparison.InvariantCultureIgnoreCase));
+                rulesFilteredByItemType = rules.Where(rule => RuleApplicabilityService
+                    .SplitItemTypes(rule.ItemType)
+                    .Any(itemType => itemType.Equals(type, StringComparison.OrdinalIgnoreCase)));
             }
 
             if (rulesFilteredByItemType == null || !rulesFilteredByItemType.Any())
@@ -209,15 +213,22 @@ namespace FabInspector.Core
 
         private void RunDeprecatedRulesByItemType(List<TestResult> testResults, IEnumerable<Rule> rules, string type, string fileSystemPath)
         {
-            const string DEPRECATED_SUFFIX = "_deprecated";
-            var deprecatedRules = rules.Where(_ => _.ItemType.Contains(DEPRECATED_SUFFIX, StringComparison.InvariantCultureIgnoreCase));
-            var rulesFilteredByItemType = deprecatedRules.Where(_ => _.ItemType.Replace(DEPRECATED_SUFFIX, string.Empty).Equals(type, StringComparison.InvariantCultureIgnoreCase));
+            const string DeprecatedSuffix = "_deprecated";
+            var targetTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { type };
+            var rulesFilteredByItemType = rules.Where(rule =>
+                RuleApplicabilityService.SplitItemTypes(rule.ItemType)
+                    .Any(itemType => itemType.EndsWith(DeprecatedSuffix, StringComparison.OrdinalIgnoreCase))
+                && RuleApplicabilityService.IsApplicableToTargetItemTypes(rule, targetTypes));
 
-            IPartQuery partQuery = PartQueryFactory.CreatePartQuery(string.Concat(type, DEPRECATED_SUFFIX), fileSystemPath, _fileSystem);
+            if (!rulesFilteredByItemType.Any())
+            {
+                return;
+            }
+
+            IPartQuery partQuery = PartQueryFactory.CreatePartQuery(string.Concat(type, DeprecatedSuffix), fileSystemPath, _fileSystem);
 
             RunRules(testResults, rulesFilteredByItemType, partQuery);
         }
-
 
         private void RunRules(List<TestResult> testResults, IEnumerable<Rule> rules, IPartQuery partQuery)
         {
