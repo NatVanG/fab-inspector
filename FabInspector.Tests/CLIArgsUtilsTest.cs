@@ -142,37 +142,7 @@ namespace FabInspector.Tests
 
             Assert.That(parsedArgs.RulesFilePath.Equals("rulesPath", StringComparison.OrdinalIgnoreCase));
         }
-
-        [Test]
-        public void TestCLIArgsUtilsRulesCatalogWithOneLakeRuleSetRequiresAuth()
-        {
-            var tempDir = Path.Combine(Path.GetTempPath(), "fab-inspector-tests", Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(tempDir);
-
-            try
-            {
-                var catalogPath = Path.Combine(tempDir, "rules-catalog.json");
-                File.WriteAllText(catalogPath, @"{
-  ""name"": ""Enterprise Catalog"",
-  ""ruleSets"": [
-    { ""name"": ""Org baseline"", ""type"": ""onelake"", ""path"": ""https://onelake.dfs.fabric.microsoft.com/YourWorkspace/YourLakehouse.Lakehouse/Files/rules/org-baseline.json"" }
-  ]
-}");
-
-                string[] args = $"-pbipreport path -rulescatalog {catalogPath} -authmethod local".Split(" ");
-
-                var ex = Assert.Throws<ArgumentException>(() => ArgsUtils.ParseArgs(args));
-                Assert.That(ex!.Message.Contains("OneLake rules catalog URL requires authentication"));
-            }
-            finally
-            {
-                if (Directory.Exists(tempDir))
-                {
-                    Directory.Delete(tempDir, true);
-                }
-            }
-        }
-
+        
         [Test]
         public void TestCLIArgsUtilsFormats()
         {

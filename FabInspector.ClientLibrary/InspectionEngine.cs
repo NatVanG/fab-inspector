@@ -380,7 +380,6 @@ namespace FabInspector.ClientLibrary
                     Tags = (rule.Tags ?? []).ToList(),
                     SourcePath = ruleSet.SourcePath,
                     RuleSetName = ruleSet.Name,
-                    RequiresAuth = operatorsUsed.Any(OperatorRequiresAuth),
                     Test = new DiscoverRuleTestMetadata
                     {
                         Logic = rule.Test.Logic,
@@ -462,15 +461,6 @@ namespace FabInspector.ClientLibrary
                     }
                     break;
             }
-        }
-
-        private static bool OperatorRequiresAuth(string operatorName)
-        {
-            return operatorName.Equals("apiget", StringComparison.OrdinalIgnoreCase)
-                || operatorName.Equals("daxquery", StringComparison.OrdinalIgnoreCase)
-                || operatorName.Equals("dfsget", StringComparison.OrdinalIgnoreCase)
-                || operatorName.Equals("scannerapi", StringComparison.OrdinalIgnoreCase)
-                || operatorName.Equals("sqlquery", StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task<HashSet<string>> ResolveTargetItemTypesAsync(IFabricFileSystem fileSystem)

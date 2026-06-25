@@ -35,8 +35,6 @@ namespace FabInspector.Core.Output
 
         public string? RuleSetName { get; set; }
 
-        public bool RequiresAuth { get; set; }
-
         public DiscoverRuleTestMetadata Test { get; set; } = new();
 
         public DiscoverRulePartScopeHint PartScope { get; set; } = new();

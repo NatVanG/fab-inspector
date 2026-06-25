@@ -283,7 +283,6 @@ public class DiRefactorTests
             var rule = discovered.Rules.Single();
             Assert.That(rule.RuleSetName, Is.EqualTo("Rules"));
             Assert.That(rule.SourcePath, Is.EqualTo(rulesPath));
-            Assert.That(rule.RequiresAuth, Is.True);
             Assert.That(rule.Test.Logic, Does.Contain("apiget"));
             Assert.That(rule.Test.Logic, Does.Contain("\"==\""));
             Assert.That(rule.Test.Logic, Does.Contain("\"var\""));
