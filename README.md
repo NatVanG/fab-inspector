@@ -32,7 +32,7 @@ Beyond artifact structure, Fab Inspector can also inspect:
 - **Tenant and capacity configurations** — validate tenant posture against your governance policies through API operators
 - **Data-based checks** — use DAX query and T-SQL query operators as rule conditions to enforce data quality, semantic model correctness, and lakehouse health
 
-Outputs can be written as Console, JSON, HTML, ADO, or GitHub formats.
+Outputs can be written as Console, JSON, HTML, ADO, or GitHub formats or combined e.g. "GitHub,JSON"
 
 ## Quick Start
 
@@ -47,16 +47,22 @@ The cross-platform `FabInspector.AvaloniaUI` desktop application lets you run in
 Local mode:
 
 ```bash
-fab-inspector -fabricitem "C:\Files\Sales.Report" -rules ".\Files\Base-rules.json" -formats "Console,JSON"
+fab-inspector -fabricitem "C:\Files\Sales.Report" -rules ".\Files\Base-rules.json" -formats Console
 ```
 
 Workspace mode (with interactive auth):
 
 ```bash
-fab-inspector -fabricworkspace "<workspace-guid>" -rules ".\Files\Base-rules.json" -authmethod interactive -formats "Console,JSON"
+fab-inspector -fabricworkspace "<workspace-guid>" -rules ".\Files\Base-rules.json" -authmethod interactive -formats Console
 ```
 
-Show CLI options:
+Workspace mode scoped to a Fabric item (with azurecli auth):
+
+```bash
+fab-inspector -fabricworkspace "<workspace-guid>" -fabricitem "<item-guid>" -rules ".\Files\Base-rules.json" -authmethod azurecli -formats Console
+```
+
+Show all CLI options:
 
 ```bash
 fab-inspector -help
@@ -73,7 +79,7 @@ Release binaries for the CLI and GUI are published at: https://github.com/NatVan
 | [Usage Scenarios](docs/usage-scenarios.md) | Common local, CI/CD, workspace, and hybrid validation patterns |
 | [GUI Reference](docs/gui-reference.md) | Cross-platform Avalonia desktop application walkthrough |
 | [CLI Reference](docs/cli-reference.md) | Full CLI parameters, auth options, and command examples |
-| [Rules Guide](docs/rules-guide.md) | Rule schema, test logic, and patching guidance |
+| [Rules Guide](docs/rules-guide.md) | Rule schema and test logic |
 | [Operators Overview](docs/operators-overview.md) | When to use Ric vs FabInspector operators |
 | [Examples Index](docs/examples-index.md) | Catalog of rule files in ExampleRules by use case |
 | [Ric Operators](docs/Ric-Operators.md) | Local/query/transformation/file-system operators |

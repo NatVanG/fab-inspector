@@ -77,7 +77,6 @@ Optional, false by default. If false then only rule violations are shown; if tru
 Optional, false by default. If true, rules are split across available processors and run in parallel before results are merged.
 
 > **Warnings when using `-parallel true`:**
-> - If rules use `applyPatch`, avoid parallel patching of the same part/file because writes can conflict and become last-writer-wins.
 > - Rules that call remote APIs (`apiget`, `dfsget`, `daxquery`, `sqlquery`, `scannerapi`) may hit service throttling/rate limits sooner under parallel fan-out.
 > - `scannerapi` polls for up to 5 minutes per request; parallel use with this operator is not recommended.
 
@@ -161,7 +160,8 @@ This is useful in agentic workflows where an agent is creating or editing Fabric
 | Parameter | Required | Description |
 |---|---|---|
 | `fabricItem` | Yes | Local path to a Fabric item/folder, or a Fabric item GUID when used with `fabricWorkspaceId`. |
-| `rules` | Yes | Local rules JSON path or OneLake DFS URL. |
+| `rules` | Conditional | Local rules JSON path or OneLake DFS URL. Provide exactly one of `rules` or `rulesCatalogPath`. |
+| `rulesCatalogPath` | Conditional | Local rules catalog JSON path or OneLake DFS URL. Provide exactly one of `rules` or `rulesCatalogPath`. |
 | `verbose` | No | `false` by default. If `true`, passing and failing rule results are included. |
 | `authMethod` | No | `local` (default), `interactive`, or `azurecli`. |
 | `fabricWorkspaceId` | No | Fabric workspace GUID. Required for workspace/item GUID scenarios. |
@@ -193,6 +193,19 @@ This is useful in agentic workflows where an agent is creating or editing Fabric
 }
 ```
 
+**Local folder + rules catalog:**
+```json
+{
+	"tool": "inspect",
+	"arguments": {
+		"fabricItem": "C:\\Files\\Sales.Report",
+		"rulesCatalogPath": "C:\\Rules\\rules-catalog.json",
+		"verbose": true,
+		"authMethod": "local"
+	}
+}
+```
+
 **Workspace item GUID + interactive auth:**
 ```json
 {
@@ -213,7 +226,8 @@ This is useful in agentic workflows where an agent is creating or editing Fabric
 | Parameter | Required | Description |
 |---|---|---|
 | `fabricItem` | Yes | Local path to a Fabric item/folder, or a Fabric item GUID when used with `fabricWorkspaceId`. |
-| `rules` | Yes | Local rules JSON path or OneLake DFS URL. |
+| `rules` | Conditional | Local rules JSON path or OneLake DFS URL. Provide exactly one of `rules` or `rulesCatalogPath`. |
+| `rulesCatalogPath` | Conditional | Local rules catalog JSON path or OneLake DFS URL. Provide exactly one of `rules` or `rulesCatalogPath`. |
 | `tags` | No | Comma-separated tags. When supplied, rules are filtered by any matching tag (case-insensitive). |
 | `authMethod` | No | `local` (default), `interactive`, or `azurecli`. |
 | `fabricWorkspaceId` | No | Fabric workspace GUID. Required for workspace/item GUID scenarios. |
@@ -239,6 +253,19 @@ This is useful in agentic workflows where an agent is creating or editing Fabric
 	"arguments": {
 		"fabricItem": "C:\\Files\\Sales.Report",
 		"rules": "C:\\Rules\\Base-rules.json",
+		"tags": "governance,performance",
+		"authMethod": "local"
+	}
+}
+```
+
+**Local folder + rules catalog (tag-filtered):**
+```json
+{
+	"tool": "discover_rules",
+	"arguments": {
+		"fabricItem": "C:\\Files\\Sales.Report",
+		"rulesCatalogPath": "C:\\Rules\\rules-catalog.json",
 		"tags": "governance,performance",
 		"authMethod": "local"
 	}
@@ -278,7 +305,7 @@ Each returned rule includes planning-oriented fields such as:
 
 - `ruleId`, `name`, `description`, `severity`
 - `itemTypes`, `tags`, `ruleSetName`, `sourcePath`
-- `requiresAuth`, `test` (`logic`, `data`, `expected`)
+- `test` (`logic`, `data`, `expected`)
 - `partScope`, `inclusionReason`, `guidanceSummary`
 
 Use `discover_rules` as the pre-flight planning step and `inspect` as the deterministic enforcement step.
