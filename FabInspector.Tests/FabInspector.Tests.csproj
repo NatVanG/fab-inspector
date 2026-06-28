@@ -43,6 +43,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FabInspector.AvaloniaUI\FabInspector.AvaloniaUI.csproj" />
+    <ProjectReference Include="..\FabInspector.CLI\FabInspector.CLI.csproj" />
     <ProjectReference Include="..\FabInspector.ImageLibrary\FabInspector.ImageLibrary.csproj" />
     <ProjectReference Include="..\FabInspector.Core\FabInspector.Core.csproj" />
     <ProjectReference Include="..\FabInspector.WinImageLibrary\FabInspector.WinImageLibrary.csproj" />
