@@ -167,6 +167,142 @@ public class DiRefactorTests
     }
 
     [Test]
+    public async Task InspectionEngine_DiscoverRulesAsync_FiltersByApplicabilityAndDisabled()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), "fab-inspector-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+
+        var itemDir = Path.Combine(tempDir, "Sales.Report");
+        Directory.CreateDirectory(itemDir);
+        File.WriteAllText(Path.Combine(itemDir, ".platform"), "{\"metadata\":{\"type\":\"Report\",\"displayName\":\"Sales\"}}", Encoding.UTF8);
+
+        var rulesPath = Path.Combine(tempDir, "discover-rules.json");
+        File.WriteAllText(rulesPath, BuildDiscoverRulesJson(), Encoding.UTF8);
+
+        try
+        {
+            var args = new Args
+            {
+                FabricItem = itemDir,
+                RulesFilePath = rulesPath,
+                AuthMethod = "local"
+            };
+
+            var engine = new InspectionEngine();
+            var discovered = await engine.DiscoverRulesAsync(args, tags: string.Empty);
+
+            Assert.That(discovered.Rules.Select(_ => _.Name), Is.EquivalentTo(new[]
+            {
+                "None Rule",
+                "Report Rule",
+                "Multi Rule"
+            }));
+
+            Assert.That(discovered.SchemaVersion, Is.EqualTo("1"));
+            Assert.That(discovered.TargetItemTypes, Does.Contain("none"));
+            Assert.That(discovered.TargetItemTypes, Does.Contain("Report").IgnoreCase);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+    }
+
+    [Test]
+    public async Task InspectionEngine_DiscoverRulesAsync_FiltersByAnyTagCaseInsensitive()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), "fab-inspector-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+
+        var itemDir = Path.Combine(tempDir, "Sales.Report");
+        Directory.CreateDirectory(itemDir);
+        File.WriteAllText(Path.Combine(itemDir, ".platform"), "{\"metadata\":{\"type\":\"Report\",\"displayName\":\"Sales\"}}", Encoding.UTF8);
+
+        var rulesPath = Path.Combine(tempDir, "discover-rules.json");
+        File.WriteAllText(rulesPath, BuildDiscoverRulesJson(), Encoding.UTF8);
+
+        try
+        {
+            var args = new Args
+            {
+                FabricItem = itemDir,
+                RulesFilePath = rulesPath,
+                AuthMethod = "local"
+            };
+
+            var engine = new InspectionEngine();
+            var discovered = await engine.DiscoverRulesAsync(args, tags: "governance, PERFORMANCE");
+
+            Assert.That(discovered.Rules.Select(_ => _.Name), Is.EquivalentTo(new[]
+            {
+                "Report Rule",
+                "Multi Rule"
+            }));
+
+            Assert.That(discovered.Rules.All(_ => _.InclusionReason.Contains("matched requested tags", StringComparison.OrdinalIgnoreCase)), Is.True);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+    }
+
+    [Test]
+    public async Task InspectionEngine_DiscoverRulesAsync_ReturnsMetadataFieldsForOperatorsAndProvenance()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), "fab-inspector-tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+
+        var itemDir = Path.Combine(tempDir, "Sales.Report");
+        Directory.CreateDirectory(itemDir);
+        File.WriteAllText(Path.Combine(itemDir, ".platform"), "{\"metadata\":{\"type\":\"Report\",\"displayName\":\"Sales\"}}", Encoding.UTF8);
+
+        var rulesPath = Path.Combine(tempDir, "discover-rules-metadata.json");
+        File.WriteAllText(rulesPath, BuildDiscoverRulesJsonWithRemoteOperator(), Encoding.UTF8);
+
+        try
+        {
+            var args = new Args
+            {
+                FabricItem = itemDir,
+                RulesFilePath = rulesPath,
+                AuthMethod = "local"
+            };
+
+            var engine = new InspectionEngine();
+            var discovered = await engine.DiscoverRulesAsync(args, tags: string.Empty);
+
+            Assert.That(discovered.Rules, Has.Count.EqualTo(1));
+
+            var rule = discovered.Rules.Single();
+            Assert.That(rule.RuleSetName, Is.EqualTo("Rules"));
+            Assert.That(rule.SourcePath, Is.EqualTo(rulesPath));
+            Assert.That(rule.Test.Logic, Does.Contain("apiget"));
+            Assert.That(rule.Test.Logic, Does.Contain("\"==\""));
+            Assert.That(rule.Test.Logic, Does.Contain("\"var\""));
+            Assert.That(rule.Test.Data? ["expectedValue"]?.ToString(), Is.EqualTo("stub"));
+            Assert.That(rule.Test.Expected?.GetValue<bool>(), Is.True);
+            Assert.That(rule.PartScope.Part, Is.EqualTo("definition/pages"));
+            Assert.That(rule.PartScope.AppliesToRootPart, Is.False);
+            Assert.That(rule.GuidanceSummary, Does.Contain("definition/pages"));
+            Assert.That(rule.InclusionReason.ToLowerInvariant(), Does.Contain("explicit item type 'report'"));
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+    }
+
+    [Test]
     public async Task InspectionEngine_RunAndReturnResultsAsync_IsolatesPerRunStateAcrossConcurrentEngines()
     {
         var registries = new[]
@@ -273,6 +409,73 @@ public class DiRefactorTests
         var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}_{suffix}_rules.json");
         File.WriteAllText(path, content, Encoding.UTF8);
         return path;
+    }
+
+        private static string BuildDiscoverRulesJson()
+        {
+                return """
+{
+    "rules": [
+        {
+            "name": "None Rule",
+            "itemType": "none",
+            "test": [ { "==": [1, 1] }, true ]
+        },
+        {
+            "name": "Report Rule",
+            "itemType": "report",
+            "tags": ["governance", "security"],
+            "test": [ { "==": [1, 1] }, true ]
+        },
+        {
+            "name": "Disabled Report Rule",
+            "itemType": "report",
+            "disabled": true,
+            "test": [ { "==": [1, 1] }, true ]
+        },
+        {
+            "name": "Json Rule",
+            "itemType": "json",
+            "tags": ["ops"],
+            "test": [ { "==": [1, 1] }, true ]
+        },
+        {
+            "name": "Multi Rule",
+            "itemType": "report|json",
+            "tags": ["performance"],
+            "test": [ { "==": [1, 1] }, true ]
+        }
+    ]
+}
+""";
+        }
+
+    private static string BuildDiscoverRulesJsonWithRemoteOperator()
+    {
+        return """
+{
+    "rules": [
+        {
+            "id": "RemoteReportRule",
+            "name": "Remote Report Rule",
+            "description": "Uses apiget for metadata validation",
+            "itemType": "report",
+            "part": "definition/pages",
+            "logType": "error",
+            "test": [
+                {
+                    "==": [
+                        { "apiget": ["https://api.fabric.microsoft.com/v1/workspaces"] },
+                        { "var": "expectedValue" }
+                    ]
+                },
+                { "expectedValue": "stub" },
+                true
+            ]
+        }
+    ]
+}
+""";
     }
 
     private static HttpClient CreateHttpClient(params HttpResponseMessage[] responses)

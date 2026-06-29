@@ -107,6 +107,26 @@ namespace FabInspector.ClientLibrary
         }
 
         /// <summary>
+        /// Resolves applicable rules without executing tests and returns
+        /// planning metadata for agent workflows.
+        /// </summary>
+        public static async Task<DiscoverRulesResponse> DiscoverRulesAsync(Args args, string? tags)
+        {
+            _args = args;
+
+            var engine = new InspectionEngine(_httpClient);
+            using var hook = HookEngine(engine);
+            try
+            {
+                return await engine.DiscoverRulesAsync(args, tags).ConfigureAwait(false);
+            }
+            finally
+            {
+                _tokenProvider = engine.TokenProvider ?? _tokenProvider;
+            }
+        }
+
+        /// <summary>
         /// Overload that accepts a pre-built <see cref="ITokenProvider"/> (e.g. a delegated
         /// per-user token provider from a Blazor / ASP.NET host). Skips the
         /// <see cref="FabricAuthenticationHelper"/>-based credential construction entirely
