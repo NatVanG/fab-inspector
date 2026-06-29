@@ -400,4 +400,5 @@ publish-test/
 /.github/copilot-instructions.md
 /.vscode/settings.json
 /.my-scripts/
+/.my-copilot-cli-prompts/
 THIRD-PARTY-NOTICES.md
