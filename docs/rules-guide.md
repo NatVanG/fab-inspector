@@ -118,34 +118,6 @@ The following rule checks that chart visuals have both axes titles visible, retu
   ]
 }
 ```
-
-### Example: vary by report name
-
-Although somewhat of an anti-pattern, rules can vary their test logic based on the item display name retrieved from the `.platform` file:
-
-```json
-{
-  "id": "VARY_BY_REPORT_NAME",
-  "name": "Vary by report name",
-  "description": "Run rule only if report display name is 'Inventory sample'",
-  "test": [
-    {
-      "?:": [
-        {
-          "==": [
-            { "query": [{ "part": ".platform" }, { "var": "0.metadata.displayName" }] },
-            "Inventory sample"
-          ]
-        },
-        "Rule output",
-        "This is another report."
-      ]
-    },
-    "Rule output"
-  ]
-}
-```
-
 ---
 
 ## Rule file examples

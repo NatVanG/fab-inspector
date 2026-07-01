@@ -2,7 +2,7 @@
 
 `FabInspector.AvaloniaUI` is a cross-platform desktop GUI.
 
-![AvaloniaUI](images/FabInspector.AvaloniaUI.png)
+![AvaloniaUI](Images/FabInspector.AvaloniaUI.png)
 
 1. Specify the Workspace Id to test. Leave blank to test Fabric item definitions on the local file system.
 2. If Workspace Id is blank, browse to a local Fabric CI/CD folder containing one or more Fabric CI/CD item definitions or paste the folder path. Alternatively if a Workspace ID is defined, optional scope the rules to a Fabric Item ID

@@ -4,7 +4,7 @@
 
 FabInspector operators extend the [JSON Logic](https://json-everything.net/json-logic) engine with remote API access and layout analysis. They are available in the `test` field of any rule and require a non-`local` authentication method.
 
-For a guide on when to use FabInspector vs Ric operators, see [Operators Overview](../docs/operators-overview.md).
+For a guide on when to use FabInspector and Ric operators, see [Operators Overview](../docs/operators-overview.md).
 
 **Authentication:** All REST API operators require a non-`local` authentication method (e.g. `interactive`, `clientsecret`, `certificate`, `federatedtoken`, or `managedidentity`). See the [CLI Reference](../docs/cli-reference.md#parameters) for authentication options.
 
@@ -20,6 +20,7 @@ For a guide on when to use FabInspector vs Ric operators, see [Operators Overvie
 ## Contents
 
 - [REST API Operators](#rest-api-operators): `apiget`, `dfsget`, `daxquery`, `sqlquery`, `scannerapi`
+- [Permission Guidance](#permission-guidance)
 
 ---
 
@@ -51,6 +52,17 @@ Performs an authenticated HTTP GET against the Power BI or Fabric REST API and r
 {
   "apiget": [
     "https://api.fabric.microsoft.com/v1/workspaces/{context-fabricworkspace}/items?type={type}&recursive={recursive}",
+    "Lakehouse",
+    "true"
+  ]
+}
+```
+
+```json
+{
+  "apiget": [
+    "https://api.fabric.microsoft.com/v1/workspaces/{fabricworkspace}/items?type={type}&recursive={recursive}",
+    "f45498e6-9f62-4bbb-bdb6-6d8a7e3a2703",
     "Lakehouse",
     "true"
   ]
@@ -211,6 +223,25 @@ Calls the [Power BI Admin Workspace Info API](https://learn.microsoft.com/en-us/
 ```
 
 See also: [25-scannerapi-Rules.json](../ExampleRules/25-scannerapi-Rules.json)
+
+---
+
+
+:Note: All REST API operators require a non-`local` authentication method.
+
+## Permission Guidance
+
+The required permission depends on the operator and, for `apiget`, the specific endpoint you call.
+
+Fab Inspector is intended to be used as a read-only inspection tool. Follow least-privilege principles by granting only the minimum workspace roles, item permissions, and delegated scopes required for the specific rule/API call.
+
+| Operator | Required permission guidance | Microsoft Learn references |
+|---|---|---|
+| `apiget` | Depends on the target API. For Fabric REST endpoints, use the endpoint's **Permissions** and **Required Delegated Scopes** sections. For Power BI endpoints with service principal auth, enable tenant setting **Allow service principals to use Power BI APIs** and grant workspace/item permissions required by that endpoint. | [Fabric scopes](https://learn.microsoft.com/en-us/rest/api/fabric/articles/scopes), [List Items (example: viewer role + Workspace.Read.All/Workspace.ReadWrite.All)](https://learn.microsoft.com/en-us/rest/api/fabric/core/items/list-items), [Using Power BI REST APIs (service principal and scopes)](https://learn.microsoft.com/en-us/rest/api/power-bi/#scopes), [Enable service principal for Power BI APIs](https://learn.microsoft.com/en-us/power-bi/developer/embedded/embed-service-principal#step-3---enable-the-power-bi-service-admin-settings) |
+| `dfsget` | Use a Microsoft Entra bearer token for OneLake DFS. The caller must have permission to read the target OneLake path/item in Fabric. | [Connecting to OneLake - Authorization](https://learn.microsoft.com/en-us/fabric/onelake/onelake-access-api#authorization), [OneLake access via API](https://learn.microsoft.com/en-us/fabric/onelake/onelake-access-api) |
+| `daxquery` | Tenant setting **Dataset Execute Queries REST API** must be enabled. Caller needs semantic model (dataset) **Read** and **Build** permission. Required scope is **Dataset.Read.All** or **Dataset.ReadWrite.All**. If using service principal, enable **Allow service principals to use Power BI APIs**. | [Datasets - Execute Queries](https://learn.microsoft.com/en-us/rest/api/power-bi/datasets/execute-queries), [Dataset access permissions](https://learn.microsoft.com/en-us/power-bi/connect-data/service-datasets-manage-access-permissions), [Allow service principals to use Power BI APIs](https://learn.microsoft.com/en-us/power-bi/admin/service-admin-portal-developer#allow-service-principals-to-use-power-bi-apis) |
+| `sqlquery` | Fab Inspector resolves Lakehouse SQL endpoint via `GET /v1/workspaces/{workspaceId}/lakehouses/{lakehouseId}` first. Caller must have **read** permission on the lakehouse. Required delegated scopes for this step are **Lakehouse.Read.All**, **Lakehouse.ReadWrite.All**, **Item.Read.All**, or **Item.ReadWrite.All**. Caller must also be permitted to read/query SQL endpoint objects. | [Items - Get Lakehouse](https://learn.microsoft.com/en-us/rest/api/fabric/lakehouse/items/get-lakehouse), [Lakehouse REST API overview](https://learn.microsoft.com/en-us/fabric/data-engineering/lakehouse-api), [Microsoft Entra auth for Fabric SQL endpoints](https://learn.microsoft.com/en-us/fabric/data-warehouse/entra-id-authentication) |
+| `scannerapi` | Calls a Power BI **admin** API (`PostWorkspaceInfo`). User must be a Fabric admin, or use service principal auth for admin APIs. With delegated admin token, required scope is **Tenant.Read.All** or **Tenant.ReadWrite.All**. With service principal auth, the app must not have admin-consent required Power BI permissions configured for this call path. | [WorkspaceInfo - PostWorkspaceInfo](https://learn.microsoft.com/en-us/rest/api/power-bi/admin/workspace-info-post-workspace-info), [Enable service principal authentication for admin APIs](https://learn.microsoft.com/en-us/fabric/admin/enable-service-principal-admin-apis), [Admin API tenant settings](https://learn.microsoft.com/en-us/fabric/admin/service-admin-portal-admin-api-settings) |
 
 ---
 
