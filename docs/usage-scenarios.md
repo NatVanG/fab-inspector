@@ -57,7 +57,7 @@ Use this to inspect every item in a Fabric workspace in a single run. Omit `-fab
 
 ```mermaid
 flowchart LR
-    A[All items in\nFabric workspace] --> C[Fab Inspector CLI/GUI]
+    A[All or some items in\nFabric workspace] --> C[Fab Inspector CLI/GUI]
     B[Rules JSON\nlocal or OneLake] --> C
     C --> D[Console, local JSON/HTML]
     C --> E[JSON results stored in OneLake]
@@ -112,10 +112,9 @@ Rules can call the Power BI admin scanner API, the Power BI and Fabric REST APIs
 ```mermaid
 flowchart TB
     subgraph Inputs
-      A1[Fabric items: Local folder]
-      A2[Fabric items: Workspace items]
-      A3["Fabric REST API\n(apiget, dfsget, sqlquery operators)"]
-      A4["Power BI REST API\n(apiget, daxquery, scannerapi operators)"]
+      A1[Local or published Fabric items]
+      A2["Fabric REST API\n(apiget, dfsget, sqlquery operators within rules)"]
+      A3["Power BI REST API\n(apiget, daxquery, scannerapi operators within rules)"]
       B1[Rules: Local JSON]
       B2[Rules: OneLake JSON]
     end
@@ -124,15 +123,14 @@ flowchart TB
 
     subgraph Outputs
       D1[Console]
-      D2[Local JSON/HTML]
-      D3[OneLake JSON]
-      D4[ADO or GitHub logging]
+      D2[Local JSON/HTML results]
+      D3[OneLake JSON results]
+      D4[Azure DevOps or GitHub logging]
     end
 
     A1 --> C
     A2 --> C
     A3 --> C
-    A4 --> C
     B1 --> C
     B2 --> C
     C --> D1
