@@ -1,6 +1,6 @@
 # Fab Inspector Examples Index
 
-This page catalogs sample rule files in [ExampleRules](../ExampleRules) so you can quickly find a starting point by scenario.
+This page catalogs sample rule files in [ExampleRules](../ExampleRules) so you can quickly find a starting point by scenario. ::warning:: Work is in progress to update and expand this collection.
 
 ## Core Rule Templates
 

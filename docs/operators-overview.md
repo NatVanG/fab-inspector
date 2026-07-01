@@ -29,9 +29,7 @@ Fab Inspector extends the [JSON Logic](https://jsonlogic.com/operations.html) bu
 | Execute T-SQL | Query a Fabric Lakehouse SQL endpoint | [Fab Inspector Operators](fabinspector-operators.md) — `sqlquery` |
 | Workspace metadata scan | Retrieve workspace info via Power BI admin API | [Fab Inspector Operators](fabinspector-operators.md) — `scannerapi` |
 
-**In short:**
-- **Ric operators** work entirely with data already available locally (item files, in-memory data, local filesystem). They have no network or authentication requirements.
-- **Fab Inspector operators** make authenticated outbound calls (REST, DFS, DAX, SQL). They require a non-`local` `-authmethod`.
+**Note:** Fab Inspector operators make authenticated outbound calls (REST, DFS, DAX, SQL). They require a non-`local` `-authmethod`.
 
 ---
 
@@ -39,7 +37,7 @@ Fab Inspector extends the [JSON Logic](https://jsonlogic.com/operations.html) bu
 
 ### Where operators appear
 
-Both operator families are available in the `test` field of any rule. Ric operators are also available in the `patch` field.
+Both operator families are available in the `test` field of any rule.
 
 ### URL placeholder tokens (Fab Inspector operators only)
 
@@ -54,7 +52,7 @@ Additional positional placeholders (e.g. `{type}`, `{folder}`, `{fileName}`) are
 
 ### Authentication (Fab Inspector operators only)
 
-All Fab Inspector operators require a non-`local` `-authmethod`. See the [CLI reference](cli-reference.md#parameters) for available authentication methods and environment variable support.
+All Fab Inspector operators require a non-`local` `-authmethod`. See the [CLI reference](cli-reference.md#parameters) for available authentication methods.
 
 ### Parallel execution caution
 
@@ -65,6 +63,8 @@ Other Fab Inspector operators may hit service throttling sooner under parallel f
 ---
 
 ## Operator quick-reference
+
+- **[JsonLogic Operators](https://jsonlogic.com/operations.html)**  —  See https://jsonlogic.com/operations.html
 
 - **[Ric Operators](ric-operators.md)** — `part`, `partinfo`, `path`, `query`, `drillvar`, `let`, `coalesce`, `tostring`, `torecord`, `typeof`, `keys`, `values`, `distinct`, `count`, `strcontains`, `strsplit`, `strjoin`, `regexextract`, `slice`, `union`, `intersect`, `diff`, `symdiff`, `equalsets`, `rectoverlap`, `now`, `datediff`, `hasprop`, `isnullorempty`, `filesize`, `filetextsearchcount`, `fromyamlfile`
 
