@@ -63,7 +63,7 @@ namespace FabInspector.ClientLibrary.Utils
                 return new ClientCertificateCredential(tenantId, clientId, certificatePath);
             }
 
-            var cert = new System.Security.Cryptography.X509Certificates.X509Certificate2(
+            var cert = System.Security.Cryptography.X509Certificates.X509CertificateLoader.LoadPkcs12FromFile(
                 certificatePath, certificatePassword,
                 System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.EphemeralKeySet);
             return new ClientCertificateCredential(tenantId, clientId, cert);

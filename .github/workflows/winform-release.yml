@@ -22,7 +22,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 10.0.x
 
     - name: Derive release version
       id: version
@@ -68,7 +68,7 @@ jobs:
         
     - name: Create Windows zip
       run: |
-        Compress-Archive -Path ./package/win-x64/* -DestinationPath ./win-x64.${{ github.ref_name }}-portable-net8.0.zip
+        Compress-Archive -Path ./package/win-x64/* -DestinationPath ./win-x64.${{ github.ref_name }}-portable-net10.0.zip
         
     - name: Create Release
       uses: softprops/action-gh-release@v2
@@ -76,9 +76,9 @@ jobs:
         name: "WinForm-portable"
         body: |
           win-x64 Window Forms client.
-          Self-contained with .NET 8.0 runtime included.
+          Self-contained with .NET 10.0 runtime included.
         files: |
-          win-x64.${{ github.ref_name }}-portable-net8.0.zip
+          win-x64.${{ github.ref_name }}-portable-net10.0.zip
         prerelease: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -22,7 +22,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
       - name: Setup Avalonia templates
         run: dotnet new install Avalonia.Templates
@@ -90,22 +90,22 @@ jobs:
       - name: Create Windows zip
         run: |
           cd ./package
-          zip -r ../win-x64-${{ github.ref_name }}-AvaloniaUI-portable-net8.0.zip win-x64/
+          zip -r ../win-x64-${{ github.ref_name }}-AvaloniaUI-portable-net10.0.zip win-x64/
 
       - name: Create Linux zip
         run: |
           cd ./package
-          zip -r ../linux-x64-${{ github.ref_name }}-AvaloniaUI-portable-net8.0.zip linux-x64/
+          zip -r ../linux-x64-${{ github.ref_name }}-AvaloniaUI-portable-net10.0.zip linux-x64/
 
       - name: Create macOS x64 zip
         run: |
           cd ./package
-          zip -r ../osx-x64-${{ github.ref_name }}-AvaloniaUI-portable-net8.0.zip osx-x64/
+          zip -r ../osx-x64-${{ github.ref_name }}-AvaloniaUI-portable-net10.0.zip osx-x64/
 
       - name: Create macOS ARM64 zip
         run: |
           cd ./package
-          zip -r ../osx-arm64-${{ github.ref_name }}-AvaloniaUI-portable-net8.0.zip osx-arm64/
+          zip -r ../osx-arm64-${{ github.ref_name }}-AvaloniaUI-portable-net10.0.zip osx-arm64/
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -113,12 +113,12 @@ jobs:
           name: "AvaloniaUI-portable"
           body: |
             win-x64, linux-x64, osx-x64, and osx-arm64 Avalonia desktop client.
-            Self-contained with .NET 8.0 runtime included.
+            Self-contained with .NET 10.0 runtime included.
           files: |
-            win-x64-${{ github.ref_name }}-AvaloniaUI-portable-net8.0.zip
-            linux-x64-${{ github.ref_name }}-AvaloniaUI-portable-net8.0.zip
-            osx-x64-${{ github.ref_name }}-AvaloniaUI-portable-net8.0.zip
-            osx-arm64-${{ github.ref_name }}-AvaloniaUI-portable-net8.0.zip
+            win-x64-${{ github.ref_name }}-AvaloniaUI-portable-net10.0.zip
+            linux-x64-${{ github.ref_name }}-AvaloniaUI-portable-net10.0.zip
+            osx-x64-${{ github.ref_name }}-AvaloniaUI-portable-net10.0.zip
+            osx-arm64-${{ github.ref_name }}-AvaloniaUI-portable-net10.0.zip
           prerelease: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
