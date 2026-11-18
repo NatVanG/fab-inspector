@@ -402,3 +402,4 @@ publish-test/
 /.my-scripts/
 /.my-copilot-cli-prompts/
 THIRD-PARTY-NOTICES.md
+nuget-package-review.tmp.md
