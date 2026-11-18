@@ -22,7 +22,7 @@
       "name": "Execute SQL query (with parameters)",
       "description": "",
       "itemType": "None",
-      "disabled": true,
+      "disabled": false,
       "test": [
         {
           "sqlquery": [

@@ -370,9 +370,8 @@ public class SuiteRunner
             try
             {
                 using var client = new HttpClient();
-                //https://raw.githubusercontent.com/json-everything/json-everything/master/src/JsonLogic.Tests/Files/tests.json
-                //https://jsonlogic.com/tests.json
-                using var request = new HttpRequestMessage(HttpMethod.Get, "https://raw.githubusercontent.com/json-everything/json-everything/master/src/JsonLogic.Tests/Files/tests.json");
+
+                using var request = new HttpRequestMessage(HttpMethod.Get, "https://raw.githubusercontent.com/json-everything/json-everything/master/tests/JsonLogic.Tests/Files/tests.json");
                 using var response = await client.SendAsync(request);
 
                 content = await response.Content.ReadAsStringAsync();
