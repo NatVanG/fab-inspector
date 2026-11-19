@@ -71,6 +71,22 @@ fab-inspector -help
 
 Release binaries for the CLI and GUI are published at: https://github.com/NatVanG/fab-inspector/releases
 
+### CLI Docker image
+
+Use a version tag for a specific CLI release once it has been published, or use `latest` to follow the maintainer-selected version:
+
+```bash
+docker pull ghcr.io/natvang/fab-inspector:vX.Y.Z  # Replace vX.Y.Z with a published version tag.
+docker pull ghcr.io/natvang/fab-inspector:latest
+```
+
+For exact image identity in CI, pin the registry digest (`ghcr.io/natvang/fab-inspector@sha256:<digest>`).
+
+**Maintainers:** In **Actions → Build and Publish Docker Image → Run workflow**, select the default branch and enter the CLI Git tag as `version`:
+
+- `publish` builds that tag and publishes its versioned image without changing `latest`. It won't overwrite an existing version tag. Only Git tags that include Docker CLI version support can be published by this workflow.
+- `promote` points `latest` to the already-published version without rebuilding. To roll back, promote an older published version.
+
 ## Documentation
 
 | Document | Description |
