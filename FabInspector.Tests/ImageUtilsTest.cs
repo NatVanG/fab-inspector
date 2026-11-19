@@ -42,7 +42,7 @@ namespace FabInspector.Tests
             var fieldMapResults = new List<TestResult>();
             var testResults = new List<TestResult>();
             var outputDir = "";
-            _pageRenderer.DrawReportPages(fieldMapResults, testResults, outputDir);
+            _pageRenderer.DrawReportPages(fieldMapResults, testResults, outputDir, string.Empty);
             Assert.That(string.IsNullOrEmpty(outputDir));
         }
     }

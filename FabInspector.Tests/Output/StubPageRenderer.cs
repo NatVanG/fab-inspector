@@ -8,13 +8,13 @@ namespace FabInspector.Tests.Output
     /// </summary>
     internal class StubPageRenderer : IReportPageWireframeRenderer
     {
-        public List<(IEnumerable<TestResult> FieldMapResults, IEnumerable<TestResult> TestResults, string OutputDir)> DrawCalls { get; } = new();
+        public List<(IEnumerable<TestResult> FieldMapResults, IEnumerable<TestResult> TestResults, string OutputDir, string TestedFilePath)> DrawCalls { get; } = new();
 
         public string Base64Result { get; set; } = "AAAA";
 
-        public void DrawReportPages(IEnumerable<TestResult> fieldMapResults, IEnumerable<TestResult> testResults, string outputDir)
+        public void DrawReportPages(IEnumerable<TestResult> fieldMapResults, IEnumerable<TestResult> testResults, string outputDir, string testedFilePath)
         {
-            DrawCalls.Add((fieldMapResults, testResults, outputDir));
+            DrawCalls.Add((fieldMapResults, testResults, outputDir, testedFilePath));
         }
 
         public string ConvertBitmapToBase64(string bitmapPath)
