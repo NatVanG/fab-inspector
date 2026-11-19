@@ -25,7 +25,13 @@ RUN dotnet build "./FabInspector.CLI.csproj" -c $BUILD_CONFIGURATION -o /app/bui
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./FabInspector.CLI.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+ARG CLI_VERSION
+RUN if [ -n "$CLI_VERSION" ]; then \
+      set -- -p:Version="$CLI_VERSION" -p:VersionPrefix="$CLI_VERSION" \
+        -p:AssemblyVersion="${CLI_VERSION}.0" -p:FileVersion="${CLI_VERSION}.0" \
+        -p:InformationalVersion="$CLI_VERSION"; \
+    fi; \
+    dotnet publish "./FabInspector.CLI.csproj" -c "$BUILD_CONFIGURATION" -o /app/publish /p:UseAppHost=false "$@"
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
