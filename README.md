@@ -71,6 +71,56 @@ fab-inspector -help
 
 Release binaries for the CLI and GUI are published at: https://github.com/NatVanG/fab-inspector/releases
 
+**Maintainers:** Before creating release tags, update `FabInspectorVersionPrefix` in `Directory.Build.props` and commit the change.
+The following PowerShell commands read that version and create signed tags on the current commit:
+
+```powershell
+$version = ([xml](Get-Content -Raw .\Directory.Build.props)).Project.PropertyGroup.FabInspectorVersionPrefix.InnerText.Trim()
+
+git tag -s "v$version" -m "Release CLI v$version"
+git tag -s "v$version-AvaloniaUI" -m "Release Avalonia UI v$version"
+git tag -s "v$version-Winform" -m "Release WinForm v$version"
+```
+
+Verify the tags, then push each tag to `origin`:
+
+```powershell
+git tag --verify "v$version"
+git tag --verify "v$version-AvaloniaUI"
+git tag --verify "v$version-Winform"
+
+git push origin "v$version"
+git push origin "v$version-AvaloniaUI"
+git push origin "v$version-Winform"
+```
+
+The tag formats are case-sensitive and must match the release workflows:
+
+| Application | Tag format |
+|---|---|
+| CLI | `v<version>` |
+| Avalonia UI | `v<version>-AvaloniaUI` |
+| WinForm | `v<version>-Winform` |
+
+Pushing each signed tag triggers its corresponding `*-release.yml` workflow. The workflows derive the application
+version from the tag; the CLI tag does not include a suffix.
+
+### CLI Docker image
+
+Use a version tag for a specific CLI release once it has been published, or use `latest` to follow the maintainer-selected version:
+
+```bash
+docker pull ghcr.io/natvang/fab-inspector:vX.Y.Z  # Replace vX.Y.Z with a published version tag.
+docker pull ghcr.io/natvang/fab-inspector:latest
+```
+
+For exact image identity in CI, pin the registry digest (`ghcr.io/natvang/fab-inspector@sha256:<digest>`).
+
+**Maintainers:** In **Actions → Build and Publish Docker Image → Run workflow**, select the default branch and enter the CLI Git tag as `version`:
+
+- `publish` builds that tag and publishes its versioned image without changing `latest`. It won't overwrite an existing version tag. Only Git tags that include Docker CLI version support can be published by this workflow.
+- `promote` points `latest` to the already-published version without rebuilding. To roll back, promote an older published version.
+
 ## Documentation
 
 | Document | Description |
