@@ -126,6 +126,7 @@ For exact image identity in CI, pin the registry digest (`ghcr.io/natvang/fab-in
 | Document | Description |
 |---|---|
 | [Intro](docs/intro.md) | Conceptual overview of Fab Inspector and why declarative JSON rules matter |
+| [Agentic Development](docs/agentic-development.md) | Rule discovery, prompt conflict handling, and agent-orchestrated inspection of Fabric items |
 | [Usage Scenarios](docs/usage-scenarios.md) | Common local, CI/CD, workspace, and hybrid validation patterns |
 | [GUI Reference](docs/gui-reference.md) | Cross-platform Avalonia desktop application walkthrough |
 | [CLI Reference](docs/cli-reference.md) | Full CLI parameters, auth options, and command examples |
@@ -145,6 +146,20 @@ To customize:
 1. Copy the base rules file.
 2. Edit parameter values or set `"disabled": true` on unwanted rules.
 3. Point `-rules` to your customized file.
+
+## Agentic Fabric development
+
+Fab Inspector provides guardrails for development agents creating Microsoft Fabric items, for example when using the Fabric-skills plugin. Run the CLI as a stdio MCP server:
+
+```bash
+fab-inspector serve
+```
+
+Before creating items, the development agent calls `discover_rules` for the relevant Fabric item types and configured rules. The agent interprets the returned rule metadata to guide creation and alerts the user if the development prompt contradicts those rules. After creation, it calls `inspect` to execute the rules against the actual items, uses the returned results to correct failures, and repeats inspection as needed.
+
+**The development agent orchestrates this workflow.** Fab Inspector provides discovery and inspection; it does not create Fabric items, resolve prompt conflicts, or automatically run an agent's correction loop.
+
+See [Agentic Development](docs/agentic-development.md) for the workflow diagram, MCP examples, and suggested agent instructions.
 
 ## Agentic rule creation
 
