@@ -552,7 +552,7 @@ public class DiRefactorTests
 
     private sealed class NoOpReportPageWireframeRenderer : IReportPageWireframeRenderer
     {
-        public void DrawReportPages(IEnumerable<TestResult> fieldMapResults, IEnumerable<TestResult> testResults, string outputDir)
+        public void DrawReportPages(IEnumerable<TestResult> fieldMapResults, IEnumerable<TestResult> testResults, string outputDir, string testedFilePath)
         {
         }
 

@@ -88,7 +88,7 @@ namespace FabInspector.ClientLibrary.Output
 
             Directory.CreateDirectory(outputPNGDirPath);
             context.OnMessage(MessageTypeEnum.Information, string.Format("Writing report page wireframe images to files at \"{0}\".", outputPNGDirPath));
-            _pageRenderer.DrawReportPages(fieldMapResults, context.TestResults, outputPNGDirPath);
+            _pageRenderer.DrawReportPages(fieldMapResults, context.TestResults, outputPNGDirPath, context.TestedFilePath);
 
             if (context.IsOneLakeOutput)
             {
