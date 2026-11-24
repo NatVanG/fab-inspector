@@ -4,7 +4,7 @@
 
 ![AvaloniaUI](Images/FabInspector.AvaloniaUI.png)
 
-The **Library** tab displays the rules library in an embedded browser that fills the available space beneath the header and tabs. Run and console output are hidden while browsing the library; selecting **Input** or **Outputs** restores them without clearing your inputs or console output.
+The **Library** tab displays the rules library in an embedded browser that fills the available space beneath the header and tabs. A **Back** button appears above the browser when a previous page is available, allowing you to return after following a web link. It is hidden on the first page. Run and console output are hidden while browsing the library; selecting **Input** or **Outputs** restores them without clearing your inputs or console output.
 
 1. Specify the Workspace Id to test. Leave blank to test Fabric item definitions on the local file system.
 2. If Workspace Id is blank, browse to a local Fabric CI/CD folder containing one or more Fabric CI/CD item definitions or paste the folder path. Alternatively if a Workspace ID is defined, optional scope the rules to a Fabric Item ID

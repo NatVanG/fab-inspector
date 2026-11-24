@@ -61,7 +61,19 @@
                     HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
             <TabItem x:Name="LibraryTab" Header="Community Library">
                 <Border Classes="card" Margin="0,12,0,0" Padding="0">
-                    <webView:NativeWebView Source="https://natvang.github.io/fab-inspector-rules-library/?embed=true&amp;theme=dark" />
+                    <Grid RowDefinitions="Auto,*">
+                        <Button x:Name="LibraryBackButton"
+                                Content="Back"
+                                Margin="12"
+                                HorizontalAlignment="Left"
+                                IsVisible="False"
+                                ToolTip.Tip="Go back to the previous page"
+                                Click="LibraryBackButton_Click" />
+                        <webView:NativeWebView x:Name="LibraryWebView"
+                                              Grid.Row="1"
+                                              Source="https://natvang.github.io/fab-inspector-rules-library/?embed=true&amp;theme=dark"
+                                              NavigationCompleted="LibraryWebView_NavigationCompleted" />
+                    </Grid>
                 </Border>
             </TabItem>
 

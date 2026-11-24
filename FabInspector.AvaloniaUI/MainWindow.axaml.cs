@@ -42,6 +42,19 @@ public partial class MainWindow : Window
         UpdateTabLayout();
     }
 
+    private void LibraryBackButton_Click(object? sender, RoutedEventArgs e)
+    {
+        if (LibraryWebView.CanGoBack)
+        {
+            LibraryWebView.GoBack();
+        }
+    }
+
+    private void LibraryWebView_NavigationCompleted(object? sender, WebViewNavigationCompletedEventArgs e)
+    {
+        LibraryBackButton.IsVisible = LibraryWebView.CanGoBack;
+    }
+
     private void UpdateTabLayout()
     {
         var isLibrarySelected = MainTabs.SelectedItem == LibraryTab;
