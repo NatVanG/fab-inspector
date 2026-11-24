@@ -1,4 +1,5 @@
 <Window xmlns="https://github.com/avaloniaui"
+        xmlns:webView="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls.WebView"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -56,8 +57,14 @@
             </DockPanel>
         </Border>
 
-        <TabControl Grid.Row="1" Margin="0,0,0,18">
-            <TabItem Header="Inputs">
+        <TabControl Grid.Row="1" Margin="0,0,0,18" SelectedIndex="1">
+            <TabItem Header="Library">
+                <Border Classes="card" Margin="0,12,0,0" Padding="0">
+                    <webView:NativeWebView Source="https://natvang.github.io/fab-inspector-rules-library/?embed=true&amp;theme=dark" />
+                </Border>
+            </TabItem>
+
+            <TabItem Header="Input">
                 <Border Classes="card" Margin="0,12,0,0">
                     <StackPanel Spacing="18">
                         <TextBlock Text="Inputs" FontSize="20" FontWeight="SemiBold" />
