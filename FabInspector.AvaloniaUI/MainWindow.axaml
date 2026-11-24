@@ -40,7 +40,7 @@
         </Style>
     </Window.Styles>
 
-    <Grid Margin="24" RowDefinitions="Auto,Auto,Auto,*,Auto">
+    <Grid x:Name="MainLayout" Margin="24" RowDefinitions="Auto,Auto,Auto,*">
         <Border Classes="card" Grid.Row="0" Margin="0,0,0,18">
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Left" Spacing="4">
@@ -57,8 +57,9 @@
             </DockPanel>
         </Border>
 
-        <TabControl Grid.Row="1" Margin="0,0,0,18" SelectedIndex="1">
-            <TabItem Header="Library">
+        <TabControl x:Name="MainTabs" Grid.Row="1" Margin="0,0,0,18" SelectedIndex="1"
+                    HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+            <TabItem x:Name="LibraryTab" Header="Community Library">
                 <Border Classes="card" Margin="0,12,0,0" Padding="0">
                     <webView:NativeWebView Source="https://natvang.github.io/fab-inspector-rules-library/?embed=true&amp;theme=dark" />
                 </Border>
@@ -128,7 +129,7 @@
             </TabItem>
         </TabControl>
 
-        <Border Classes="card" Grid.Row="2" Margin="0,0,0,18">
+        <Border x:Name="RunPanel" Classes="card" Grid.Row="2" Margin="0,0,0,18">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                 <StackPanel Spacing="4" VerticalAlignment="Center">
                     <TextBlock Text="Run inspection" FontSize="20" FontWeight="SemiBold" />
@@ -138,7 +139,7 @@
             </Grid>
         </Border>
 
-        <Border Classes="card" Grid.Row="3">
+        <Border x:Name="ConsolePanel" Classes="card" Grid.Row="3">
             <Grid RowDefinitions="Auto,*" RowSpacing="12">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Left" Text="Console output" FontSize="20" FontWeight="SemiBold" />
