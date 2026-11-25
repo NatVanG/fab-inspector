@@ -26,6 +26,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        MainTabs.SelectionChanged += MainTabs_SelectionChanged;
+        UpdateTabLayout();
         _serviceProvider = AppServices.CreateServiceProvider();
         _pageRenderer = _serviceProvider.GetRequiredService<IReportPageWireframeRenderer>();
         _registries = _serviceProvider.GetRequiredService<IEnumerable<JsonLogicOperatorRegistry>>();
@@ -33,6 +35,33 @@ public partial class MainWindow : Window
         Icon = LoadWindowIcon();
         Opened += MainWindow_Opened;
         Closing += MainWindow_Closing;
+    }
+
+    private void MainTabs_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        UpdateTabLayout();
+    }
+
+    private void LibraryBackButton_Click(object? sender, RoutedEventArgs e)
+    {
+        if (LibraryWebView.CanGoBack)
+        {
+            LibraryWebView.GoBack();
+        }
+    }
+
+    private void LibraryWebView_NavigationCompleted(object? sender, WebViewNavigationCompletedEventArgs e)
+    {
+        LibraryBackButton.IsVisible = LibraryWebView.CanGoBack;
+    }
+
+    private void UpdateTabLayout()
+    {
+        var isLibrarySelected = MainTabs.SelectedItem == LibraryTab;
+        MainLayout.RowDefinitions[1].Height = isLibrarySelected ? GridLength.Star : GridLength.Auto;
+        MainLayout.RowDefinitions[3].Height = isLibrarySelected ? GridLength.Auto : GridLength.Star;
+        RunPanel.IsVisible = !isLibrarySelected;
+        ConsolePanel.IsVisible = !isLibrarySelected;
     }
 
     private void MainWindow_Opened(object? sender, EventArgs e)
