@@ -10,8 +10,11 @@ namespace FabInspector.ClientLibrary.Utils
 
         public static bool IsOneLakeDfsUrl(string? path)
         {
-            return !string.IsNullOrWhiteSpace(path)
-                && path.StartsWith(RequiredUrlPrefix, StringComparison.OrdinalIgnoreCase);
+            return Uri.TryCreate(path, UriKind.Absolute, out var uri)
+                && uri.Scheme == Uri.UriSchemeHttps
+                && uri.Host.Equals("onelake.dfs.fabric.microsoft.com", StringComparison.OrdinalIgnoreCase)
+                && uri.IsDefaultPort
+                && string.IsNullOrEmpty(uri.UserInfo);
         }
 
         public static async Task<MemoryStream> DownloadFileToMemoryStreamAsync(
@@ -31,14 +34,14 @@ namespace FabInspector.ClientLibrary.Utils
             var fileSystemClient = serviceClient.GetFileSystemClient(fileSystemName);
             var fileClient = fileSystemClient.GetFileClient(oneLakePath);
 
-            onProgress?.Invoke($"Checking OneLake rules file at \"{oneLakeUrl}\".");
+            onProgress?.Invoke($"Checking OneLake rules file at \"{PublicRulesFileDownloader.DisplayPath(oneLakeUrl)}\".");
             Response<bool> exists = await fileClient.ExistsAsync(cancellationToken: cancellationToken);
             if (!exists.Value)
             {
                 throw new FileNotFoundException("Remote OneLake rules file was not found.", oneLakePath);
             }
 
-            onProgress?.Invoke($"Downloading rules file from OneLake at \"{oneLakeUrl}\".");
+            onProgress?.Invoke($"Downloading rules file from OneLake at \"{PublicRulesFileDownloader.DisplayPath(oneLakeUrl)}\".");
             var memoryStream = new MemoryStream();
             await using var remote = await fileClient.OpenReadAsync(cancellationToken: cancellationToken);
             await remote.CopyToAsync(memoryStream, cancellationToken);
@@ -49,7 +52,7 @@ namespace FabInspector.ClientLibrary.Utils
 
         private static (string FileSystem, string Path) ParseAbsoluteUrl(string url)
         {
-            var afterPrefix = url[RequiredUrlPrefix.Length..].TrimStart('/');
+            var afterPrefix = new Uri(url).AbsolutePath.TrimStart('/');
             var decoded = Uri.UnescapeDataString(afterPrefix);
             var slashIndex = decoded.IndexOf('/');
 

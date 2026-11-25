@@ -31,7 +31,7 @@ namespace FabInspector.Tests
   ]
 }");
 
-                var reader = new RulesCatalogReader(null, new HttpClient());
+                var reader = new RulesCatalogReader(null);
                 var resolved = await reader.ReadResolvedRuleSetsAsync(catalogPath);
 
                 Assert.That(resolved.Count, Is.EqualTo(2));
@@ -66,7 +66,7 @@ namespace FabInspector.Tests
   ]
 }");
 
-                var reader = new RulesCatalogReader(null, new HttpClient());
+                var reader = new RulesCatalogReader(null);
 
                 var ex = Assert.ThrowsAsync<PBIRInspectorException>(async () => await reader.ReadResolvedRuleSetsAsync(catalogPath));
                 Assert.That(ex!.Message.Contains("has an invalid type"));

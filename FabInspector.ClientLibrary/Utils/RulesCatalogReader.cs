@@ -1,6 +1,5 @@
 using FabInspector.Core;
 using FabInspector.Core.Exceptions;
-using System.Net.Http;
 using System.Text.Json;
 
 namespace FabInspector.ClientLibrary.Utils
@@ -8,13 +7,11 @@ namespace FabInspector.ClientLibrary.Utils
     internal sealed class RulesCatalogReader
     {
         private readonly ITokenProvider? _tokenProvider;
-        private readonly HttpClient _httpClient;
         private readonly Action<string>? _onProgress;
 
-        public RulesCatalogReader(ITokenProvider? tokenProvider, HttpClient httpClient, Action<string>? onProgress = null)
+        public RulesCatalogReader(ITokenProvider? tokenProvider, Action<string>? onProgress = null)
         {
             _tokenProvider = tokenProvider;
-            _httpClient = httpClient;
             _onProgress = onProgress;
         }
 
@@ -65,13 +62,13 @@ namespace FabInspector.ClientLibrary.Utils
                 var rules = await ReadRulesFromReferenceAsync(type, resolvedPath).ConfigureAwait(false);
                 if (rules == null || rules.Rules == null || rules.Rules.Count == 0)
                 {
-                    throw new PBIRInspectorException($"No rule definitions were found in ruleset '{reference.Name}' at '{resolvedPath}'.");
+                    throw new PBIRInspectorException($"No rule definitions were found in ruleset '{reference.Name}' at '{PublicRulesFileDownloader.DisplayPath(resolvedPath)}'.");
                 }
 
                 resolvedRuleSets.Add(new ResolvedRuleSet
                 {
                     Name = reference.Name,
-                    SourcePath = resolvedPath,
+                    SourcePath = PublicRulesFileDownloader.DisplayPath(resolvedPath),
                     Rules = rules
                 });
             }
@@ -151,15 +148,15 @@ namespace FabInspector.ClientLibrary.Utils
 
         private async Task<InspectionRules?> ReadUrlRulesAsync(string resolvedPath)
         {
-            if (!Uri.TryCreate(resolvedPath, UriKind.Absolute, out var uri)
-                || !uri.Scheme.Equals(Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            try
             {
-                throw new PBIRInspectorException($"Ruleset URL '{resolvedPath}' must be an absolute HTTPS URL.");
+                using var stream = await PublicRulesFileDownloader.DownloadAsync(resolvedPath, _onProgress).ConfigureAwait(false);
+                return JsonUtils.Deserialise<InspectionRules>(stream);
             }
-
-            _onProgress?.Invoke($"Downloading rules file from URL '{resolvedPath}'.");
-            using var stream = await _httpClient.GetStreamAsync(uri).ConfigureAwait(false);
-            return JsonUtils.Deserialise<InspectionRules>(stream);
+            catch (JsonException ex)
+            {
+                throw new PBIRInspectorException($"Could not deserialize ruleset at '{PublicRulesFileDownloader.DisplayPath(resolvedPath)}'. Check the JSON format.", ex);
+            }
         }
 
         private static string ResolveRuleSetPath(string catalogPath, RuleSetReference reference)

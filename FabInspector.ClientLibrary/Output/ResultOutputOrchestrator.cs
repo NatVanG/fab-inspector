@@ -65,7 +65,7 @@ namespace FabInspector.ClientLibrary.Output
                     LocalOutputDirPath = localOutputDirPath,
                     IsOneLakeOutput = isOneLakeOutput,
                     TestedFilePath = BuildTestedFilePath(),
-                    RulesFilePath = _args.RulesFilePath,
+                    RulesFilePath = PublicRulesFileDownloader.DisplayPath(_args.RulesFilePath),
                     RulesCatalogPath = _args.RulesCatalogPath,
                     TagsFilter = _args.Tags,
                     Verbose = _args.Verbose,
