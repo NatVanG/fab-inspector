@@ -8,11 +8,13 @@ namespace FabInspector.ClientLibrary.Utils
     {
         private readonly ITokenProvider? _tokenProvider;
         private readonly Action<string>? _onProgress;
+        private readonly HttpClient? _webClient;
 
-        public RulesCatalogReader(ITokenProvider? tokenProvider, Action<string>? onProgress = null)
+        public RulesCatalogReader(ITokenProvider? tokenProvider, Action<string>? onProgress = null, HttpClient? webClient = null)
         {
             _tokenProvider = tokenProvider;
             _onProgress = onProgress;
+            _webClient = webClient;
         }
 
         public async Task<IReadOnlyList<ResolvedRuleSet>> ReadResolvedRuleSetsAsync(string catalogPath)
@@ -150,7 +152,7 @@ namespace FabInspector.ClientLibrary.Utils
         {
             try
             {
-                using var stream = await PublicRulesFileDownloader.DownloadAsync(resolvedPath, _onProgress).ConfigureAwait(false);
+                using var stream = await PublicRulesFileDownloader.DownloadAsync(resolvedPath, _onProgress, _webClient).ConfigureAwait(false);
                 return JsonUtils.Deserialise<InspectionRules>(stream);
             }
             catch (JsonException ex)

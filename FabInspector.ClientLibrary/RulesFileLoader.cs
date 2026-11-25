@@ -6,7 +6,7 @@ using FabInspector.Core.Output;
 namespace FabInspector.ClientLibrary
 {
     /// <summary>
-    /// Helper that deserialises a rules file from a local path, OneLake, or public HTTPS URL.
+    /// Helper that deserialises a rules file from a local path, OneLake, or anonymous HTTPS URL.
     /// Extracted from the legacy <see cref="Main.DeserialiseRulesFromPath"/> so the
     /// per-run <see cref="InspectionEngine"/> can call it with its own
     /// <see cref="ITokenProvider"/> without depending on process-wide static state.

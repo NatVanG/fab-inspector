@@ -34,9 +34,12 @@ REQUIRED PARAMETERS:
   -fabricitem <path>|<guid>       Path to local folder containing one or more Fabric item definition or, if supplied with -fabricworkspace, Fabric item ID (guid).
                                   Legacy behaviour: path to local Power BI report's .pbip file path or .Report folder path also works but is deprecated.
   
-  -rules <path>                   Path to rules file (JSON) or OneLake URL to rules file (latter requires authentication)
+  -rules <path>                   Local JSON path, anonymous HTTPS .json URL, or authenticated OneLake DFS URL
   -rulescatalog <path>            Path to rules catalog file (JSON) or OneLake URL to catalog file
                                   Exactly one of -rules or -rulescatalog must be specified
+                                  Catalog rulesets of type 'url' use the same HTTPS rules download policy
+                                  HTTPS rules: no query strings or origin credentials; payload less than 10 MB
+                                  System/configured web proxies are supported; only use trusted rules sources
   
 ALTERNATIVE INPUT OPTIONS (use one of these):
   -pbipreport <path>              Deprecated: Path to Power BI file

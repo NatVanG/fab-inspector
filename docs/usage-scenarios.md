@@ -13,6 +13,8 @@ Rules input can be provided either as a single rules file (`-rules`) or as a rul
 
 Rules catalog examples are available at [ExampleRules/23-RulesCatalog.json](../ExampleRules/23-RulesCatalog.json).
 
+Single rules files and catalog ruleset references of type `url` can also use direct anonymous HTTPS `.json` URLs, including through a system/configured corporate web proxy. Catalog files themselves remain local or OneLake-hosted. HTTPS payloads must be less than 10 MB (10,000,000 bytes); query strings and origin authentication are not supported. Use trusted rules sources. See the [CLI reference](cli-reference.md) for the HTTPS download policy.
+
 ## 1. Local Fabric item definitions + local rules + local output
 
 Use this when developing rules or validating item definitions on your machine before committing code. Output formats: `Console`, `JSON`, `HTML`.
