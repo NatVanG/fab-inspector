@@ -51,6 +51,8 @@
   <ItemGroup>
     <None Include="..\LICENSE" Link="LICENSE">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
