@@ -40,7 +40,7 @@
         </Style>
     </Window.Styles>
 
-    <Grid x:Name="MainLayout" Margin="24" RowDefinitions="Auto,Auto,Auto,*">
+    <Grid x:Name="MainLayout" Margin="24" RowDefinitions="Auto,Auto,Auto,Auto,*">
         <Border Classes="card" Grid.Row="0" Margin="0,0,0,18">
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Left" Spacing="4">
@@ -59,23 +59,7 @@
 
         <TabControl x:Name="MainTabs" Grid.Row="1" Margin="0,0,0,18" SelectedIndex="1"
                     HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
-            <TabItem x:Name="LibraryTab" Header="Community Library">
-                <Border Classes="card" Margin="0,12,0,0" Padding="0">
-                    <Grid RowDefinitions="Auto,*">
-                        <Button x:Name="LibraryBackButton"
-                                Content="Back"
-                                Margin="12"
-                                HorizontalAlignment="Left"
-                                IsVisible="False"
-                                ToolTip.Tip="Go back to the previous page"
-                                Click="LibraryBackButton_Click" />
-                        <webView:NativeWebView x:Name="LibraryWebView"
-                                              Grid.Row="1"
-                                              Source="https://natvang.github.io/fab-inspector-rules-library/?embed=true&amp;theme=dark"
-                                              NavigationCompleted="LibraryWebView_NavigationCompleted" />
-                    </Grid>
-                </Border>
-            </TabItem>
+            <TabItem x:Name="LibraryTab" Header="Community Library" />
 
             <TabItem Header="Input">
                 <Border Classes="card" Margin="0,12,0,0">
@@ -141,7 +125,24 @@
             </TabItem>
         </TabControl>
 
-        <Border x:Name="RunPanel" Classes="card" Grid.Row="2" Margin="0,0,0,18">
+        <!-- Keep the native browser attached when switching tabs to preserve its session. -->
+        <Border x:Name="LibraryPanel" Classes="card" Grid.Row="2" Margin="0,12,0,18" Padding="0" IsVisible="False">
+            <Grid RowDefinitions="Auto,*">
+                <Button x:Name="LibraryBackButton"
+                        Content="Back"
+                        Margin="12"
+                        HorizontalAlignment="Left"
+                        IsVisible="False"
+                        ToolTip.Tip="Go back to the previous page"
+                        Click="LibraryBackButton_Click" />
+                <webView:NativeWebView x:Name="LibraryWebView"
+                                      Grid.Row="1"
+                                      Source="https://natvang.github.io/fab-inspector-rules-library/?embed=true&amp;theme=dark"
+                                      NavigationCompleted="LibraryWebView_NavigationCompleted" />
+            </Grid>
+        </Border>
+
+        <Border x:Name="RunPanel" Classes="card" Grid.Row="3" Margin="0,0,0,18">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                 <StackPanel Spacing="4" VerticalAlignment="Center">
                     <TextBlock Text="Run inspection" FontSize="20" FontWeight="SemiBold" />
@@ -151,7 +152,7 @@
             </Grid>
         </Border>
 
-        <Border x:Name="ConsolePanel" Classes="card" Grid.Row="3">
+        <Border x:Name="ConsolePanel" Classes="card" Grid.Row="4">
             <Grid RowDefinitions="Auto,*" RowSpacing="12">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Left" Text="Console output" FontSize="20" FontWeight="SemiBold" />
