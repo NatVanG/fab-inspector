@@ -1,12 +1,22 @@
 <Project>
 
   <PropertyGroup>
-    <FabInspectorVersionPrefix Condition="'$(FabInspectorVersionPrefix)' == ''">4.0.2</FabInspectorVersionPrefix>
+    <FabInspectorVersionPrefix Condition="'$(FabInspectorVersionPrefix)' == ''">4.1.0</FabInspectorVersionPrefix>
     <VersionPrefix Condition="'$(VersionPrefix)' == ''">$(FabInspectorVersionPrefix)</VersionPrefix>
     <Version Condition="'$(Version)' == ''">$(VersionPrefix)</Version>
     <AssemblyVersion Condition="'$(AssemblyVersion)' == ''">$(VersionPrefix).0</AssemblyVersion>
     <FileVersion Condition="'$(FileVersion)' == ''">$(VersionPrefix).0</FileVersion>
     <InformationalVersion Condition="'$(InformationalVersion)' == ''">$(Version)</InformationalVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)THIRD-PARTY-NOTICES.txt" Link="THIRD-PARTY-NOTICES.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <Pack>true</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>

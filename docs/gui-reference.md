@@ -4,6 +4,8 @@
 
 ![AvaloniaUI](Images/FabInspector.AvaloniaUI.png)
 
+The **Community Library** tab keeps its page loaded while you switch to **Input** or **Outputs**, preserving navigation history and page state until the application closes.
+
 1. Specify the Workspace Id to test. Leave blank to test Fabric item definitions on the local file system.
 2. If Workspace Id is blank, browse to a local Fabric CI/CD folder containing one or more Fabric CI/CD item definitions or paste the folder path. Alternatively if a Workspace ID is defined, optional scope the rules to a Fabric Item ID
 3. Either use the base (Power BI) rules file included in the application or select your own local rules file or a DFS URL to a rules file in OneLake.

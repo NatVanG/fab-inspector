@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Support for anonymous HTTPS `.json` rules files and catalog ruleset URLs, with URL validation, a strict 10 MB payload limit, bounded redirects, download timeouts, and progress messages. Local and authenticated OneLake loading remain unchanged.
+
+### Changed
+- Updated CLI, MCP, and GUI guidance for public HTTPS rules sources; the Avalonia UI no longer selects base rules by default.
+
+### Fixed
+- Preserved the Community Library browser session when switching Avalonia UI tabs.
+- Embedded the Fab Inspector icon in the Avalonia UI Windows executable so Windows Explorer displays the application icon.
+
 ## [4.0.1] - 2026-11-18
 
 ### Changed

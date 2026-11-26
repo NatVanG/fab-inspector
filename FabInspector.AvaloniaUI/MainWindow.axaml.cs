@@ -58,8 +58,10 @@ public partial class MainWindow : Window
     private void UpdateTabLayout()
     {
         var isLibrarySelected = MainTabs.SelectedItem == LibraryTab;
-        MainLayout.RowDefinitions[1].Height = isLibrarySelected ? GridLength.Star : GridLength.Auto;
-        MainLayout.RowDefinitions[3].Height = isLibrarySelected ? GridLength.Auto : GridLength.Star;
+        MainTabs.Margin = new Avalonia.Thickness(0, 0, 0, isLibrarySelected ? 0 : 18);
+        MainLayout.RowDefinitions[2].Height = isLibrarySelected ? GridLength.Star : GridLength.Auto;
+        MainLayout.RowDefinitions[4].Height = isLibrarySelected ? GridLength.Auto : GridLength.Star;
+        LibraryPanel.IsVisible = isLibrarySelected;
         RunPanel.IsVisible = !isLibrarySelected;
         ConsolePanel.IsVisible = !isLibrarySelected;
     }

@@ -16,10 +16,30 @@ Optional. Microsoft Fabric Workspace ID (GUID). When specified, enables Fabric m
 - **Authentication required**: `-authmethod` must be one of `interactive`, `azurecli`, `clientsecret`, `certificate`, `federatedtoken`, or `managedidentity`.
 
 ```-rules filepath```  
-Required. Path to the rules file. This can be a local JSON file path or a OneLake DFS URL. OneLake rules URLs require non-local authentication.
+Required unless `-rulescatalog` is supplied. Path to the rules file: a local JSON file path, an anonymous HTTPS `.json` URL, or a OneLake DFS URL. OneLake rules URLs require non-local authentication.
 
 ```-rulescatalog filepath```  
-Alternative to `-rules`. Path to a rules catalog JSON file that references multiple rulesets. Mutually exclusive with `-rules`. See [23-RulesCatalog.json](../ExampleRules/23-RulesCatalog.json).
+Alternative to `-rules`. Local path or authenticated OneLake DFS URL to a rules catalog JSON file that references multiple rulesets. Catalog files themselves cannot be downloaded from generic HTTPS URLs. Mutually exclusive with `-rules`. See [23-RulesCatalog.json](../ExampleRules/23-RulesCatalog.json).
+
+**HTTPS rules downloads** (both `-rules` URLs and catalog rulesets of type `url`):
+- Use a direct HTTPS URL whose decoded path ends in `.json` (case-insensitive), not a web page containing a file.
+- URL user information and query strings are rejected, including signed/token URLs. Origin authentication, cookies, and Fabric credentials are not used. Authentication configured for OneLake remains separate.
+- Normal system/environment-configured web proxies and standard TLS certificate validation are supported. Proxy authentication is separate from origin authentication.
+- Each decoded JSON payload must be strictly less than **10,000,000 bytes (10 MB)**. Downloads use GET without a HEAD preflight: known oversized unencoded responses are rejected from GET headers, and the payload is always size-checked while streaming, including decompressed responses and responses without a declared length.
+- Downloads have a 30-second deadline and at most five redirects. Every redirect must remain HTTPS, end in `.json`, and satisfy the same URL restrictions; redirects into OneLake are rejected.
+- Use trusted rules sources. Private-network HTTPS destinations are permitted; the downloader does not enforce network isolation or sandbox rule execution. Hosts may serve valid JSON with a text/plain or application/octet-stream content type.
+
+These download restrictions do not change local-file or authenticated OneLake loading.
+
+```bash
+fab-inspector -fabricitem "./FabricProject" -rules "https://raw.githubusercontent.com/NatVanG/fab-inspector/main/Rules/Base-rules.json" -formats "JSON"
+```
+
+A local or OneLake catalog can reference the same URL:
+
+```json
+{ "name": "Community rules", "type": "url", "path": "https://raw.githubusercontent.com/NatVanG/fab-inspector/main/Rules/Base-rules.json" }
+```
 
 ```-authmethod local|interactive|azurecli|clientsecret|certificate|federatedtoken|managedidentity```  
 Optional, defaults to `local`.
@@ -177,7 +197,7 @@ This is useful in agentic workflows where an agent is creating or editing Fabric
 | Parameter | Required | Description |
 |---|---|---|
 | `fabricItem` | Yes | Local path to a Fabric item/folder, or a Fabric item GUID when used with `fabricWorkspaceId`. |
-| `rules` | Conditional | Local rules JSON path or OneLake DFS URL. Provide exactly one of `rules` or `rulesCatalogPath`. |
+| `rules` | Conditional | Local rules JSON path, anonymous HTTPS `.json` URL, or OneLake DFS URL. Provide exactly one of `rules` or `rulesCatalogPath`. |
 | `rulesCatalogPath` | Conditional | Local rules catalog JSON path or OneLake DFS URL. Provide exactly one of `rules` or `rulesCatalogPath`. |
 | `verbose` | No | `false` by default. If `true`, passing and failing rule results are included. |
 | `tags` | No | Comma-separated tags. When supplied, rules are filtered by any matching tag (case-insensitive). If omitted or empty, all applicable rules run. |
@@ -257,7 +277,7 @@ This is useful in agentic workflows where an agent is creating or editing Fabric
 | Parameter | Required | Description |
 |---|---|---|
 | `fabricItem` | Yes | Local path to a Fabric item/folder, or a Fabric item GUID when used with `fabricWorkspaceId`. |
-| `rules` | Conditional | Local rules JSON path or OneLake DFS URL. Provide exactly one of `rules` or `rulesCatalogPath`. |
+| `rules` | Conditional | Local rules JSON path, anonymous HTTPS `.json` URL, or OneLake DFS URL. Provide exactly one of `rules` or `rulesCatalogPath`. |
 | `rulesCatalogPath` | Conditional | Local rules catalog JSON path or OneLake DFS URL. Provide exactly one of `rules` or `rulesCatalogPath`. |
 | `tags` | No | Comma-separated tags. When supplied, rules are filtered by any matching tag (case-insensitive). If omitted or empty, all applicable rules are returned. |
 | `authMethod` | No | `local` (default), `interactive`, or `azurecli`. |

@@ -150,7 +150,7 @@ namespace FabInspector.ClientLibrary
             {
                 CompletionTime = DateTime.UtcNow,
                 TestedFilePath = args.FabricItem,
-                RulesFilePath = args.RulesFilePath,
+                RulesFilePath = PublicRulesFileDownloader.DisplayPath(args.RulesFilePath),
                 RulesCatalogPath = args.RulesCatalogPath,
                 Verbose = args.Verbose,
                 Results = testResults
@@ -176,7 +176,7 @@ namespace FabInspector.ClientLibrary
             {
                 CompletionTime = DateTime.UtcNow,
                 TestedFilePath = args.FabricItem,
-                RulesFilePath = args.RulesFilePath,
+                RulesFilePath = PublicRulesFileDownloader.DisplayPath(args.RulesFilePath),
                 RulesCatalogPath = args.RulesCatalogPath,
                 Verbose = args.Verbose,
                 Results = testResults
@@ -215,7 +215,7 @@ namespace FabInspector.ClientLibrary
             {
                 GeneratedAt = DateTime.UtcNow,
                 FabricItem = args.FabricItem,
-                RulesFilePath = args.RulesFilePath,
+                RulesFilePath = PublicRulesFileDownloader.DisplayPath(args.RulesFilePath),
                 RulesCatalogPath = args.RulesCatalogPath,
                 TargetItemTypes = targetItemTypes.OrderBy(itemType => itemType, StringComparer.OrdinalIgnoreCase).ToList(),
                 Rules = discoveredRules
@@ -331,18 +331,19 @@ namespace FabInspector.ClientLibrary
         {
             if (!string.IsNullOrWhiteSpace(args.RulesCatalogPath))
             {
-                var reader = new RulesCatalogReader(_tokenProvider, _httpClient,
+                var reader = new RulesCatalogReader(_tokenProvider,
                     onProgress: msg => OnMessageIssued(MessageTypeEnum.Information, msg));
                 return await reader.ReadResolvedRuleSetsAsync(args.RulesCatalogPath).ConfigureAwait(false);
             }
 
-            var rules = await Task.Run(() => DeserialiseRulesFromPath(args.RulesFilePath ?? string.Empty)).ConfigureAwait(false);
+            var rules = await RulesFileLoader.DeserialiseRulesFromPathAsync(args.RulesFilePath ?? string.Empty, _tokenProvider,
+                msg => OnMessageIssued(MessageTypeEnum.Information, msg)).ConfigureAwait(false);
             return new List<ResolvedRuleSet>
             {
                 new ResolvedRuleSet
                 {
                     Name = "Rules",
-                    SourcePath = args.RulesFilePath ?? string.Empty,
+                    SourcePath = PublicRulesFileDownloader.DisplayPath(args.RulesFilePath),
                     Rules = rules
                 }
             };
@@ -711,7 +712,7 @@ namespace FabInspector.ClientLibrary
         }
 
         /// <summary>
-        /// Deserialise rules from a local path or OneLake DFS URL. Uses this
+        /// Deserialise rules from a local path, public HTTPS URL, or OneLake DFS URL. Uses this
         /// engine's token provider for OneLake authentication.
         /// </summary>
         public InspectionRules DeserialiseRulesFromPath(string rulesPath)
