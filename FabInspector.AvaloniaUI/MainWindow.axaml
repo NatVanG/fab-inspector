@@ -66,7 +66,7 @@
                     <StackPanel Spacing="18">
                         <TextBlock Text="Inputs" FontSize="20" FontWeight="SemiBold" />
                         <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="16" RowSpacing="14">
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Fabric Workspace ID" VerticalAlignment="Center" ToolTip.Tip="Optional Fabric workspace GUID. Required for workspace or item GUID scans." />
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Fabric Workspace" VerticalAlignment="Center" ToolTip.Tip="Optional Fabric workspace GUID. Required for workspace or item GUID scans." />
                             <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <TextBox x:Name="FabricWorkspaceIdTextBox" PlaceholderText="Workspace GUID (optional)" />
                                 <CheckBox x:Name="BlankWorkspaceCheckBox" Grid.Column="1" Content="Blank" VerticalAlignment="Center" IsCheckedChanged="BlankWorkspaceCheckBox_Changed" />
@@ -81,14 +81,14 @@
 
                             <TextBlock Grid.Row="2" Grid.Column="0" Text="Rules file" VerticalAlignment="Center" ToolTip.Tip="Path or OneLake DFS URL to a single rules JSON file." />
                             <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
-                                <TextBox x:Name="RulesFilePathTextBox" PlaceholderText="Rules JSON path or DFS URL" TextChanged="RulesFilePathTextBox_TextChanged" />
+                                <TextBox x:Name="RulesFilePathTextBox" PlaceholderText="Rules JSON path, public URL or OneLake DFS URL" TextChanged="RulesFilePathTextBox_TextChanged" />
                                 <Button x:Name="BrowseRulesFileButton" Grid.Column="1" Content="Browse" Click="BrowseRulesFileButton_Click" />
-                                <CheckBox x:Name="UseBaseRulesCheckBox" Grid.Column="2" Content="Use base rules" IsChecked="True" VerticalAlignment="Center" IsCheckedChanged="UseBaseRulesCheckBox_Changed" />
+                                <CheckBox x:Name="UseBaseRulesCheckBox" Grid.Column="2" Content="Use base rules" VerticalAlignment="Center" IsCheckedChanged="UseBaseRulesCheckBox_Changed" />
                             </Grid>
 
                             <TextBlock Grid.Row="3" Grid.Column="0" Text="Rules catalog" VerticalAlignment="Center" ToolTip.Tip="Path or OneLake DFS URL to a rules catalog JSON that references multiple rulesets." />
                             <Grid Grid.Row="3" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                <TextBox x:Name="RulesCatalogPathTextBox" PlaceholderText="Rules catalog JSON path or DFS URL" TextChanged="RulesCatalogPathTextBox_TextChanged" />
+                                <TextBox x:Name="RulesCatalogPathTextBox" PlaceholderText="Rules catalog JSON path or OneLake DFS URL" TextChanged="RulesCatalogPathTextBox_TextChanged" />
                                 <Button x:Name="BrowseRulesCatalogButton" Grid.Column="1" Content="Browse" Click="BrowseRulesCatalogButton_Click" />
                             </Grid>
                         </Grid>
@@ -103,7 +103,7 @@
                         <Grid ColumnDefinitions="200,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="16" RowSpacing="14">
                             <TextBlock Grid.Row="0" Grid.Column="0" Text="Output directory" VerticalAlignment="Center" ToolTip.Tip="Optional local output folder or OneLake DFS destination. Leave blank to use temp files." />
                             <Grid Grid.Row="0" Grid.Column="1" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
-                                <TextBox x:Name="OutputDirPathTextBox" PlaceholderText="Output folder or DFS URL" />
+                                <TextBox x:Name="OutputDirPathTextBox" PlaceholderText="Output folder or OneLake DFS URL" />
                                 <Button x:Name="BrowseOutputDirButton" Grid.Column="1" Content="Browse" Click="BrowseOutputDirButton_Click" />
                                 <CheckBox x:Name="UseTempFilesCheckBox" Grid.Column="2" Content="Use temp files" VerticalAlignment="Center" IsCheckedChanged="UseTempFilesCheckBox_Changed" />
                             </Grid>

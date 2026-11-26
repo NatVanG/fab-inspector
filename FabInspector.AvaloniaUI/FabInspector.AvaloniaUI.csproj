@@ -7,6 +7,7 @@
     <AssemblyName>FabInspector.AvaloniaUI</AssemblyName>
     <RootNamespace>FabInspector.AvaloniaUI</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\FabInspector.ClientLibrary\Files\icon\pbiinspector.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>pbiinspector.png</PackageIcon>
